@@ -1,0 +1,37 @@
+# ── Binários compilados ──────────────────────────────────────────────────────
+out/
+src/sistema
+src/sistema_dbg
+
+# ── Resultados de simulação (arquivos binários grandes) ──────────────────────
+simulations/results/
+
+# ── Arquivos gerados automaticamente pelo opp_msgc ───────────────────────────
+src/messages/*_m.cc
+src/messages/*_m.h
+
+# ── Figuras geradas pelo script de análise ────────────────────────────────────
+analysis/figures/
+
+# ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────
+.cproject
+.project
+.settings/
+.oppbuildspec
+
+# ── Documentação de terceiros (copyrighted, pesada) ──────────────────────────
+UserGuide.txt
+firebase-debug.log
+
+# ── Ambiente local (segredos e caminhos de máquina) ──────────────────────────
+.env
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+*.swp

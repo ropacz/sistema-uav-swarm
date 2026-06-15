@@ -1,0 +1,5 @@
+#!/bin/sh
+cd `dirname $0`
+INET=/Users/rodrigo/omnetpp-workspace/inet-4.5.4
+../src/sistema_dbg -n .:../src:$INET/src $*
+# for release: opp_run -l ../src/sistema -n .:../src:$INET/src $*

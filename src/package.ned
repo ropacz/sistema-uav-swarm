@@ -1,0 +1,3 @@
+package echosar;
+
+@license(LGPL);
