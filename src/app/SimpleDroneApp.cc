@@ -174,10 +174,16 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
                                       double lat, double lon,
                                       simtime_t sentAt)
 {
-    // Passo 10: verifica tabela por equipe disponível e alcançável
+    // Passo 10: prioriza equipe disponível; sem nenhuma, cai para qualquer
+    // equipe conhecida (ocupada ainda recebe e confirma o alerta — quem
+    // decide o atendimento é outra camada, fora do escopo deste sistema).
+    // Só vai a relay broadcast se a tabela não tiver nenhuma equipe.
     std::string teamIp;
     for (auto& [id, e] : teamTable)
         if (e.available && !e.ip.empty()) { teamIp = e.ip; break; }
+    if (teamIp.empty())
+        for (auto& [id, e] : teamTable)
+            if (!e.ip.empty()) { teamIp = e.ip; break; }
 
     auto chunk = makeShared<VictimAlertChunk>();
     chunk->setChunkLength(B(1024));

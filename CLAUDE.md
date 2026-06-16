@@ -69,11 +69,11 @@ BasicNetwork (BasicNetwork.ned)
 ├── visualizer: IntegratedCanvasVisualizer   ← exibe alcance de rádio (mediumVisualizer)
 ├── configurator: Ipv4NetworkConfigurator
 ├── radioMedium:  Ieee80211ScalarRadioMedium
-├── drone[10]: WirelessHost
-│   ├── mobility: GaussMarkovMobility   ← voo 3D, Z: 100–150 m, 11–31 m/s
+├── drone[15]: WirelessHost
+│   ├── mobility: GaussMarkovMobility   ← voo 3D, Z: 100–150 m, 8–15 m/s
 │   └── app[0]:   SimpleDroneApp
-└── team[3]: WirelessHost               ← 3 equipes terrestres (SW/NE/SE da área)
-    ├── mobility: StationaryMobility
+└── team[5]: WirelessHost               ← 5 equipes terrestres (4 cantos + centro)
+    ├── mobility: RandomWaypointMobility ← patrulha a pé, Z fixo 1.5 m, 0.45–1.4 m/s (cenário inundação)
     └── app[0]:   SimpleTeamApp
 ```
 
@@ -103,20 +103,32 @@ Os arquivos `*_m.{cc,h}` são gerados automaticamente pelo `opp_msgc` — não e
 
 ```
 t=5s, 10s, 15s …  [passos 2–5]
-  SimpleTeamApp[0..2] ──[TeamUpdate bcast:5001]──▶ SimpleDroneApp[0..9]
+  SimpleTeamApp[0..4] ──[TeamUpdate bcast:5001]──▶ SimpleDroneApp[0..14]
   SimpleDroneApp      ──[DroneStatus uni:5003]───▶ SimpleTeamApp
 
-t=Exp(20s) por drone  [passos 7–12]
+t=Exp(40s) por drone  [passos 7–12]
   SimpleDroneApp detecta vítima → msgId = droneId_N → insere em seenAlerts
-    ├─ SE tem equipe na teamTable →  VictimAlert uni:5000  → SimpleTeamApp
-    └─ SE não tem               →  VictimAlert bcast:5004 → drones vizinhos (relay)
-         └─ drone relay: verifica seenAlerts (dedup), repassa até chegar a equipe
-  SimpleTeamApp  → dedup em seenAlerts → *** ALERTA *** → VictimAck uni:5002 → drone origem
+    ├─ 1ª prioridade: equipe DISPONÍVEL na teamTable → VictimAlert uni:5000 → SimpleTeamApp
+    ├─ 2ª prioridade: teamTable não vazia mas todas ocupadas →
+    │    VictimAlert uni:5000 → qualquer equipe conhecida (equipe ocupada ainda recebe
+    │    e confirma; decisão de qual equipe atende é de outra camada, fora de escopo)
+    └─ 3ª prioridade: teamTable vazia (nenhuma equipe conhecida) →
+         VictimAlert bcast:5004 → drones vizinhos (relay)
+         └─ drone relay: verifica seenAlerts (dedup), repassa seguindo a mesma prioridade
+  SimpleTeamApp  → dedup em seenAlerts → *** ALERTA *** → calcula busyDuration → available=false
+                 → VictimAck uni:5002 → drone origem
   SimpleDroneApp (origem) recebe VictimAck → remove de pendingAlerts
 
 Timeout: drone remove equipe da teamTable após 30s sem TeamUpdate  [passo 13]
 Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 ```
+
+> **Nota de correção:** `forwardAlertOnce()` originalmente só considerava equipes **disponíveis**
+> (2ª prioridade ausente). Quando todas as equipes conhecidas ficavam ocupadas, todo alerta
+> caía no relay broadcast — porta que nenhuma equipe escuta — e expirava garantidamente.
+> Corrigido adicionando o fallback para "qualquer equipe conhecida" antes do relay.
+> PDR do baseline saltou de ~3% para ~30% com essa correção. Detalhes em
+> `docs/scenario_reference.md` §8.1.
 
 ### SimpleDroneApp — estado interno relevante
 
@@ -124,29 +136,40 @@ Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 - `seenAlerts: set<string>` — msgIds já vistos (deduplicação de relay)
 - `pendingAlerts: vector<PendingAlert>` — alertas pendentes de confirmação (store-forward)
 - `victimCounter` — gera msgId único (`droneId_N`)
-- Timers: `detectTimer` (Exp 20s), `timeoutTimer` (30s), `retryTimer` (10s)
+- Timers: `detectTimer` (Exp 40s), `timeoutTimer` (30s), `retryTimer` (10s)
 - Sockets: `teamSocket` (bind 5001), `ackSocket` (sem bind), `alertSocket` (sem bind),
   `relaySocket` (bind 5004), `fwdSocket` (sem bind), `ackRxSocket` (bind 5002)
+- Contadores de métrica: `alertsGenerated`, `alertsSentDirect`, `alertsSentRelay`, `alertsRelayed`,
+  `alertsAcked`, `alertsExpired`, `totalRetries`, `totalE2EDelay` — gravados via `recordScalar()` no `finish()`
 
 ### SimpleTeamApp — estado interno relevante
 
 - Descobre próprio IP via `L3AddressResolver` → `IInterfaceTable` no `initialize()`
 - `seenAlerts: set<string>` — deduplicação de VictimAlerts recebidos via relay
+- `available: bool` — false enquanto atende vítima; `attendTimer` restaura para true após
+  `busyDuration = distância/teamSpeed + serviceTime` (parâmetros `teamSpeed`, `serviceTime` no NED)
 - Sockets: `sendSocket` (broadcast), `statusSocket` (bind 5003), `alertSocket` (bind 5000), `ackTxSocket` (sem bind)
+- Contadores de métrica: `alertsReceived`, `teamUpdatesSent`, `droneStatusReceived`, `totalDeliveryDelay`
 
 ### Parâmetros-chave do BasicTest
 
 | Parâmetro | Valor | Fonte |
 |-----------|-------|-------|
 | Área | 5000 × 5000 m | [FEA-2024] |
+| numDrones / numTeams | 15 / 5 | calibração de densidade (ver scenario_reference.md) |
 | Altitude drones | 100–150 m | [SCI-2019] |
-| Velocidade drones | uniform(11, 31) m/s | [FEA-2024] |
+| Velocidade drones | uniform(8, 15) m/s | cenário SAR urbano |
+| Velocidade equipes | uniform(0.45, 1.4) m/s | patrulha a pé em área alagada |
 | Potência drone | 20 mW → ~800 m | [OPP-MAN] |
 | Potência equipe | 50 mW → ~1260 m | proporcional |
 | MAC buffer | 50 pacotes | [SCI-2019] |
+| victimInterval | 40 s (exponencial) | cenário moderado |
+| maxRetries / retryInterval | 5 / 10 s (janela 50 s) | validado empiricamente — aumentar piora o PDR (congestiona MAC) |
+| serviceTime / teamSpeed | 120 s / 0.9 m/s | timer de atendimento da equipe |
 | sim-time-limit | 300 s | [FEA-2024] |
 
-Rastreabilidade completa em `docs/params_reference.md`.
+Rastreabilidade completa em `docs/params_reference.md`.  
+Referência consolidada do cenário (topologia, métricas, histórico de correções) em `docs/scenario_reference.md`.
 
 ### Visualização (`mediumVisualizer`)
 
@@ -165,10 +188,13 @@ Círculos de alcance são do **`mediumVisualizer`**, não do `radioVisualizer`:
 ## Análise de resultados
 
 ```bash
-python3 analysis/process_results.py   # gera analysis/figures/comparison.pdf
+python3 analysis/process_results.py   # gera analysis/figures/metrics.{pdf,png}
 ```
 
-Espera escalares: `alertSent:sum`, `alertReceived:sum`, `alertDeliveryDelay:mean`, `residualEnergyCapacity:last`.  
+Parser próprio em regex (sem dependência de `omnetpp.scave`) lê os `.sca` em `simulations/results/`.  
+Calcula 5 métricas por config: PDR, atraso E2E médio, retransmissões/entrega, overhead de comunicação,
+taxa de sucesso AppACK — a partir dos escalares gravados por `SimpleDroneApp`/`SimpleTeamApp` (ver
+`docs/scenario_reference.md` §9–10 para a lista completa de escalares e fórmulas).  
 As configs `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR` ainda não estão no `.ini`.
 
 ## Namespaces
