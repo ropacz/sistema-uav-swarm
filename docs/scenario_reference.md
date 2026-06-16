@@ -2,7 +2,8 @@
 
 **Versão:** BasicTest (cenário base calibrado)  
 **Simulador:** OMNeT++ 6.2.0 + INET Framework 4.5.4  
-**Tempo de simulação:** 300 s
+**Tempo de simulação:** 300 s  
+**Repetições:** 5 seeds (`repeat = 5`, `seed-set = ${repetition}`) — métricas reportadas como média ± desvio-padrão entre seeds
 
 ---
 
@@ -193,7 +194,9 @@ t = retryInterval (10 s, periódico)  [passo 15]
 
 ---
 
-## 8.1. Correção de Roteamento — Beco sem Saída em Equipe Ocupada
+## 8.1. Correção da Lógica de Encaminhamento da Aplicação — Beco sem Saída em Equipe Ocupada
+
+> Nota de terminologia: a correção é na lógica de **encaminhamento de aplicação** (`forwardAlertOnce()`, camada da app), não em roteamento de rede — o INET/IP não participa dessa decisão.
 
 **Bug identificado:** `forwardAlertOnce()` só selecionava equipe **disponível** (`e.available == true`) na `teamTable` para envio unicast. Quando todas as equipes conhecidas pelo drone estavam ocupadas (`available = false`), a função caía sempre no relay broadcast (`RELAY_PORT = 5004`) — porta que **nenhuma equipe escuta** (`SimpleTeamApp` só faz bind em `ALERT_PORT`, `DRONE_STATUS_PORT`, `TEAM_UPDATE_PORT`). Resultado: todo alerta gerado depois que as equipes conhecidas ficavam ocupadas caía num beco sem saída e expirava garantidamente, independente de `maxRetries`, `retryInterval` ou densidade de drones.
 
@@ -201,7 +204,9 @@ t = retryInterval (10 s, periódico)  [passo 15]
 
 **Correção aplicada** (`SimpleDroneApp.cc`, `forwardAlertOnce`): mantém a prioridade por equipe disponível, mas adiciona um *fallback* para qualquer equipe conhecida (mesmo ocupada) antes de recorrer ao relay broadcast. O lado da equipe já confirmava o alerta independente do status `available` (`SimpleTeamApp.cc`), então a entrega passou a funcionar sem nenhuma mudança naquele lado.
 
-**Impacto medido** (mesma seed, mesmos parâmetros, antes vs. depois):
+> **Caveat sobre o ACK de equipe ocupada:** o `VictimAck` enviado por uma equipe ocupada confirma apenas o **recebimento da informação**, não o **atendimento da vítima** — a equipe pode estar a caminho de outra ocorrência. A decisão de qual equipe efetivamente desloca para atender fica em outra camada (despacho/triagem), fora do escopo deste protocolo de comunicação. As métricas de PDR e taxa AppACK aqui medem **entrega de informação confirmada fim a fim**, não tempo de resgate.
+
+**Impacto medido** (mesma seed, mesmos parâmetros, antes vs. depois do fix):
 
 | Métrica | Antes do fix | Depois do fix |
 |---|---|---|
@@ -212,7 +217,9 @@ t = retryInterval (10 s, periódico)  [passo 15]
 | Overhead | 215,5 msgs/alerta | **15,3** msgs/alerta |
 | Taxa AppACK | 3,1% | **33,0%** |
 
-Esse fix também invalida a hipótese de que `maxRetries` baixo (5) fosse a causa do PDR ruim — testes anteriores mostraram que **aumentar** `maxRetries` para 15 piorava o PDR (mais broadcasts de relay competindo no MAC, sem destino possível). O gargalo nunca foi o TTL; era o roteamento.
+(Tabela com seed única, antes da consolidação multi-seed do §11 — usada aqui apenas para ilustrar a magnitude do efeito do fix, não como resultado final.)
+
+Esse fix também reduz a plausibilidade da hipótese de que `maxRetries` baixo (5) fosse a causa do PDR ruim — nos testes realizados, **aumentar** `maxRetries` para 15 piorou o PDR (mais broadcasts de relay competindo no MAC, sem destino possível). Nas condições testadas, o gargalo dominante foi a lógica de encaminhamento, não o número de tentativas (TTL); isso não exclui que o TTL volte a ser relevante em outros regimes (ex.: densidade de drones muito menor).
 
 ---
 
@@ -240,6 +247,8 @@ Esse fix também invalida a hipótese de que `maxRetries` baixo (5) fosse a caus
 | `droneStatusReceived` | `DroneStatus` recebidos |
 | `meanDeliveryDelay` | Atraso médio de entrega (s) até a equipe; −1 se nenhum |
 
+> **`alertsReceived` vs. `alertsAcked` — não são a mesma coisa.** `alertsReceived` (lado da equipe) conta a chegada do `VictimAlert` à equipe, um marco unidirecional. `alertsAcked` (lado do drone) conta o ciclo completo: o drone que originou o alerta recebeu de volta o `VictimAck`. Um alerta pode ser recebido pela equipe e o `VictimAck` correspondente se perder no caminho de volta — nesse caso `alertsReceived` incrementa mas `alertsAcked` não. As métricas de PDR, retries/entrega e overhead (§10) usam `alertsAcked` como critério de sucesso porque mede o ciclo fim a fim, não apenas a entrega de ida.
+
 ---
 
 ## 10. Métricas Computadas — `process_results.py`
@@ -249,26 +258,29 @@ Esse fix também invalida a hipótese de que `maxRetries` baixo (5) fosse a caus
 | **PDR** (taxa de entrega) | `alertsAcked / alertsGenerated × 100` | % |
 | **Atraso E2E médio** | média de `meanE2EDelay` por drone com ACK | s |
 | **Retransmissões por entrega** | `totalRetries / alertsAcked` | tentativas |
-| **Overhead de comunicação** | `(alertsSentDirect + alertsSentRelay) / alertsReceived` | msgs/alerta |
+| **Overhead de comunicação** | `(alertsSentDirect + alertsSentRelay) / alertsAcked` | msgs/entrega |
 | **Taxa de sucesso AppACK** | `alertsAcked / (alertsAcked + alertsExpired) × 100` | % |
+
+> Denominador do overhead alinhado com PDR e retries/entrega: usa `alertsAcked` (entrega confirmada fim a fim) em vez de `alertsReceived` (chegada à equipe), para manter as três métricas coerentes com o mesmo critério de sucesso. `alertsSentDirect + alertsSentRelay` já soma toda transmissão de `VictimAlert` (originada ou repassada) — `alertsRelayed` não entra na conta para não duplicar.
 
 ---
 
-## 11. Resultado da Última Rodada (seed 0, pós-correção §8.1)
+## 11. Resultado Consolidado — 5 Seeds (pós-correção §8.1)
 
-| Métrica | Valor |
+**Metodologia:** `repeat = 5`, `seed-set = ${repetition}` no `omnetpp.ini`. Cada seed é uma repetição independente da simulação completa (300 s); as 5 métricas são calculadas **por seed** e depois agregadas como média ± desvio-padrão entre seeds (`analysis/process_results.py`) — não somadas num único pool, para não mascarar a variabilidade entre execuções.
+
+| Métrica | Média ± Desvio (n=5 seeds) |
 |---|---|
-| PDR | **29,6%** |
-| Alertas gerados | 108 |
-| Alertas confirmados (ACK) | 32 |
-| Alertas expirados | 65 |
-| Alertas pendentes ao final | 11 |
-| Atraso E2E médio | 3,87 s |
-| Retransmissões por entrega | 11,6 |
-| Overhead | 15,3 msgs/alerta |
-| Taxa de sucesso AppACK | 33,0% |
+| PDR | **27,0% ± 7,3%** |
+| Atraso E2E médio | 5,09 s ± 3,64 s |
+| Retransmissões por entrega | 14,3 ± 6,0 |
+| Overhead | 23,6 ± 9,8 msgs/entrega |
+| Taxa de sucesso AppACK | 31,0% ± 8,6% |
+| Alertas gerados (total/seed) | 114,0 ± 11,3 |
+| Alertas confirmados (ACK) | 31,2 ± 11,0 |
+| Alertas expirados | 67,8 ± 4,4 |
 
-> **Interpretação:** com o roteamento corrigido, o PDR de ~30% reflete agora a limitação real de cobertura (alcance ~800 m em área de 25 km²) — não mais um defeito de protocolo. Esse é o **baseline sem reposicionamento e sem obstáculos** coerente para comparação posterior com o cenário com obstáculos urbanos e com o reposicionamento via Bat Algorithm.
+> **Interpretação:** com o encaminhamento corrigido, o PDR médio de ~27% (variando 17,3%–36,4% entre as 5 seeds) reflete a limitação real de cobertura (alcance ~800 m em área de 25 km²) e a aleatoriedade de mobilidade/detecção entre execuções — não mais um defeito de protocolo. O desvio-padrão relativamente alto (±7,3 p.p. de PDR) é esperado num cenário com poucas equipes (5) competindo por cobertura de 15 drones móveis; é um indicativo de que comparações futuras (ex.: com vs. sem Bat Algorithm) devem reportar significância estatística entre médias, não apenas comparar pontos únicos. Este é o **baseline sem reposicionamento e sem obstáculos**, consolidado com múltiplas seeds, para comparação posterior com o cenário com obstáculos urbanos e com o reposicionamento via Bat Algorithm.
 
 ---
 
@@ -282,12 +294,13 @@ Os itens abaixo ainda precisam de revisão ou decisão antes da defesa:
 - [ ] `teamSpeed = 0,9 m/s` — média adequada para equipe em área severamente alagada?
 - [ ] Potência dos drones (`20 mW → ~800 m`) e equipes (`50 mW → ~1 260 m`) — calibradas com as referências usadas na dissertação?
 - [ ] `numDrones = 15` e `numTeams = 5` — densidade coerente com a área 5 km × 5 km da dissertação?
-- [ ] Tempo de simulação `300 s` — suficiente para cobrir os cenários comparativos, agora que o fix do §8.1 desbloqueou o roteamento?
+- [ ] Tempo de simulação `300 s` — suficiente para cobrir os cenários comparativos, agora que o fix do §8.1 desbloqueou o encaminhamento? **Deferido deliberadamente**: variar para 600 s/900 s é um teste de baixo risco e fácil de rodar, mas a recomendação é consolidar primeiro este baseline (5 seeds, parâmetros fixos) antes de introduzir mais uma dimensão de variação — evita confundir o efeito da correção do §8.1 com o efeito do tempo de simulação.
 
 ### Resolvidos nesta sessão
 
 - [x] `maxRetries = 5` / `retryInterval = 10 s` (janela 50 s) — **mantido**. Testes empíricos mostraram que aumentar para 15 (janela 150 s) piora o PDR por congestionamento de broadcast, não melhora por TTL maior. Ver §8.1.
-- [x] PDR estruturalmente baixo (2–5%) — **causa raiz era bug de roteamento**, não calibração de parâmetros. Corrigido em §8.1; PDR baseline agora em ~30%.
+- [x] PDR estruturalmente baixo (2–5%) — **causa raiz era bug na lógica de encaminhamento da aplicação**, não calibração de parâmetros. Corrigido em §8.1; PDR baseline agora em ~27% ± 7,3% (5 seeds).
+- [x] Resultado de seed única substituído por consolidação de 5 seeds (média ± desvio) — ver §11.
 
 ### Próximo passo planejado
 

@@ -3,6 +3,9 @@
 Uso:
     python3 analysis/process_results.py
 
+Calcula as 5 métricas por seed (run) e agrega por configuração como
+média ± desvio-padrão entre seeds — não soma todos os runs num único pool.
+
 Saída: analysis/figures/metrics.pdf  +  analysis/figures/metrics.png
 """
 
@@ -25,8 +28,14 @@ PALETTE = plt.cm.tab10.colors
 # ── Parser de .sca ────────────────────────────────────────────────────────────
 
 def parse_sca(path):
-    """Lê um arquivo .sca e devolve DataFrame [config, module, name, value]."""
+    """Lê um arquivo .sca e devolve DataFrame [config, run, module, name, value].
+
+    `run` é extraído do nome do arquivo (ex.: BasicTest-3.sca → run="BasicTest-3"),
+    não do conteúdo — garante uma chave estável mesmo que o atributo `run` interno
+    do .sca mude de formato.
+    """
     config = "unknown"
+    run = os.path.splitext(os.path.basename(path))[0]
     rows = []
     with open(path, encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -42,6 +51,7 @@ def parse_sca(path):
                     continue
                 rows.append({
                     'config': config,
+                    'run':    run,
                     'module': m.group(1),
                     'name':   m.group(2),
                     'value':  value,
@@ -61,11 +71,17 @@ def load_all_scalars():
     return df
 
 
-# ── Cálculo das 5 métricas por config ────────────────────────────────────────
+# ── Cálculo das 5 métricas por seed (run) ────────────────────────────────────
+#
+# alertsReceived (equipe recebeu VictimAlert) e alertsAcked (drone origem
+# recebeu VictimAck) são conceitos distintos: o primeiro mede entrega até a
+# equipe, o segundo mede o ciclo completo confirmado fim a fim. O PDR e o
+# overhead usam alertsAcked como critério de sucesso para manter os dois
+# coerentes entre si.
 
-def compute_metrics(df):
-    results = {}
-    for config, g in df.groupby('config'):
+def compute_run_metrics(df):
+    rows = []
+    for (config, run), g in df.groupby(['config', 'run']):
         def s(name):
             return g[g['name'] == name]['value'].sum()
 
@@ -77,24 +93,45 @@ def compute_metrics(df):
         acked     = s('alertsAcked')
         expired   = s('alertsExpired')
         retries   = s('totalRetries')
+        # alertsSentDirect/alertsSentRelay já contam toda transmissão de
+        # VictimAlert (originada OU relayed) — forwardAlertOnce() incrementa
+        # um dos dois em toda chamada, seja por detectVictim() ou por
+        # handleVictimAlertRelay(). Não somar alertsRelayed aqui (duplicaria).
         sent      = s('alertsSentDirect') + s('alertsSentRelay')
         received  = s('alertsReceived')
 
-        results[config] = {
+        rows.append({
+            'config': config,
+            'run':    run,
             'm1_pdr':      (acked / generated * 100) if generated else 0.0,
             'm2_e2e':      avg('meanE2EDelay'),
             'm3_retries':  (retries / acked) if acked else 0.0,
-            'm4_overhead': (sent / received) if received else 0.0,
+            'm4_overhead': (sent / acked) if acked else 0.0,
             'm5_ack_rate': (acked / (acked + expired) * 100) if (acked + expired) else 0.0,
-            # contadores brutos (para tabela)
             'alertsGenerated': generated,
             'alertsAcked':     acked,
             'alertsExpired':   expired,
             'totalRetries':    retries,
             'alertsSent':      sent,
             'alertsReceived':  received,
-        }
-    return pd.DataFrame(results).T
+        })
+    return pd.DataFrame(rows)
+
+
+# ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
+
+METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_ack_rate']
+COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
+               'totalRetries', 'alertsSent', 'alertsReceived']
+
+
+def aggregate_metrics(run_df):
+    agg = run_df.groupby('config')[METRIC_COLS + COUNT_COLS].agg(['mean', 'std'])
+    agg.columns = ['_'.join(c) for c in agg.columns]
+    agg['n_runs'] = run_df.groupby('config')['run'].nunique()
+    # std é NaN com n=1 run — trata como 0 para não quebrar barras de erro
+    agg = agg.fillna(0.0)
+    return agg
 
 
 # ── Gráficos ──────────────────────────────────────────────────────────────────
@@ -103,13 +140,13 @@ METRICS = [
     ('m1_pdr',      'Taxa de Entrega\n(PDR)',               '%',              True),
     ('m2_e2e',      'Atraso Fim a Fim\nMédio',              's',              False),
     ('m3_retries',  'Retransmissões\npor Alerta Entregue',  'tentativas',     False),
-    ('m4_overhead', 'Overhead de\nComunicação',             'msgs / alerta',  False),
+    ('m4_overhead', 'Overhead de\nComunicação',             'msgs / entrega', False),
     ('m5_ack_rate', 'Taxa de Sucesso\npor ACK de Aplicação','%',              True),
 ]
 
 
-def plot_metrics(metrics_df):
-    configs = metrics_df.index.tolist()
+def plot_metrics(agg_df):
+    configs = agg_df.index.tolist()
     colors  = [PALETTE[i % len(PALETTE)] for i in range(len(configs))]
 
     fig, axes = plt.subplots(2, 3, figsize=(16, 9))
@@ -117,9 +154,11 @@ def plot_metrics(metrics_df):
 
     for ax_idx, (col, title, ylabel, is_pct) in enumerate(METRICS):
         ax = axes_flat[ax_idx]
-        vals = [metrics_df.loc[c, col] for c in configs]
+        means = [agg_df.loc[c, f'{col}_mean'] for c in configs]
+        stds  = [agg_df.loc[c, f'{col}_std']  for c in configs]
 
-        bars = ax.bar(configs, vals, color=colors, edgecolor='black', linewidth=0.6, width=0.5)
+        bars = ax.bar(configs, means, yerr=stds, capsize=4,
+                       color=colors, edgecolor='black', linewidth=0.6, width=0.5)
         ax.set_title(title, fontsize=11, fontweight='bold', pad=8)
         ax.set_ylabel(ylabel, fontsize=9)
         ax.tick_params(axis='x', rotation=20, labelsize=8)
@@ -128,42 +167,40 @@ def plot_metrics(metrics_df):
             ax.set_ylim(0, 110)
             ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
 
-        for bar, val in zip(bars, vals):
-            if pd.notna(val):
-                label = f'{val:.1f}%' if is_pct else f'{val:.3g}'
+        for bar, mean, std in zip(bars, means, stds):
+            if pd.notna(mean):
+                label = f'{mean:.1f}±{std:.1f}%' if is_pct else f'{mean:.3g}±{std:.2g}'
                 ax.text(bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + ax.get_ylim()[1] * 0.01,
-                        label, ha='center', va='bottom', fontsize=8, fontweight='bold')
+                        bar.get_height() + std + ax.get_ylim()[1] * 0.01,
+                        label, ha='center', va='bottom', fontsize=7.5, fontweight='bold')
 
     # remove 6º subplot vazio
     axes_flat[5].set_visible(False)
 
-    fig.suptitle('ECHOSAR-Net — Métricas de Comunicação SAR', fontsize=13, fontweight='bold', y=1.01)
+    n_runs = agg_df['n_runs'].iloc[0] if len(agg_df) else 0
+    fig.suptitle(f'ECHOSAR-Net — Métricas de Comunicação SAR (média ± desvio, n={n_runs} seeds)',
+                 fontsize=13, fontweight='bold', y=1.01)
     plt.tight_layout()
     return fig
 
 
 # ── Tabela resumo ─────────────────────────────────────────────────────────────
 
-def print_summary(metrics_df):
-    print("\n╔══ Métricas por configuração ══════════════════════════════════════╗")
-    display = metrics_df[[
-        'm1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_ack_rate',
-        'alertsGenerated', 'alertsAcked', 'alertsExpired', 'totalRetries',
-    ]].rename(columns={
-        'm1_pdr':           'PDR (%)',
-        'm2_e2e':           'Atraso E2E (s)',
-        'm3_retries':       'Retries/entrega',
-        'm4_overhead':      'Overhead',
-        'm5_ack_rate':      'Taxa ACK (%)',
-        'alertsGenerated':  'Gerados',
-        'alertsAcked':      'Confirmados',
-        'alertsExpired':    'Expirados',
-        'totalRetries':     'Total retries',
-    })
-    pd.set_option('display.float_format', '{:.3f}'.format)
-    print(display.to_string())
-    print("╚═══════════════════════════════════════════════════════════════════╝\n")
+def print_summary(agg_df):
+    print("\n╔══ Métricas por configuração (média ± desvio entre seeds) ══════════╗")
+    for config in agg_df.index:
+        row = agg_df.loc[config]
+        n = int(row['n_runs'])
+        print(f"\n  [{config}]  n={n} seeds")
+        print(f"    PDR (%)          {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
+        print(f"    Atraso E2E (s)   {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
+        print(f"    Retries/entrega  {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
+        print(f"    Overhead         {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
+        print(f"    Taxa ACK (%)     {row['m5_ack_rate_mean']:.3f} ± {row['m5_ack_rate_std']:.3f}")
+        print(f"    Gerados (total)  {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
+        print(f"    Confirmados      {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
+        print(f"    Expirados        {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
+    print("\n╚═══════════════════════════════════════════════════════════════════╝\n")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -176,13 +213,15 @@ def main():
         print(f"Erro: {e}\nExecute as simulações antes de gerar os gráficos.")
         sys.exit(1)
 
+    n_runs = df.groupby('config')['run'].nunique()
     print(f"  {len(df)} escalares carregados de {df['config'].nunique()} config(s): "
-          f"{', '.join(df['config'].unique())}")
+          f"{', '.join(df['config'].unique())}  |  seeds por config: {dict(n_runs)}")
 
-    metrics_df = compute_metrics(df)
-    print_summary(metrics_df)
+    run_df = compute_run_metrics(df)
+    agg_df = aggregate_metrics(run_df)
+    print_summary(agg_df)
 
-    fig = plot_metrics(metrics_df)
+    fig = plot_metrics(agg_df)
 
     for ext in ('pdf', 'png'):
         out = os.path.join(FIGURES_DIR, f'metrics.{ext}')
