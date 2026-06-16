@@ -13,14 +13,16 @@ python3 search_guide.py -n 5 "sua dúvida aqui"     # top-5
 python3 search_guide.py --list-sections             # índice completo
 ```
 
-O `UserGuide.txt` é o guia oficial do OMNeT++ IDE 6.2.0 (9 231 linhas).
-O script usa BM25 (sem dependências externas) e retorna as seções mais relevantes com número de linha.
+O `UserGuide.txt` é o guia oficial do OMNeT++ IDE 6.2.0 (9 231 linhas, não versionado).
+Para parâmetros do INET (visualizadores, mobilidade, rádio), consulte diretamente os `.ned` em:
+`/Users/rodrigo/omnetpp-workspace/inet-4.5.4/src/inet/`
 
 ---
 
 ## Project Context
 
-Simulação OMNeT++ de enxame de drones para busca e resgate (SAR) — dissertação de mestrado PPGCAP/UDESC.
+Simulação OMNeT++ de enxame de drones para busca e resgate (SAR) — dissertação de mestrado PPGCAP/UDESC.  
+Repositório: `github.com/ropacz/sistema-uav-swarm`
 
 **Stack:** OMNeT++ 6.2.0 + INET Framework 4.5.4  
 **Ambiente:** gerenciado via `opp_env` (não chamar `omnetpp`/`opp_run` diretamente)
@@ -42,23 +44,14 @@ opp_env run inet-4.5.4 -w /Users/rodrigo/omnetpp-workspace --no-isolated \
 ```
 
 O Makefile usa `-I. -I$INET/src -L$INET/src -lINET_dbg` via `opp_makemake --deep`.  
-O flag `-I.` é crítico: coloca `src/` no include path para que `#include "messages/Foo_m.h"` resolva corretamente.
+O flag `-I.` é crítico: coloca `src/` no include path para que `#include "messages/Foo_m.h"` resolva.
 
 ## Run Commands
 
 ```bash
-# Cmdenv (terminal) — BasicTest
-opp_env run inet-4.5.4 -w /Users/rodrigo/omnetpp-workspace --no-isolated \
-  -c 'cd simulations && ./run -u Cmdenv -c BasicTest -r 0 --cmdenv-express-mode=false'
-
-# Qtenv (GUI)
-opp_env run inet-4.5.4 -w /Users/rodrigo/omnetpp-workspace --no-isolated \
-  -c 'cd simulations && ./run -u Qtenv -c BasicTest'
-
-# Atalho via script
 ./run.sh              # Cmdenv, log INFO, BasicTest run 0
 ./run.sh --gui        # Qtenv (janela gráfica)
-./run.sh --warn       # Cmdenv com log WARN (mais rápido)
+./run.sh --warn       # log WARN (mais rápido)
 ./run.sh --build      # compila antes de rodar
 ./run.sh -c OutraConf # config diferente
 ./run.sh -r 2         # seed/run 2
@@ -73,111 +66,113 @@ Usar sempre esse script em vez de `opp_run` — `opp_run` não tem INET linkado 
 
 ```
 BasicNetwork (BasicNetwork.ned)
-├── visualizer: IntegratedCanvasVisualizer   ← exibe alcance de rádio no canvas
+├── visualizer: IntegratedCanvasVisualizer   ← exibe alcance de rádio (mediumVisualizer)
 ├── configurator: Ipv4NetworkConfigurator
 ├── radioMedium:  Ieee80211ScalarRadioMedium
 ├── drone[10]: WirelessHost
-│   ├── mobility: GaussMarkovMobility   ← voo 3D, Z: 50–150 m
-│   └── app[0]:   SimpleDroneApp        ← recebe TeamUpdate, envia DroneStatus e VictimAlert
-└── team: WirelessHost
-    ├── mobility: StationaryMobility    ← terrestre, em (500, 900, 1.5) m
-    └── app[0]:   SimpleTeamApp         ← broadcast TeamUpdate, recebe DroneStatus e VictimAlert
+│   ├── mobility: GaussMarkovMobility   ← voo 3D, Z: 100–150 m, 11–31 m/s
+│   └── app[0]:   SimpleDroneApp
+└── team[3]: WirelessHost               ← 3 equipes terrestres (SW/NE/SE da área)
+    ├── mobility: StationaryMobility
+    └── app[0]:   SimpleTeamApp
 ```
 
 ### Portas UDP (`src/app/ports.h`)
 
-| Constante          | Porta | Uso                          |
-|--------------------|-------|------------------------------|
-| `ALERT_PORT`       | 5000  | VictimAlert (drone → equipe) |
-| `TEAM_UPDATE_PORT` | 5001  | TeamUpdate (equipe → broadcast) |
-| `DRONE_STATUS_PORT`| 5003  | DroneStatus / ACK (drone → equipe) |
+| Constante           | Porta | Direção                               |
+|---------------------|-------|---------------------------------------|
+| `ALERT_PORT`        | 5000  | VictimAlert  drone → equipe (unicast) |
+| `TEAM_UPDATE_PORT`  | 5001  | TeamUpdate   equipe → broadcast       |
+| `ACK_PORT`          | 5002  | VictimAck    equipe → drone origem    |
+| `DRONE_STATUS_PORT` | 5003  | DroneStatus  drone → equipe           |
+| `RELAY_PORT`        | 5004  | VictimAlert  drone → drone (relay)    |
 
 ### Mensagens (`src/messages/`)
 
-| Arquivo            | Chunk               | Direção              | Campos                                      |
-|--------------------|---------------------|----------------------|---------------------------------------------|
-| `TeamUpdate.msg`   | `TeamUpdateChunk`   | equipe → broadcast   | teamId, ipAddress, lat, lon, available      |
-| `DroneStatus.msg`  | `DroneStatusChunk`  | drone → unicast → equipe | droneId, posX/Y/Z, sentAt               |
-| `VictimAlert.msg`  | `VictimAlertChunk`  | drone → unicast → equipe | droneId, msgId, lat, lon, sentAt        |
+| Arquivo           | Chunk              | Campos                                          | Tamanho |
+|-------------------|--------------------|-------------------------------------------------|---------|
+| `TeamUpdate.msg`  | `TeamUpdateChunk`  | teamId, ipAddress, lat, lon, available          | 512 B   |
+| `DroneStatus.msg` | `DroneStatusChunk` | droneId, posX/Y/Z, sentAt                      | 512 B   |
+| `VictimAlert.msg` | `VictimAlertChunk` | droneId, msgId, **originIp**, lat, lon, sentAt  | 1024 B  |
+| `VictimAck.msg`   | `VictimAckChunk`   | msgId, teamId, sentAt                           | 64 B    |
 
-### Fluxo de comunicação
+`originIp` em `VictimAlertChunk` carrega o IP do drone que originou o alerta para que a equipe roteie o `VictimAck` direto ao criador, independente do caminho de relay.  
+Os arquivos `*_m.{cc,h}` são gerados automaticamente pelo `opp_msgc` — não editar manualmente.
+
+### Fluxo de comunicação completo (15 passos, sem passo 14)
 
 ```
-t=5s, 10s, 15s …
-  SimpleTeamApp  ──[TeamUpdate bcast:5001]──▶  SimpleDroneApp (×10)
-  SimpleDroneApp ──[DroneStatus uni:5003]───▶  SimpleTeamApp
-  SimpleTeamApp  loga: RTT e posição do drone
+t=5s, 10s, 15s …  [passos 2–5]
+  SimpleTeamApp[0..2] ──[TeamUpdate bcast:5001]──▶ SimpleDroneApp[0..9]
+  SimpleDroneApp      ──[DroneStatus uni:5003]───▶ SimpleTeamApp
 
-t=aleatório (Exp(20s) por drone)
-  SimpleDroneApp  detecta vítima → consulta teamTable (equipe disponível)
-  SimpleDroneApp ──[VictimAlert uni:5000]───▶  SimpleTeamApp
-  SimpleTeamApp  loga: droneId, lat/lon da vítima, delay
+t=Exp(20s) por drone  [passos 7–12]
+  SimpleDroneApp detecta vítima → msgId = droneId_N → insere em seenAlerts
+    ├─ SE tem equipe na teamTable →  VictimAlert uni:5000  → SimpleTeamApp
+    └─ SE não tem               →  VictimAlert bcast:5004 → drones vizinhos (relay)
+         └─ drone relay: verifica seenAlerts (dedup), repassa até chegar a equipe
+  SimpleTeamApp  → dedup em seenAlerts → *** ALERTA *** → VictimAck uni:5002 → drone origem
+  SimpleDroneApp (origem) recebe VictimAck → remove de pendingAlerts
 
-Timeout: drone remove equipe da teamTable se sem TeamUpdate por >15s
+Timeout: drone remove equipe da teamTable após 30s sem TeamUpdate  [passo 13]
+Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 ```
 
-### Apps (`src/app/`)
+### SimpleDroneApp — estado interno relevante
 
-**SimpleDroneApp** (`SimpleDroneApp.h/.cc/.ned`)
-
-Parâmetros NED: `myDroneId` (default: nome do módulo), `victimInterval` (default 20s), `teamTimeout` (default 15s)
-
-Sockets:
-- `teamSocket` — bound a `TEAM_UPDATE_PORT` (5001), recebe TeamUpdate, setBroadcast(true)
-- `ackSocket`  — sem bind, envia DroneStatus unicast para IP de origem do TeamUpdate
-- `alertSocket`— sem bind, envia VictimAlert unicast para IP da equipe disponível
-
-Estado interno:
 - `teamTable: map<string, TeamEntry>` — ip, lat, lon, available, lastSeen por equipe
-- `victimCounter` — sequência para gerar msgId único (`droneId_N`)
-- `detectTimer` — dispara `detectVictim()` com intervalo Exp(`victimInterval`)
-- `timeoutTimer` — dispara `checkTimeouts()` a cada `teamTimeout`
+- `seenAlerts: set<string>` — msgIds já vistos (deduplicação de relay)
+- `pendingAlerts: vector<PendingAlert>` — alertas pendentes de confirmação (store-forward)
+- `victimCounter` — gera msgId único (`droneId_N`)
+- Timers: `detectTimer` (Exp 20s), `timeoutTimer` (30s), `retryTimer` (10s)
+- Sockets: `teamSocket` (bind 5001), `ackSocket` (sem bind), `alertSocket` (sem bind),
+  `relaySocket` (bind 5004), `fwdSocket` (sem bind), `ackRxSocket` (bind 5002)
 
-**SimpleTeamApp** (`SimpleTeamApp.h/.cc/.ned`)
+### SimpleTeamApp — estado interno relevante
 
-Parâmetros NED: `myTeamId` (default: nome do módulo), `sendInterval` (default 5s)
+- Descobre próprio IP via `L3AddressResolver` → `IInterfaceTable` no `initialize()`
+- `seenAlerts: set<string>` — deduplicação de VictimAlerts recebidos via relay
+- Sockets: `sendSocket` (broadcast), `statusSocket` (bind 5003), `alertSocket` (bind 5000), `ackTxSocket` (sem bind)
 
-Sockets:
-- `sendSocket`   — sem bind, setBroadcast(true), envia TeamUpdate
-- `statusSocket` — bound a `DRONE_STATUS_PORT` (5003), recebe DroneStatus
-- `alertSocket`  — bound a `ALERT_PORT` (5000), recebe VictimAlert
+### Parâmetros-chave do BasicTest
 
-Descobre o próprio IP via `L3AddressResolver` → `IInterfaceTable` na inicialização.
+| Parâmetro | Valor | Fonte |
+|-----------|-------|-------|
+| Área | 5000 × 5000 m | [FEA-2024] |
+| Altitude drones | 100–150 m | [SCI-2019] |
+| Velocidade drones | uniform(11, 31) m/s | [FEA-2024] |
+| Potência drone | 20 mW → ~800 m | [OPP-MAN] |
+| Potência equipe | 50 mW → ~1260 m | proporcional |
+| MAC buffer | 50 pacotes | [SCI-2019] |
+| sim-time-limit | 300 s | [FEA-2024] |
 
-### Configuração (`simulations/omnetpp.ini`)
+Rastreabilidade completa em `docs/params_reference.md`.
 
-| Config      | Descrição                                              |
-|-------------|--------------------------------------------------------|
-| `BasicTest` | 10 drones + 1 equipe, FreeSpacePathLoss, 60s           |
+### Visualização (`mediumVisualizer`)
 
-Parâmetros chave de `BasicTest`:
-- `GaussMarkovMobility`: α=0.75, 10 m/s ±2, angleStdDev=30°, área 0–1000×0–1000×50–150 m
-- `StationaryMobility` da equipe em (500, 900, 1.5) m
-- Wi-Fi 2.4 GHz, 5 mW, modo ad-hoc, sem roteamento (limitedBroadcast)
-- `displayCommunicationRanges = true` no visualizador
-
-## Análise de resultados (`analysis/`)
-
-```bash
-# Requer omnetpp.scave (disponível dentro do opp_env) ou CSVs exportados pelo IDE
-python3 analysis/process_results.py
-# Saída: analysis/figures/comparison.pdf
+Círculos de alcance são do **`mediumVisualizer`**, não do `radioVisualizer`:
+```ini
+*.visualizer.mediumVisualizer.displayCommunicationRanges = true
 ```
-
-O script `process_results.py` compara três cenários (ainda não implementados no `.ini`):
-- `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR`
-
-Métricas geradas: PDR (%), latência de entrega (s), energia residual (J).
 
 ## Adicionando mensagens novas
 
 1. Criar `src/messages/Foo.msg` com `class FooChunk extends inet::FieldsChunk { ... }`
-2. Rodar `make makefiles && make` — o compilador gera `Foo_m.h` e `Foo_m.cc` automaticamente
+2. Rodar `make makefiles && make` — gera `Foo_m.h` e `Foo_m.cc` automaticamente
 3. Incluir `"messages/Foo_m.h"` no `.h` da app
 4. Usar `makeShared<FooChunk>()` e `peekAtFront<FooChunk>()`
 
-## Namespaces NED
+## Análise de resultados
+
+```bash
+python3 analysis/process_results.py   # gera analysis/figures/comparison.pdf
+```
+
+Espera escalares: `alertSent:sum`, `alertReceived:sum`, `alertDeliveryDelay:mean`, `residualEnergyCapacity:last`.  
+As configs `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR` ainda não estão no `.ini`.
+
+## Namespaces
 
 - `src/package.ned` → `package echosar`
 - `simulations/package.ned` → `package echosar.simulations`
-- Todas as classes C++ ficam em `namespace echosar { ... }`
+- Todo C++ em `namespace echosar { ... }`

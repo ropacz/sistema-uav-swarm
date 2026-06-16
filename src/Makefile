@@ -31,12 +31,19 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = $O/app/SimpleDroneApp.o $O/app/SimpleTeamApp.o $O/messages/DroneStatus_m.o $O/messages/TeamUpdate_m.o $O/messages/VictimAlert_m.o
+OBJS = \
+    $O/app/SimpleDroneApp.o \
+    $O/app/SimpleTeamApp.o \
+    $O/messages/DroneStatus_m.o \
+    $O/messages/TeamUpdate_m.o \
+    $O/messages/VictimAck_m.o \
+    $O/messages/VictimAlert_m.o
 
 # Message files
 MSGFILES = \
     messages/DroneStatus.msg \
     messages/TeamUpdate.msg \
+    messages/VictimAck.msg \
     messages/VictimAlert.msg
 
 # SM files

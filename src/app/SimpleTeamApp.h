@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 
 #include "inet/applications/base/ApplicationBase.h"
@@ -8,6 +9,7 @@
 #include "messages/TeamUpdate_m.h"
 #include "messages/DroneStatus_m.h"
 #include "messages/VictimAlert_m.h"
+#include "messages/VictimAck_m.h"
 #include "ports.h"
 
 namespace echosar {
@@ -16,15 +18,25 @@ class SimpleTeamApp : public inet::ApplicationBase,
                       public inet::UdpSocket::ICallback
 {
   protected:
-    inet::UdpSocket sendSocket;   // envia TeamUpdate   (broadcast, sem bind)
-    inet::UdpSocket statusSocket; // recebe DroneStatus (port DRONE_STATUS_PORT)
-    inet::UdpSocket alertSocket;  // recebe VictimAlert (port ALERT_PORT)
+    // ── Sockets ──────────────────────────────────────────────────────────────
+    inet::UdpSocket sendSocket;    // envia TeamUpdate broadcast   (sem bind)
+    inet::UdpSocket statusSocket;  // recebe DroneStatus           (DRONE_STATUS_PORT)
+    inet::UdpSocket alertSocket;   // recebe VictimAlert           (ALERT_PORT)
+    inet::UdpSocket ackTxSocket;   // envia VictimAck unicast      (sem bind)  passo 12
 
-    omnetpp::cMessage *sendTimer = nullptr;
+    // ── Estado ───────────────────────────────────────────────────────────────
+    omnetpp::cMessage *sendTimer   = nullptr;
+    omnetpp::cMessage *attendTimer = nullptr;   // dispara quando atendimento encerra
     std::string myTeamId;
     std::string myIp;
     double sendInterval = 5.0;
+    double teamSpeed    = 7.0;    // m/s — velocidade de deslocamento terrestre
+    double serviceTime  = 120.0;  // s   — tempo no local da vítima
+    bool   available    = true;   // false enquanto equipe está atendendo
 
+    std::set<std::string> seenAlerts;  // deduplicação de VictimAlerts recebidos
+
+    // ── Ciclo de vida INET ───────────────────────────────────────────────────
     virtual void initialize(int stage) override;
     virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
     virtual void finish() override;
