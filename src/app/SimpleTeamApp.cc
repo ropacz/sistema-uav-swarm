@@ -98,6 +98,7 @@ void SimpleTeamApp::sendUpdate()
 
     sendSocket.sendTo(new Packet("TeamUpdate", chunk),
                       Ipv4Address::ALLONES_ADDRESS, TEAM_UPDATE_PORT);
+    teamUpdatesSent++;
     EV_INFO << "[TEAM " << myTeamId << "] TeamUpdate broadcast (ip=" << myIp << ")\n";
 }
 
@@ -106,6 +107,7 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
     if (socket == &statusSocket && pkt->hasAtFront<DroneStatusChunk>()) {
         // Passo 5: recebe DroneStatus (ACK de posição)
         auto chunk = pkt->peekAtFront<DroneStatusChunk>();
+        droneStatusReceived++;
         EV_INFO << "[TEAM " << myTeamId << "] DroneStatus de " << chunk->getDroneId()
                 << " pos=(" << chunk->getPosX() << ","
                 << chunk->getPosY() << "," << chunk->getPosZ()
@@ -124,6 +126,8 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
             return;
         }
         seenAlerts.insert(msgId);
+        alertsReceived++;
+        totalDeliveryDelay += simTime() - chunk->getSentAt();
 
         // Calcula distância e tempo de deslocamento até a vítima
         auto *mob = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
@@ -177,6 +181,12 @@ void SimpleTeamApp::finish()
 {
     cancelAndDelete(sendTimer);
     cancelAndDelete(attendTimer);
+
+    recordScalar("alertsReceived",      alertsReceived);
+    recordScalar("teamUpdatesSent",     teamUpdatesSent);
+    recordScalar("droneStatusReceived", droneStatusReceived);
+    recordScalar("meanDeliveryDelay",
+        alertsReceived > 0 ? totalDeliveryDelay.dbl() / alertsReceived : -1.0);
 }
 
 } // namespace echosar

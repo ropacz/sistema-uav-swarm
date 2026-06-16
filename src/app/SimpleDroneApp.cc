@@ -163,6 +163,7 @@ void SimpleDroneApp::detectVictim()
 
     // Passo 15: guarda para retry até receber VictimAck da equipe
     pendingAlerts.push_back({msgId, myDroneId, myIp, pos.x, pos.y, simTime(), 0});
+    alertsGenerated++;
 }
 
 // ── Passos 10/11/9: tenta equipe direta; senão relay broadcast ───────────────
@@ -189,12 +190,14 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
 
     if (!teamIp.empty()) {
         // Passo 11: unicast direto para equipe
+        alertsSentDirect++;
         alertSocket.sendTo(new Packet("VictimAlert", chunk),
                            Ipv4Address(teamIp.c_str()), ALERT_PORT);
         EV_INFO << "[DRONE " << myDroneId << "] VictimAlert " << msgId
                 << " → equipe " << teamIp << "\n";
     } else {
         // Passo 9: relay broadcast para drones vizinhos
+        alertsSentRelay++;
         fwdSocket.sendTo(new Packet("VictimAlert", chunk),
                          Ipv4Address::ALLONES_ADDRESS, RELAY_PORT);
         EV_INFO << "[DRONE " << myDroneId << "] relay: " << msgId
@@ -216,6 +219,7 @@ void SimpleDroneApp::handleVictimAlertRelay(Packet *pkt)
         return;
     }
     seenAlerts.insert(msgId);
+    alertsRelayed++;
 
     EV_INFO << "[DRONE " << myDroneId << "] relay recebido: " << msgId
             << " de " << chunk->getDroneId() << "\n";
@@ -240,6 +244,14 @@ void SimpleDroneApp::handleVictimAck(Packet *pkt)
     EV_INFO << "[DRONE " << myDroneId << "] VictimAck recebido para " << msgId
             << " de " << chunk->getTeamId() << "\n";
 
+    // Captura sentAt e acumula atraso E2E antes de remover
+    for (const auto& p : pendingAlerts)
+        if (p.msgId == msgId) {
+            totalE2EDelay += simTime() - p.sentAt;
+            alertsAcked++;
+            break;
+        }
+
     // Remove de pendingAlerts — interrompe retries
     auto it = std::remove_if(pendingAlerts.begin(), pendingAlerts.end(),
                               [&](const PendingAlert& p){ return p.msgId == msgId; });
@@ -258,10 +270,12 @@ void SimpleDroneApp::retryPending()
     for (auto& p : pendingAlerts) {
         p.retries++;
         if (p.retries > maxRetries) {
+            alertsExpired++;
             EV_WARN << "[DRONE " << myDroneId << "] store-forward: descartando "
                     << p.msgId << " após " << maxRetries << " tentativas\n";
             continue;
         }
+        totalRetries++;
         EV_INFO << "[DRONE " << myDroneId << "] store-forward: retry "
                 << p.retries << "/" << maxRetries << " para " << p.msgId << "\n";
         forwardAlertOnce(p.msgId, p.droneId, p.originIp, p.lat, p.lon, p.sentAt);
@@ -290,6 +304,16 @@ void SimpleDroneApp::finish()
     cancelAndDelete(detectTimer);
     cancelAndDelete(timeoutTimer);
     cancelAndDelete(retryTimer);
+
+    recordScalar("alertsGenerated",  alertsGenerated);
+    recordScalar("alertsSentDirect", alertsSentDirect);
+    recordScalar("alertsSentRelay",  alertsSentRelay);
+    recordScalar("alertsRelayed",    alertsRelayed);
+    recordScalar("alertsAcked",      alertsAcked);
+    recordScalar("alertsExpired",    alertsExpired);
+    recordScalar("totalRetries",     totalRetries);
+    recordScalar("meanE2EDelay",
+        alertsAcked > 0 ? totalE2EDelay.dbl() / alertsAcked : -1.0);
 }
 
 } // namespace echosar

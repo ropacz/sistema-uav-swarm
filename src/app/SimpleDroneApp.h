@@ -64,6 +64,16 @@ class SimpleDroneApp : public inet::ApplicationBase,
     double retryInterval  = 10.0;
     int    maxRetries     = 5;
 
+    // ── Contadores de métricas ────────────────────────────────────────────
+    int alertsGenerated  = 0;  // vítimas detectadas → pendingAlerts criados
+    int alertsSentDirect = 0;  // VictimAlert unicast → equipe
+    int alertsSentRelay  = 0;  // VictimAlert broadcast relay → drones
+    int alertsRelayed    = 0;  // alertas de outro drone recebidos e repassados
+    int alertsAcked      = 0;  // VictimAck recebidos (entregas confirmadas)
+    int alertsExpired    = 0;  // descartados após maxRetries
+    int totalRetries     = 0;  // total de tentativas store-forward
+    omnetpp::simtime_t totalE2EDelay = 0;  // soma dos atrasos E2E confirmados
+
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
     virtual void initialize(int stage) override;
     virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
