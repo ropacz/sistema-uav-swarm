@@ -99,6 +99,12 @@ def compute_run_metrics(df):
         # handleVictimAlertRelay(). Não somar alertsRelayed aqui (duplicaria).
         sent      = s('alertsSentDirect') + s('alertsSentRelay')
         received  = s('alertsReceived')
+        # Atraso de entrega (1 via): soma bruta no lado da equipe / nº recebidos.
+        # Média global PONDERADA do run (não média de médias por módulo).
+        delivDelay = s('totalDeliveryDelay')
+        # Alertas que chegaram a equipe DISPONÍVEL vs OCUPADA
+        availRecv = s('alertsReceivedAvailable')
+        busyRecv  = s('alertsReceivedBusy')
 
         rows.append({
             'config': config,
@@ -106,27 +112,33 @@ def compute_run_metrics(df):
             # m1: PDR canônico — alertas chegaram ao destino (equipe/embarcação recebeu)
             # Alinhado à definição da dissertação: "recebidas no destino / enviadas"
             'm1_pdr':       (received / generated * 100) if generated else 0.0,
-            'm2_e2e':       avg('meanE2EDelay'),
+            # m2: atraso de entrega fim-a-fim de 1 via (drone → equipe), ponderado
+            'm2_e2e':       (delivDelay / received) if received else float('nan'),
             'm3_retries':   (retries / acked) if acked else 0.0,
             'm4_overhead':  (sent / acked) if acked else 0.0,
             # m5: taxa de sucesso do ciclo completo (drone recebeu VictimAck de volta)
             # Era a definição anterior de PDR; renomeado para distinguir dos dois sentidos
             'm5_appack':    (acked / generated * 100) if generated else 0.0,
+            # m6: dos alertas entregues, fração que encontrou equipe DISPONÍVEL
+            'm6_availrate': (availRecv / received * 100) if received else 0.0,
             'alertsGenerated': generated,
             'alertsAcked':     acked,
             'alertsExpired':   expired,
             'totalRetries':    retries,
             'alertsSent':      sent,
             'alertsReceived':  received,
+            'availRecv':       availRecv,
+            'busyRecv':        busyRecv,
         })
     return pd.DataFrame(rows)
 
 
 # ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
 
-METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack']
+METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack', 'm6_availrate']
 COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
-               'totalRetries', 'alertsSent', 'alertsReceived']
+               'totalRetries', 'alertsSent', 'alertsReceived',
+               'availRecv', 'busyRecv']
 
 
 def aggregate_metrics(run_df):
@@ -141,11 +153,12 @@ def aggregate_metrics(run_df):
 # ── Gráficos ──────────────────────────────────────────────────────────────────
 
 METRICS = [
-    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',   '%',              True),
-    ('m2_e2e',      'Atraso Fim a Fim\nMédio',              's',              False),
-    ('m3_retries',  'Retransmissões\npor Alerta Confirmado','tentativas',     False),
-    ('m4_overhead', 'Overhead de\nAlerta (msgs/confirmado)','msgs / confirm.', False),
-    ('m5_appack',   'AppACK\n(ciclo completo confirmado)',  '%',              True),
+    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',     '%',              True),
+    ('m2_e2e',      'Atraso de Entrega\n1 via (drone→equipe)','s',              False),
+    ('m3_retries',  'Retransmissões\npor Alerta Confirmado',  'tentativas',     False),
+    ('m4_overhead', 'Overhead de\nAlerta (msgs/confirmado)',  'msgs / confirm.', False),
+    ('m5_appack',   'AppACK\n(ciclo completo confirmado)',    '%',              True),
+    ('m6_availrate','Alertas a Equipe\nDISPONÍVEL (/ recebidos)','%',            True),
 ]
 
 
@@ -178,9 +191,6 @@ def plot_metrics(agg_df):
                         bar.get_height() + std + ax.get_ylim()[1] * 0.01,
                         label, ha='center', va='bottom', fontsize=7.5, fontweight='bold')
 
-    # remove 6º subplot vazio
-    axes_flat[5].set_visible(False)
-
     n_runs = agg_df['n_runs'].iloc[0] if len(agg_df) else 0
     fig.suptitle(f'ECHOSAR-Net — Métricas de Comunicação SAR (média ± desvio, n={n_runs} seeds)',
                  fontsize=13, fontweight='bold', y=1.01)
@@ -196,14 +206,17 @@ def print_summary(agg_df):
         row = agg_df.loc[config]
         n = int(row['n_runs'])
         print(f"\n  [{config}]  n={n} seeds")
-        print(f"    PDR (%)              {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
-        print(f"    Atraso E2E (s)       {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
-        print(f"    Retries/confirmado   {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
-        print(f"    Overhead             {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
-        print(f"    AppACK (%)           {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
-        print(f"    Gerados (total)  {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
-        print(f"    Confirmados      {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
-        print(f"    Expirados        {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
+        print(f"    PDR (%)                {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
+        print(f"    Atraso entrega 1via(s) {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
+        print(f"    Retries/confirmado     {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
+        print(f"    Overhead               {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
+        print(f"    AppACK (%)             {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
+        print(f"    Alerta→disponível (%)  {row['m6_availrate_mean']:.3f} ± {row['m6_availrate_std']:.3f}")
+        print(f"    Gerados (total)    {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
+        print(f"    Confirmados        {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
+        print(f"    Expirados          {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
+        print(f"    →equipe disponível {row['availRecv_mean']:.1f} ± {row['availRecv_std']:.1f}  "
+              f"→ocupada {row['busyRecv_mean']:.1f} ± {row['busyRecv_std']:.1f}")
     print("\n╚═══════════════════════════════════════════════════════════════════╝\n")
 
 

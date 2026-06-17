@@ -122,8 +122,8 @@ void SimpleDroneApp::handleTeamUpdate(Packet *pkt)
 
     auto& e    = teamTable[chunk->getTeamId()];
     e.ip        = chunk->getIpAddress();
-    e.lat       = chunk->getLat();
-    e.lon       = chunk->getLon();
+    e.posX      = chunk->getPosX();
+    e.posY      = chunk->getPosY();
     e.available = chunk->getAvailable();
     e.lastSeen  = simTime();
 
@@ -171,7 +171,7 @@ void SimpleDroneApp::detectVictim()
 void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
                                       const std::string &droneId,
                                       const std::string &originIp,
-                                      double lat, double lon,
+                                      double posX, double posY,
                                       simtime_t sentAt)
 {
     auto chunk = makeShared<VictimAlertChunk>();
@@ -179,8 +179,8 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
     chunk->setDroneId(droneId.c_str());
     chunk->setMsgId(msgId.c_str());
     chunk->setOriginIp(originIp.c_str());
-    chunk->setLat(lat);
-    chunk->setLon(lon);
+    chunk->setPosX(posX);
+    chunk->setPosY(posY);
     chunk->setSentAt(sentAt);
 
     // Envia para TODAS as equipes da tabela, independente de disponibilidade.
@@ -229,8 +229,8 @@ void SimpleDroneApp::handleVictimAlertRelay(Packet *pkt)
     forwardAlertOnce(msgId,
                      chunk->getDroneId(),
                      chunk->getOriginIp(),
-                     chunk->getLat(),
-                     chunk->getLon(),
+                     chunk->getPosX(),
+                     chunk->getPosY(),
                      chunk->getSentAt());
     delete pkt;
 }
@@ -279,7 +279,7 @@ void SimpleDroneApp::retryPending()
         totalRetries++;
         EV_INFO << "[DRONE " << myDroneId << "] store-forward: retry "
                 << p.retries << "/" << maxRetries << " para " << p.msgId << "\n";
-        forwardAlertOnce(p.msgId, p.droneId, p.originIp, p.lat, p.lon, p.sentAt);
+        forwardAlertOnce(p.msgId, p.droneId, p.originIp, p.posX, p.posY, p.sentAt);
         next.push_back(p);
     }
     pendingAlerts = std::move(next);
@@ -313,7 +313,10 @@ void SimpleDroneApp::finish()
     recordScalar("alertsAcked",      alertsAcked);
     recordScalar("alertsExpired",    alertsExpired);
     recordScalar("totalRetries",     totalRetries);
-    recordScalar("meanE2EDelay",
+    // RTT do ciclo completo (alerta enviado → VictimAck recebido), lado do drone.
+    // NÃO é o atraso de entrega 1-via — esse é medido na equipe (meanDeliveryDelay).
+    recordScalar("totalRTT",         totalE2EDelay.dbl());
+    recordScalar("meanRTT",
         alertsAcked > 0 ? totalE2EDelay.dbl() / alertsAcked : -1.0);
 }
 

@@ -18,7 +18,7 @@ namespace echosar {
 
 struct TeamEntry {
     std::string ip;
-    double lat = 0, lon = 0;
+    double posX = 0, posY = 0;
     bool available = false;
     omnetpp::simtime_t lastSeen;
 };
@@ -27,7 +27,7 @@ struct PendingAlert {
     std::string msgId;
     std::string droneId;
     std::string originIp;
-    double lat, lon;
+    double posX, posY;
     omnetpp::simtime_t sentAt;
     int retries = 0;
 };
@@ -100,7 +100,7 @@ class SimpleDroneApp : public inet::ApplicationBase,
     void forwardAlertOnce(const std::string &msgId,
                           const std::string &droneId,
                           const std::string &originIp,
-                          double lat, double lon,
+                          double posX, double posY,
                           omnetpp::simtime_t sentAt);   // passos 10/11/9
     void retryPending();                                // passo 15
     void checkTimeouts();                               // passo 13

@@ -93,8 +93,8 @@ void SimpleTeamApp::sendUpdate()
     chunk->setTeamId(myTeamId.c_str());
     chunk->setIpAddress(myIp.c_str());
     chunk->setAvailable(available);
-    chunk->setLat(pos.x);
-    chunk->setLon(pos.y);
+    chunk->setPosX(pos.x);
+    chunk->setPosY(pos.y);
 
     sendSocket.sendTo(new Packet("TeamUpdate", chunk),
                       Ipv4Address::ALLONES_ADDRESS, TEAM_UPDATE_PORT);
@@ -129,18 +129,24 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
         alertsReceived++;
         totalDeliveryDelay += simTime() - chunk->getSentAt();
 
+        // Métrica: o alerta chegou com a equipe DISPONÍVEL ou OCUPADA?
+        // (a entrega ocorre em ambos os casos; isto mede quantos alertas
+        //  encontraram a equipe livre para atender de imediato)
+        if (available) alertsReceivedAvailable++;
+        else           alertsReceivedBusy++;
+
         // Calcula distância e tempo de deslocamento até a vítima
         auto *mob = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
         Coord myPos = mob->getCurrentPosition();
-        double dx       = chunk->getLat() - myPos.x;
-        double dy       = chunk->getLon() - myPos.y;
+        double dx       = chunk->getPosX() - myPos.x;
+        double dy       = chunk->getPosY() - myPos.y;
         double distance = std::sqrt(dx*dx + dy*dy);
         double travelTime   = distance / teamSpeed;
         double busyDuration = travelTime + serviceTime;
 
         EV_INFO << "[TEAM " << myTeamId << "] *** ALERTA de " << chunk->getDroneId()
                 << " msgId=" << msgId
-                << " vitima em (" << chunk->getLat() << "," << chunk->getLon()
+                << " vitima em (" << chunk->getPosX() << "," << chunk->getPosY()
                 << ") dist=" << distance << "m"
                 << " travel=" << travelTime << "s"
                 << " busy=" << busyDuration << "s"
@@ -182,9 +188,13 @@ void SimpleTeamApp::finish()
     cancelAndDelete(sendTimer);
     cancelAndDelete(attendTimer);
 
-    recordScalar("alertsReceived",      alertsReceived);
-    recordScalar("teamUpdatesSent",     teamUpdatesSent);
-    recordScalar("droneStatusReceived", droneStatusReceived);
+    recordScalar("alertsReceived",          alertsReceived);
+    recordScalar("alertsReceivedAvailable", alertsReceivedAvailable);
+    recordScalar("alertsReceivedBusy",      alertsReceivedBusy);
+    recordScalar("teamUpdatesSent",         teamUpdatesSent);
+    recordScalar("droneStatusReceived",     droneStatusReceived);
+    // Soma bruta dos atrasos de entrega (1 via) — permite média global ponderada
+    recordScalar("totalDeliveryDelay",      totalDeliveryDelay.dbl());
     recordScalar("meanDeliveryDelay",
         alertsReceived > 0 ? totalDeliveryDelay.dbl() / alertsReceived : -1.0);
 }

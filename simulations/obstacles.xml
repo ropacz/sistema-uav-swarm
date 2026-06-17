@@ -19,7 +19,7 @@
 
     <!-- Obs-A: 350 x 350 x 120 m — próximo de team0 (SW) -->
     <object id="1"
-            name="Edificio-A"
+            name="OB-A"
             position="center 1050 4100 60"
             orientation="0 0 0"
             shape="cuboid 350 350 120"
@@ -30,7 +30,7 @@
 
     <!-- Obs-B: 400 x 400 x 120 m — próximo de team4 (Centro) -->
     <object id="2"
-            name="Edificio-B"
+            name="OB-B"
             position="center 2750 2750 60"
             orientation="0 0 0"
             shape="cuboid 400 400 120"
@@ -41,7 +41,7 @@
 
     <!-- Obs-C: 350 x 350 x 120 m — próximo de team2 (SE) -->
     <object id="3"
-            name="Edificio-C"
+            name="OB-C"
             position="center 4050 4100 60"
             orientation="0 0 0"
             shape="cuboid 350 350 120"

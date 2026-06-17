@@ -6,7 +6,7 @@ class TeamUpdateChunk extends inet::FieldsChunk
 {
     string teamId;
     string ipAddress;
-    double lat;
-    double lon;
+    double posX;        // coordenada cartesiana X no playground (m)
+    double posY;        // coordenada cartesiana Y no playground (m)
     bool available;
 }

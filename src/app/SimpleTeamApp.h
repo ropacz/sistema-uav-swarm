@@ -37,10 +37,12 @@ class SimpleTeamApp : public inet::ApplicationBase,
     std::set<std::string> seenAlerts;  // deduplicação de VictimAlerts recebidos
 
     // ── Contadores de métricas ────────────────────────────────────────────
-    int alertsReceived      = 0;  // VictimAlerts únicos recebidos (pós-dedup)
-    int teamUpdatesSent     = 0;  // TeamUpdate broadcasts enviados
-    int droneStatusReceived = 0;  // DroneStatus recebidos
-    omnetpp::simtime_t totalDeliveryDelay = 0;  // soma dos atrasos de entrega
+    int alertsReceived          = 0;  // VictimAlerts únicos recebidos (pós-dedup)
+    int alertsReceivedAvailable = 0;  // recebidos com a equipe DISPONÍVEL
+    int alertsReceivedBusy      = 0;  // recebidos com a equipe OCUPADA
+    int teamUpdatesSent         = 0;  // TeamUpdate broadcasts enviados
+    int droneStatusReceived     = 0;  // DroneStatus recebidos
+    omnetpp::simtime_t totalDeliveryDelay = 0;  // soma dos atrasos de entrega (1 via)
 
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
     virtual void initialize(int stage) override;

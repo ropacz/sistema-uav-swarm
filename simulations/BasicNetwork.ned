@@ -3,7 +3,7 @@ package echosar.simulations;
 import inet.environment.common.PhysicalEnvironment;
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.physicallayer.wireless.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
-import inet.node.inet.WirelessHost;
+import inet.node.aodv.AodvRouter;
 import inet.visualizer.canvas.integrated.IntegratedCanvasVisualizer;
 
 network BasicNetwork
@@ -31,14 +31,14 @@ network BasicNetwork
         radioMedium: Ieee80211ScalarRadioMedium {
             @display("p=250,4200;i=misc/sun;is=s");
         }
-        // ── Drones: ícone azul claro ─────────────────────────────────────────
-        drone[numDrones]: WirelessHost {
+        // ── Drones: AodvRouter (FANET ad-hoc com roteamento AODV multi-hop) ───
+        drone[numDrones]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.SimpleDroneApp";
             @display("i=misc/drone,#3399ff,40");
         }
-        // ── Embarcações de resgate: ícone verde ──────────────────────────────
-        team[numTeams]: WirelessHost {
+        // ── Embarcações de resgate: AodvRouter (mesmo stack de rede) ──────────
+        team[numTeams]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.SimpleTeamApp";
             @display("i=block/user,#33aa33,50");

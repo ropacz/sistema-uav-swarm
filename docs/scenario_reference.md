@@ -17,11 +17,13 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 
 | Entidade | Quantidade | Tipo INET |
 |---|---|---|
-| Drones | **15** | `WirelessHost` |
-| Embarcações de resgate | **5** | `WirelessHost` |
+| Drones | **15** | `AodvRouter` (AdhocHost + AODV) |
+| Embarcações de resgate | **5** | `AodvRouter` |
 | Área de operação | 5 000 × 5 000 m | — |
-| Configurador IP | 1 | `Ipv4NetworkConfigurator` |
+| Configurador IP | 1 | `Ipv4NetworkConfigurator` (sub-rede única, sem rotas estáticas) |
 | Meio de rádio | 1 | `Ieee80211ScalarRadioMedium` |
+
+> Roteamento **AODV** (reativo, multi-hop) habilita unicast por múltiplos saltos — ver §13.
 
 ### Posições iniciais das embarcações
 
@@ -95,9 +97,9 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 
 | Mensagem | Chunk | Campos | Tamanho |
 |---|---|---|---|
-| `TeamUpdate` | `TeamUpdateChunk` | `teamId`, `ipAddress`, `lat`, `lon`, `available` | 512 B |
+| `TeamUpdate` | `TeamUpdateChunk` | `teamId`, `ipAddress`, `posX`, `posY`, `available` | 512 B |
 | `DroneStatus` | `DroneStatusChunk` | `droneId`, `posX`, `posY`, `posZ`, `sentAt` | 512 B |
-| `VictimAlert` | `VictimAlertChunk` | `droneId`, `msgId`, `originIp`, `lat`, `lon`, `sentAt` | 1 024 B |
+| `VictimAlert` | `VictimAlertChunk` | `droneId`, `msgId`, `originIp`, `posX`, `posY`, `sentAt` | 1 024 B |
 | `VictimAck` | `VictimAckChunk` | `msgId`, `teamId`, `sentAt` | 64 B |
 
 > `originIp` em `VictimAlertChunk` preserva o IP do drone criador do alerta ao longo de toda a cadeia de relay, permitindo que a equipe envie o `VictimAck` diretamente ao originador.
@@ -127,7 +129,7 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 
 | Estrutura | Tipo | Conteúdo |
 |---|---|---|
-| `teamTable` | `map<string, TeamEntry>` | ip, lat, lon, available, lastSeen por equipe |
+| `teamTable` | `map<string, TeamEntry>` | ip, posX, posY, available, lastSeen por equipe |
 | `seenAlerts` | `set<string>` | msgIds já processados (deduplicação de relay) |
 | `pendingAlerts` | `vector<PendingAlert>` | alertas aguardando VictimAck (store-forward) |
 | `victimCounter` | `int` | sequencial para gerar msgId único (`droneId_N`) |
@@ -168,21 +170,19 @@ t = 5 s, 10 s, 15 s, …  [passos 2–5]
 
 t = Exp(40 s) por drone  [passos 7–12]
   SimpleDroneApp detecta vítima
-    ├─ 1ª prioridade: equipe DISPONÍVEL na teamTable → uni:5000 (direto)
-    ├─ 2ª prioridade: teamTable não vazia mas todas ocupadas
-    │    → uni:5000 para qualquer equipe conhecida (equipe ocupada
-    │      ainda recebe e confirma — decisão de atendimento é de outra
-    │      camada, fora do escopo deste sistema)
-    └─ 3ª prioridade: teamTable vazia (nenhuma equipe conhecida)
-         → VictimAlert bcast:5004 ──▶ drones vizinhos (relay)
+    ├─ teamTable NÃO vazia → uni:5000 para TODAS as equipes conhecidas
+    │    (independente de available; a que estiver alcançável — direto OU
+    │     multi-hop via AODV — recebe e confirma)
+    └─ teamTable vazia → VictimAlert bcast:5004 ──▶ drones vizinhos (relay)
               └─ drone relay: verifica seenAlerts (dedup), repassa
-                 seguindo a mesma prioridade acima
+                 seguindo a mesma lógica acima
   SimpleTeamApp recebe VictimAlert
     → dedup (seenAlerts)
-    → calcula busyDuration → available = false
-    → VictimAck uni:5002 ──▶ drone origem (via originIp)
-  SimpleDroneApp recebe VictimAck
-    → remove de pendingAlerts
+    → registra se chegou com equipe DISPONÍVEL ou OCUPADA (métrica)
+    → calcula busyDuration → available = false (se estava livre)
+    → VictimAck uni:5002 ──▶ drone origem (via originIp; ROTEADO MULTI-HOP por AODV)
+  SimpleDroneApp recebe 1º VictimAck
+    → remove de pendingAlerts (ACKs seguintes de outras equipes são ignorados)
 
 t = teamTimeout (30 s, periódico)  [passo 13]
   SimpleDroneApp remove equipes com lastSeen > 30 s.
@@ -413,3 +413,48 @@ Após a primeira análise (obstáculos no interior da área), os edifícios fora
 - [x] Config `BasicTest_10drones` (10 drones, sem obstáculos, referência)
 - [x] 5 seeds simuladas em ambas as configs
 - [ ] Passo 14 (Bat Algorithm) — implementação do reposicionamento ativo via gatilho Γ
+
+## 13. Adoção do AODV (roteamento multi-hop reativo)
+
+### Motivação
+
+Na versão anterior, o roteamento IP estava **totalmente desligado** (`addStaticRoutes/Subnet/Default = false`, sem protocolo de roteamento). O multi-hop existia **apenas** na camada de aplicação (flooding em `RELAY_PORT` com deduplicação). Isso criava uma **assimetria crítica**: o `VictimAlert` alcançava a equipe por múltiplos saltos (flooding), mas o `VictimAck` de volta era **unicast de 1 salto** — só era entregue se o drone de origem estivesse no alcance direto da equipe. Alertas que chegavam à equipe via relay eram contabilizados em `alertsReceived` mas raramente em `alertsAcked`, gerando um gap de ~2 p.p. entre PDR e AppACK (o ACK simplesmente não voltava).
+
+### Implementação
+
+| Componente | Antes | Depois |
+|---|---|---|
+| Tipo de nó | `WirelessHost` | `AodvRouter` (= `AdhocHost` + submódulo `aodv`) |
+| Roteamento | nenhum (rotas desligadas) | AODV reativo (RREQ/RREP sob demanda) |
+| Forwarding IP | — | `forwarding = true` (default do `AdhocHost`) |
+| Endereçamento | auto | sub-rede única `10.0.0.x/24` (XML do configurator) |
+| `activeRouteTimeout` | — | 5 s (rotas envelhecem rápido em FANET móvel) |
+
+Rotas estáticas permanecem **desligadas** — é o AODV que as resolve dinamicamente. O flooding de aplicação (`RELAY_PORT`) foi **mantido**: serve como mecanismo de *descoberta* de equipe para drones distantes (o `TeamUpdate` é broadcast de 1 salto, então um drone afastado só conhece equipes via o flooding). Uma vez que qualquer drone conhece o IP de uma equipe, o AODV roteia o unicast por múltiplos saltos — e, crucialmente, **roteia o `VictimAck` de volta ao drone origem multi-hop**.
+
+### Resultados (BasicTest, 5 seeds, com AODV)
+
+| Métrica | Sem AODV (anterior) | Com AODV | Δ |
+|---|---|---|---|
+| PDR | 27,3% ± 4,2% | **31,7% ± 3,8%** | +4,4 p.p. |
+| AppACK | 25,1% ± 4,4% | **31,5% ± 3,8%** | +6,4 p.p. |
+| Gap PDR−AppACK | ~2,2 p.p. | **~0,2 p.p.** | resolvido |
+| Atraso entrega 1-via | — | 4,12 s ± 3,36 s | nova métrica |
+| Retransmissões/confirmação | 14,8 ± 3,4 | **10,7 ± 1,9** | −28% |
+| Overhead (msgs/confirmado) | 24,1 ± 6,1 | **17,9 ± 2,0** | −26% |
+
+**Leitura:** o AODV (a) eleva o PDR ao entregar alertas a equipes fora de alcance direto via múltiplos saltos; (b) **fecha o gap PDR−AppACK** porque o ACK agora volta multi-hop — a assimetria que fazia alertas relay nunca serem confirmados desapareceu; (c) **reduz retransmissões e overhead** porque uma rota AODV estabelecida entrega na 1ª tentativa, evitando ciclos de store-and-forward.
+
+### Nova métrica — alertas a equipe disponível vs ocupada
+
+A `SimpleTeamApp` agora registra, no instante do recebimento de cada alerta, se a equipe estava **disponível** (`alertsReceivedAvailable`) ou **ocupada** (`alertsReceivedBusy`). Resultado: apenas **~10,4%** dos alertas entregues encontram a equipe livre; **~89,6%** chegam a equipes já em atendimento. Isso quantifica a **saturação das equipes** (5 equipes, `serviceTime = 120 s`, taxa de vítimas alta) e é forte motivação para o trabalho futuro: o reposicionamento via Bat Algorithm deve considerar não só cobertura de rádio, mas **disponibilidade das equipes** ao decidir para onde mover os drones.
+
+> Nota metodológica: a comparação "com/sem AODV" mantém todos os demais parâmetros e seeds idênticos; a mudança é estrutural (adição de protocolo de roteamento), não de um parâmetro escalar trocado por distribuição — portanto **não** sofre o viés de RNG-stream descrito em §12.1. As trajetórias de eventos diferem (AODV injeta tráfego de controle RREQ/RREP), mas a comparação reflete um efeito causal real do roteamento.
+
+### Status
+
+- [x] Nós migrados para `AodvRouter`; sub-rede única; `activeRouteTimeout = 5 s`
+- [x] `VictimAck` multi-hop validado (gap PDR−AppACK fechado)
+- [x] Coordenadas `lat`/`lon` → `posX`/`posY` (cartesianas, nome corrigido)
+- [x] Métricas separadas: atraso de entrega 1-via (equipe) × RTT (drone); disponível × ocupada
+- [ ] Re-rodar `BasicTest_Obstacles` / `BasicTest_10drones` com AODV (resultados atuais eram pré-AODV; removidos de `results/`)
