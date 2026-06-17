@@ -9,7 +9,7 @@
 
 ## Resumo do Cenário
 
-A simulação representa uma operação de busca e salvamento (SAR) em ambiente urbano alagado. Uma rede FANET composta por **15 drones autônomos** patrulha uma área de **5 km × 5 km**, voando em altitudes entre 100 m e 150 m com mobilidade de Gauss-Markov. Quando um drone detecta uma vítima, envia um alerta para a equipe terrestre mais próxima disponível. Na ausência de contato direto, o alerta é disseminado via **relay oportunístico** entre os drones vizinhos (store-and-forward com deduplicação). **5 equipes de resgate terrestres** patrulham o terreno a pé em velocidade reduzida, característica de áreas severamente alagadas, e confirmam o recebimento de cada alerta com um ACK de aplicação. O cenário foi calibrado para refletir conectividade parcial e intermitente, condição típica de FANET esparsa que motiva o mecanismo de reposicionamento proposto.
+A simulação representa uma operação de busca e salvamento (SAR) em ambiente urbano alagado. Uma rede FANET composta por **15 drones autônomos** patrulha uma área de **5 km × 5 km**, voando a **altitude constante de 100 m** com mobilidade de Gauss-Markov. Quando um drone detecta uma vítima, envia um alerta para a embarcação de resgate mais próxima disponível. Na ausência de contato direto, o alerta é disseminado via **relay oportunístico** entre os drones vizinhos (store-and-forward com deduplicação). **5 embarcações de resgate** patrulham a área inundada a entre 1,5 m/s e 3,0 m/s e confirmam o recebimento de cada alerta com um ACK de aplicação. O cenário foi calibrado para refletir conectividade parcial e intermitente, condição típica de FANET esparsa que motiva o mecanismo de reposicionamento proposto.
 
 ---
 
@@ -18,14 +18,14 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 | Entidade | Quantidade | Tipo INET |
 |---|---|---|
 | Drones | **15** | `WirelessHost` |
-| Equipes terrestres | **5** | `WirelessHost` |
+| Embarcações de resgate | **5** | `WirelessHost` |
 | Área de operação | 5 000 × 5 000 m | — |
 | Configurador IP | 1 | `Ipv4NetworkConfigurator` |
 | Meio de rádio | 1 | `Ieee80211ScalarRadioMedium` |
 
-### Posições iniciais das equipes
+### Posições iniciais das embarcações
 
-| Equipe | Região | X (m) | Y (m) |
+| Embarcação | Região | X (m) | Y (m) |
 |---|---|---|---|
 | team0 | SW | 600 | 4 400 |
 | team1 | NE | 4 400 | 600 |
@@ -65,16 +65,16 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 | `speedStdDev` | 0 m/s | Sem variância de velocidade |
 | `angleStdDev` | 30° | Desvio angular por passo |
 | `margin` | 50 m | Margem de reflexão nas bordas |
-| Altitude (Z) | 100 – 150 m | Faixa operacional |
+| Altitude (Z) | **100 m constante** | Altitude operacional fixa [garg2022directed] |
 | Área XY | 0 – 5 000 m | Toda a área de busca |
 
-### Equipes — `RandomWaypointMobility`
+### Embarcações de resgate — `RandomWaypointMobility`
 
 | Parâmetro | Valor | Significado |
 |---|---|---|
-| `speed` | `uniform(0,45, 1,4)` m/s | Velocidade em área alagada |
+| `speed` | `uniform(1,5, 3,0)` m/s | Velocidade de embarcação em área alagada (~5,4–10,8 km/h) |
 | `waitTime` | `uniform(5, 20)` s | Pausa entre waypoints |
-| Altitude (Z) | **1,5 m fixo** | Altura da antena do terminal |
+| Altitude (Z) | **1,5 m fixo** | Altura da antena montada no convés |
 | Área XY | 0 – 5 000 m | Toda a área de busca |
 
 ---
@@ -139,20 +139,20 @@ A simulação representa uma operação de busca e salvamento (SAR) em ambiente 
 | Parâmetro NED | Valor no INI | Unidade | Descrição |
 |---|---|---|---|
 | `sendInterval` | **5** | s | Intervalo de envio do beacon `TeamUpdate` |
-| `teamSpeed` | **0,9** | m/s | Velocidade estimada para cálculo de `busyDuration` |
+| `teamSpeed` | **2,25** | m/s | Ponto médio da faixa de embarcação (1,5–3,0 m/s) para estimar `busyDuration` |
 | `serviceTime` | **120** | s | Tempo mínimo de atendimento no local da vítima |
 
 ### Timer de atendimento
 
-Quando a equipe recebe um `VictimAlert`:
+Quando a embarcação recebe um `VictimAlert`:
 
 ```
 busyDuration = distância_até_vítima / teamSpeed + serviceTime
 ```
 
-A equipe fica com `available = false` pelo `busyDuration` calculado. Após esse período o `attendTimer` dispara e restaura `available = true`.
+A embarcação fica com `available = false` pelo `busyDuration` calculado. Após esse período o `attendTimer` dispara e restaura `available = true`.
 
-Com velocidade 0,9 m/s, distâncias típicas de ~400–2 000 m e `serviceTime = 120 s`, o `busyDuration` varia de ~560 s a ~2 340 s — excedendo o tempo total de simulação (300 s) na maioria dos casos. **Na prática, uma equipe que recebe o primeiro alerta permanece ocupada pelo restante da simulação.**
+Com `teamSpeed = 2,25 m/s`, distâncias típicas de ~400–2 000 m e `serviceTime = 120 s`, o `busyDuration` varia de ~298 s a ~1 009 s. Para vítimas próximas (distância < ~405 m), o `busyDuration` pode ficar abaixo dos 300 s de simulação — nesse caso a embarcação **recupera disponibilidade** antes do fim. Para vítimas mais distantes, permanece ocupada pelo restante da janela de 300 s.
 
 ---
 
@@ -253,34 +253,38 @@ Esse fix também reduz a plausibilidade da hipótese de que `maxRetries` baixo (
 
 ## 10. Métricas Computadas — `process_results.py`
 
-| Métrica | Fórmula | Unidade |
-|---|---|---|
-| **PDR** (taxa de entrega) | `alertsAcked / alertsGenerated × 100` | % |
-| **Atraso E2E médio** | média de `meanE2EDelay` por drone com ACK | s |
-| **Retransmissões por entrega** | `totalRetries / alertsAcked` | tentativas |
-| **Overhead de comunicação** | `(alertsSentDirect + alertsSentRelay) / alertsAcked` | msgs/entrega |
-| **Taxa de sucesso AppACK** | `alertsAcked / (alertsAcked + alertsExpired) × 100` | % |
+| Métrica | Fórmula | Unidade | Alinhamento com a dissertação |
+|---|---|---|---|
+| **PDR** (taxa de entrega) | `alertsReceived / alertsGenerated × 100` | % | "recebidas no destino / enviadas" |
+| **Atraso E2E médio** | média de `meanE2EDelay` por drone com ACK | s | "tempo até recepção pela equipe" |
+| **Retransmissões por confirmação** | `totalRetries / alertsAcked` | tentativas | — |
+| **Overhead de alerta** | `(alertsSentDirect + alertsSentRelay) / alertsAcked` | msgs/confirm. | ver nota abaixo |
+| **AppACK** (ciclo completo) | `alertsAcked / alertsGenerated × 100` | % | complementa o PDR |
 
-> Denominador do overhead alinhado com PDR e retries/entrega: usa `alertsAcked` (entrega confirmada fim a fim) em vez de `alertsReceived` (chegada à equipe), para manter as três métricas coerentes com o mesmo critério de sucesso. `alertsSentDirect + alertsSentRelay` já soma toda transmissão de `VictimAlert` (originada ou repassada) — `alertsRelayed` não entra na conta para não duplicar.
+> **PDR vs. AppACK:** o PDR canônico (`alertsReceived/alertsGenerated`) mede chegada da informação ao destino; o AppACK (`alertsAcked/alertsGenerated`) mede o ciclo completo — o drone origem recebeu de volta o `VictimAck`. A diferença entre os dois é a taxa de perda de ACK no caminho de retorno; na simulação atual esse gap é ~2–3 p.p.
+
+> **Overhead — escopo restrito ao protocolo de alerta:** o denominador usa `alertsAcked` (ciclo completo) para manter coerência com as demais métricas. O numerador (`alertsSentDirect + alertsSentRelay`) cobre apenas as transmissões de `VictimAlert` (incluindo relays); tráfego de coordenação (`TeamUpdate`, `DroneStatus`, `VictimAck`) não está incluído. O tráfego de `TeamUpdate` é determinístico (5 s × 5 embarcações × 300 s ≈ 300 pacotes por run) e pode ser calculado analiticamente sem simulação adicional. `alertsRelayed` não entra no numerador para não duplicar transmissões já contadas em `alertsSentRelay`.
 
 ---
 
-## 11. Resultado Consolidado — 5 Seeds (pós-correção §8.1)
+## 11. Resultado Consolidado — 5 Seeds (baseline calibrado)
 
-**Metodologia:** `repeat = 5`, `seed-set = ${repetition}` no `omnetpp.ini`. Cada seed é uma repetição independente da simulação completa (300 s); as 5 métricas são calculadas **por seed** e depois agregadas como média ± desvio-padrão entre seeds (`analysis/process_results.py`) — não somadas num único pool, para não mascarar a variabilidade entre execuções.
+**Metodologia:** `repeat = 5`, `seed-set = ${repetition}`. Métricas computadas **por seed** e agregadas como média ± desvio-padrão (`analysis/process_results.py`). Parâmetros: altitude fixa 100 m, embarcações 1,5–3,0 m/s, `teamSpeed = 2,25 m/s`.
 
 | Métrica | Média ± Desvio (n=5 seeds) |
 |---|---|
-| PDR | **27,0% ± 7,3%** |
-| Atraso E2E médio | 5,09 s ± 3,64 s |
-| Retransmissões por entrega | 14,3 ± 6,0 |
-| Overhead | 23,6 ± 9,8 msgs/entrega |
-| Taxa de sucesso AppACK | 31,0% ± 8,6% |
-| Alertas gerados (total/seed) | 114,0 ± 11,3 |
-| Alertas confirmados (ACK) | 31,2 ± 11,0 |
-| Alertas expirados | 67,8 ± 4,4 |
+| **PDR** (`alertsReceived / alertsGenerated`) | **27,3% ± 4,2%** |
+| Atraso E2E médio | 3,84 s ± 2,99 s |
+| Retransmissões por confirmação | 14,8 ± 3,4 |
+| Overhead (msgs/confirmação) | 24,1 ± 6,1 |
+| **AppACK** (`alertsAcked / alertsGenerated`) | 25,1% ± 4,4% |
+| Alertas gerados (por seed) | 116,0 ± 7,3 |
+| Alertas confirmados (ACK) | 29,0 ± 4,4 |
+| Alertas expirados | 70,2 ± 8,9 |
 
-> **Interpretação:** com o encaminhamento corrigido, o PDR médio de ~27% (variando 17,3%–36,4% entre as 5 seeds) reflete a limitação real de cobertura (alcance ~800 m em área de 25 km²) e a aleatoriedade de mobilidade/detecção entre execuções — não mais um defeito de protocolo. O desvio-padrão relativamente alto (±7,3 p.p. de PDR) é esperado num cenário com poucas equipes (5) competindo por cobertura de 15 drones móveis; é um indicativo de que comparações futuras (ex.: com vs. sem Bat Algorithm) devem reportar significância estatística entre médias, não apenas comparar pontos únicos. Este é o **baseline sem reposicionamento e sem obstáculos**, consolidado com múltiplas seeds, para comparação posterior com o cenário com obstáculos urbanos e com o reposicionamento via Bat Algorithm.
+> **PDR vs. AppACK:** o gap de ~2,2 p.p. entre PDR (27,3%) e AppACK (25,1%) indica a taxa de perda de `VictimAck` no caminho de retorno — a embarcação recebeu o alerta mas a confirmação não chegou ao drone origem. Ambas as métricas são úteis: PDR valida a eficácia de entrega de informação; AppACK valida o protocolo store-forward ponta a ponta.
+
+> **Baseline final:** PDR de ~27% com desvio-padrão menor que na versão anterior (±4,2 vs. ±7,3 p.p.) — embarcações mais rápidas reduzem a variância do busyDuration e permitem recuperação de disponibilidade para vítimas próximas. Este é o **baseline sem reposicionamento e sem obstáculos**, para comparação com o cenário com obstáculos urbanos e com o reposicionamento via Bat Algorithm.
 
 ---
 

@@ -103,11 +103,15 @@ def compute_run_metrics(df):
         rows.append({
             'config': config,
             'run':    run,
-            'm1_pdr':      (acked / generated * 100) if generated else 0.0,
-            'm2_e2e':      avg('meanE2EDelay'),
-            'm3_retries':  (retries / acked) if acked else 0.0,
-            'm4_overhead': (sent / acked) if acked else 0.0,
-            'm5_ack_rate': (acked / (acked + expired) * 100) if (acked + expired) else 0.0,
+            # m1: PDR canônico — alertas chegaram ao destino (equipe/embarcação recebeu)
+            # Alinhado à definição da dissertação: "recebidas no destino / enviadas"
+            'm1_pdr':       (received / generated * 100) if generated else 0.0,
+            'm2_e2e':       avg('meanE2EDelay'),
+            'm3_retries':   (retries / acked) if acked else 0.0,
+            'm4_overhead':  (sent / acked) if acked else 0.0,
+            # m5: taxa de sucesso do ciclo completo (drone recebeu VictimAck de volta)
+            # Era a definição anterior de PDR; renomeado para distinguir dos dois sentidos
+            'm5_appack':    (acked / generated * 100) if generated else 0.0,
             'alertsGenerated': generated,
             'alertsAcked':     acked,
             'alertsExpired':   expired,
@@ -120,7 +124,7 @@ def compute_run_metrics(df):
 
 # ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
 
-METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_ack_rate']
+METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack']
 COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
                'totalRetries', 'alertsSent', 'alertsReceived']
 
@@ -137,11 +141,11 @@ def aggregate_metrics(run_df):
 # ── Gráficos ──────────────────────────────────────────────────────────────────
 
 METRICS = [
-    ('m1_pdr',      'Taxa de Entrega\n(PDR)',               '%',              True),
+    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',   '%',              True),
     ('m2_e2e',      'Atraso Fim a Fim\nMédio',              's',              False),
-    ('m3_retries',  'Retransmissões\npor Alerta Entregue',  'tentativas',     False),
-    ('m4_overhead', 'Overhead de\nComunicação',             'msgs / entrega', False),
-    ('m5_ack_rate', 'Taxa de Sucesso\npor ACK de Aplicação','%',              True),
+    ('m3_retries',  'Retransmissões\npor Alerta Confirmado','tentativas',     False),
+    ('m4_overhead', 'Overhead de\nAlerta (msgs/confirmado)','msgs / confirm.', False),
+    ('m5_appack',   'AppACK\n(ciclo completo confirmado)',  '%',              True),
 ]
 
 
@@ -192,11 +196,11 @@ def print_summary(agg_df):
         row = agg_df.loc[config]
         n = int(row['n_runs'])
         print(f"\n  [{config}]  n={n} seeds")
-        print(f"    PDR (%)          {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
-        print(f"    Atraso E2E (s)   {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
-        print(f"    Retries/entrega  {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
-        print(f"    Overhead         {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
-        print(f"    Taxa ACK (%)     {row['m5_ack_rate_mean']:.3f} ± {row['m5_ack_rate_std']:.3f}")
+        print(f"    PDR (%)              {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
+        print(f"    Atraso E2E (s)       {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
+        print(f"    Retries/confirmado   {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
+        print(f"    Overhead             {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
+        print(f"    AppACK (%)           {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
         print(f"    Gerados (total)  {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
         print(f"    Confirmados      {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
         print(f"    Expirados        {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")

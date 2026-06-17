@@ -70,10 +70,10 @@ BasicNetwork (BasicNetwork.ned)
 ├── configurator: Ipv4NetworkConfigurator
 ├── radioMedium:  Ieee80211ScalarRadioMedium
 ├── drone[15]: WirelessHost
-│   ├── mobility: GaussMarkovMobility   ← voo 3D, Z: 100–150 m, 8–15 m/s
+│   ├── mobility: GaussMarkovMobility   ← altitude constante 100 m, 8–15 m/s
 │   └── app[0]:   SimpleDroneApp
-└── team[5]: WirelessHost               ← 5 equipes terrestres (4 cantos + centro)
-    ├── mobility: RandomWaypointMobility ← patrulha a pé, Z fixo 1.5 m, 0.45–1.4 m/s (cenário inundação)
+└── team[5]: WirelessHost               ← 5 embarcações de resgate (4 cantos + centro)
+    ├── mobility: RandomWaypointMobility ← Z fixo 1.5 m (antena convés), 1.5–3.0 m/s
     └── app[0]:   SimpleTeamApp
 ```
 
@@ -157,15 +157,15 @@ Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 |-----------|-------|-------|
 | Área | 5000 × 5000 m | [FEA-2024] |
 | numDrones / numTeams | 15 / 5 | calibração de densidade (ver scenario_reference.md) |
-| Altitude drones | 100–150 m | [SCI-2019] |
+| Altitude drones | **100 m constante** | [garg2022directed] |
 | Velocidade drones | uniform(8, 15) m/s | cenário SAR urbano |
-| Velocidade equipes | uniform(0.45, 1.4) m/s | patrulha a pé em área alagada |
+| Velocidade embarcações | uniform(1.5, 3.0) m/s | embarcações de resgate em área alagada |
 | Potência drone | 20 mW → ~800 m | [OPP-MAN] |
-| Potência equipe | 50 mW → ~1260 m | proporcional |
+| Potência embarcação | 50 mW → ~1260 m | proporcional |
 | MAC buffer | 50 pacotes | [SCI-2019] |
 | victimInterval | 40 s (exponencial) | cenário moderado |
 | maxRetries / retryInterval | 5 / 10 s (janela 50 s) | validado empiricamente — aumentar piora o PDR (congestiona MAC) |
-| serviceTime / teamSpeed | 120 s / 0.9 m/s | timer de atendimento da equipe |
+| serviceTime / teamSpeed | 120 s / 2.25 m/s | ponto médio da faixa de embarcação |
 | sim-time-limit | 300 s | [FEA-2024] |
 
 Rastreabilidade completa em `docs/params_reference.md`.  
@@ -192,9 +192,10 @@ python3 analysis/process_results.py   # gera analysis/figures/metrics.{pdf,png}
 ```
 
 Parser próprio em regex (sem dependência de `omnetpp.scave`) lê os `.sca` em `simulations/results/`.  
-Calcula 5 métricas por config: PDR, atraso E2E médio, retransmissões/entrega, overhead de comunicação,
-taxa de sucesso AppACK — a partir dos escalares gravados por `SimpleDroneApp`/`SimpleTeamApp` (ver
-`docs/scenario_reference.md` §9–10 para a lista completa de escalares e fórmulas).  
+Calcula 5 métricas por config (média ± desvio entre seeds): PDR canônico (`alertsReceived/alertsGenerated`),
+atraso E2E médio, retransmissões/confirmação, overhead de alerta, AppACK (`alertsAcked/alertsGenerated`) —
+PDR e AppACK são conceitos distintos: o PDR mede chegada ao destino, o AppACK mede ciclo completo (ver
+`docs/scenario_reference.md` §10 para fórmulas e nota sobre o gap entre os dois).  
 As configs `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR` ainda não estão no `.ini`.
 
 ## Namespaces
