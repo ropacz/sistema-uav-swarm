@@ -13,25 +13,34 @@ Dissertação de mestrado — PPGCAP/UDESC.
 
 ## Cenário BasicTest
 
-- **10 drones** com mobilidade GaussMarkov 3D (100–150 m altitude, 11–31 m/s)
-- **3 equipes terrestres** estacionárias em triângulo na área de busca
-- **Área**: 5000 × 5000 m
-- **Tempo**: 300 s
+- **30 drones** com mobilidade GaussMarkov, altitude constante **100 m**, 8–15 m/s
+- **10 embarcações de resgate** com RandomWaypoint, Z = 1,5 m, 1,5–3,0 m/s
+- **Área**: 2000 × 2000 m — grau médio k̄ ≈ 2,05 (rede moderadamente esparsa)
+- **Tempo**: 300 s, 5 seeds (`repeat = 5`)
+- **Roteamento**: AODV multi-hop (`AodvRouter`)
+- **Resultado**: PDR ≈ 86,8 % ± 6,9 % (AppACK, 5 seeds)
+
+> Modelo mede **entrega de informação** (alerta chegou à equipe), não sucesso de resgate.
 
 ### Fluxos de mensagens
 
 ```
-equipe  ──[TeamUpdate  bcast 5001]──▶  drone(×10)   a cada 5s
-drone   ──[DroneStatus uni   5003]──▶  equipe        ACK com posição 3D
-drone   ──[VictimAlert uni   5000]──▶  equipe        ao detectar vítima
+equipe  ──[TeamUpdate  bcast 5001]──▶  drone          a cada 5 s (jitter inicial)
+drone   ──[DroneStatus uni   5003]──▶  equipe          ACK com posição 3D
+drone   ──[VictimAlert uni   5000]──▶  equipe          ao detectar vítima (Exp 40 s)
+equipe  ──[VictimAck   uni   5002]──▶  drone origem    confirmação fim a fim (AODV)
+drone   ──[VictimAlert bcast 5004]──▶  drones viz.     relay quando sem equipe
 ```
 
 ### Parâmetros de rádio
 
-| Nó | Potência | Alcance (FreeSpace) |
-|----|----------|---------------------|
-| Drone | 20 mW | ~800 m |
-| Equipe | 50 mW | ~1260 m |
+| Parâmetro | Valor |
+|-----------|-------|
+| Potência (todos) | 2,9 mW |
+| Alcance nominal (FreeSpace) | ≈ 300 m |
+| Alcance horizontal drone–equipe (3D) | ≈ 283 m |
+| Sensibilidade | −85 dBm |
+| Frequência | 2,4 GHz |
 
 > Referências: [FEA-2024] journal-fea.com · [SCI-2019] Tropea et al. (Scitepress) · [OPP-MAN] omnet-manual.com  
 > Detalhes em [`docs/params_reference.md`](docs/params_reference.md)

@@ -1,7 +1,7 @@
 <config>
     <!--
         Cenário ECHOSAR-Net — 3 edifícios urbanos de concreto.
-        Área: 5000 x 5000 m  |  Drones: Z=100 m (constante)  |  Embarcações: Z=1,5 m
+        Área: 2000 x 2000 m  |  Drones: Z=100 m (constante)  |  Embarcações: Z=1,5 m
 
         POSICIONAMENTO: próximo das posições iniciais de 3 equipes de resgate,
         bloqueando a linha de visada de drones vindos do interior da área.
@@ -12,39 +12,39 @@
         Material 'concrete': ε_r=4,5, σ≈0,01 S/m → ~0,24 dB/m @ 2,4 GHz.
 
         Equipes de referência (posições iniciais):
-          team0 (SW)     → (600, 4400)   → Obs-A em (1050, 4100)
-          team4 (Centro) → (2500, 2500)  → Obs-B em (2750, 2750)
-          team2 (SE)     → (4400, 4400)  → Obs-C em (4050, 4100)
+          team0 (SW)     → (300,  1700)  → Obs-A em (400,  1600)  ~141 m
+          team4 (Centro) → (1000, 1000)  → Obs-B em (1133, 1133)  ~188 m
+          team2 (SE)     → (1700, 1700)  → Obs-C em (1600, 1600)  ~141 m
     -->
 
-    <!-- Obs-A: 350 x 350 x 120 m — próximo de team0 (SW) -->
+    <!-- Obs-A: 100 x 100 x 120 m — próximo de team0 (SW) -->
     <object id="1"
             name="OB-A"
-            position="center 1050 4100 60"
+            position="center 400 1600 60"
             orientation="0 0 0"
-            shape="cuboid 350 350 120"
+            shape="cuboid 100 100 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="140 140 140"
             opacity="0.80"/>
 
-    <!-- Obs-B: 400 x 400 x 120 m — próximo de team4 (Centro) -->
+    <!-- Obs-B: 120 x 120 x 120 m — próximo de team4 (Centro) -->
     <object id="2"
             name="OB-B"
-            position="center 2750 2750 60"
+            position="center 1133 1133 60"
             orientation="0 0 0"
-            shape="cuboid 400 400 120"
+            shape="cuboid 120 120 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="120 120 120"
             opacity="0.80"/>
 
-    <!-- Obs-C: 350 x 350 x 120 m — próximo de team2 (SE) -->
+    <!-- Obs-C: 100 x 100 x 120 m — próximo de team2 (SE) -->
     <object id="3"
             name="OB-C"
-            position="center 4050 4100 60"
+            position="center 1600 1600 60"
             orientation="0 0 0"
-            shape="cuboid 350 350 120"
+            shape="cuboid 100 100 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="140 140 140"

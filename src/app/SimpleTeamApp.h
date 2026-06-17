@@ -29,9 +29,10 @@ class SimpleTeamApp : public inet::ApplicationBase,
     omnetpp::cMessage *attendTimer = nullptr;   // dispara quando atendimento encerra
     std::string myTeamId;
     std::string myIp;
-    double sendInterval = 5.0;
-    double teamSpeed    = 7.0;    // m/s — velocidade de deslocamento terrestre
-    double serviceTime  = 120.0;  // s   — tempo no local da vítima
+    double sendInterval  = 5.0;
+    double beaconJitter  = 5.0;   // s — offset inicial; deve ser > 0 (ver NED)
+    double teamSpeed     = 7.0;
+    double serviceTime   = 120.0;
     bool   available    = true;   // false enquanto equipe está atendendo
 
     std::set<std::string> seenAlerts;  // deduplicação de VictimAlerts recebidos
@@ -45,6 +46,7 @@ class SimpleTeamApp : public inet::ApplicationBase,
     omnetpp::simtime_t totalDeliveryDelay = 0;  // soma dos atrasos de entrega (1 via)
 
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
+    virtual ~SimpleTeamApp();
     virtual void initialize(int stage) override;
     virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
     virtual void finish() override;

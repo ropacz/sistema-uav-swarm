@@ -155,24 +155,39 @@ void SimpleDroneApp::detectVictim()
     Coord pos = mob->getCurrentPosition();
 
     std::string msgId = myDroneId + "_" + std::to_string(++victimCounter);
-    seenAlerts.insert(msgId);  // marca como originado (não retransmitir relay de volta)
+    seenAlerts.insert(msgId);
 
     EV_INFO << "[DRONE " << myDroneId << "] vitima detectada → " << msgId << "\n";
 
-    forwardAlertOnce(msgId, myDroneId, myIp, pos.x, pos.y, simTime());
+    PendingAlert pa;
+    pa.msgId    = msgId;
+    pa.droneId  = myDroneId;
+    pa.originIp = myIp;
+    pa.posX     = pos.x;
+    pa.posY     = pos.y;
+    pa.sentAt   = simTime();
 
-    // Passo 15: guarda para retry até receber VictimAck da equipe
-    pendingAlerts.push_back({msgId, myDroneId, myIp, pos.x, pos.y, simTime(), 0});
+    std::string sel = forwardAlertOnce(msgId, myDroneId, myIp, pos.x, pos.y,
+                                       simTime(), pa.triedTeams);
+    if (!sel.empty()) pa.triedTeams.insert(sel);
+
+    pendingAlerts.push_back(std::move(pa));
     alertsGenerated++;
 }
 
-// ── Passos 10/11/9: envia para TODAS as equipes conhecidas; senão relay ───────
+// ── Passos 10/11/9: seleciona UMA equipe (disponível mais próxima → qualquer
+//    mais próxima → relay broadcast). Retorna o teamId escolhido ou "".
+//
+// Política de seleção única evita fan-out de múltiplos unicasts simultâneos,
+// que saturariam o MAC e disparariam múltiplas descobertas de rota no AODV.
+// Fallback sequencial: em retries, as equipes já tentadas ficam em 'exclude'.
 
-void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
-                                      const std::string &droneId,
-                                      const std::string &originIp,
-                                      double posX, double posY,
-                                      simtime_t sentAt)
+std::string SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
+                                              const std::string &droneId,
+                                              const std::string &originIp,
+                                              double posX, double posY,
+                                              simtime_t sentAt,
+                                              const std::set<std::string> &exclude)
 {
     auto chunk = makeShared<VictimAlertChunk>();
     chunk->setChunkLength(B(1024));
@@ -183,27 +198,40 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
     chunk->setPosY(posY);
     chunk->setSentAt(sentAt);
 
-    // Envia para TODAS as equipes da tabela, independente de disponibilidade.
-    // O chunk é imutável e compartilhado (shared_ptr) entre os pacotes.
-    bool sentAny = false;
+    // Seleciona a melhor equipe: disponível + mais próxima; senão qualquer + mais próxima.
+    // Usa distância ao quadrado para evitar sqrt (mesma ordenação, sem dependência extra).
+    const TeamEntry *best  = nullptr;
+    std::string      bestId;
+    double           bestDist2 = 1e30;
+    bool             bestAvail = false;
+
     for (auto& [id, e] : teamTable) {
-        if (e.ip.empty()) continue;
-        alertsSentDirect++;
-        alertSocket.sendTo(new Packet("VictimAlert", chunk),
-                           Ipv4Address(e.ip.c_str()), ALERT_PORT);
-        EV_INFO << "[DRONE " << myDroneId << "] VictimAlert " << msgId
-                << " → " << id << " (" << e.ip << ")\n";
-        sentAny = true;
+        if (e.ip.empty() || exclude.count(id)) continue;
+        double dx = e.posX - posX, dy = e.posY - posY;
+        double d2 = dx*dx + dy*dy;
+        bool win = !best
+                || (e.available && !bestAvail)
+                || (e.available == bestAvail && d2 < bestDist2);
+        if (win) { best = &e; bestId = id; bestDist2 = d2; bestAvail = e.available; }
     }
 
-    if (!sentAny) {
-        // Relay broadcast para drones vizinhos (tabela vazia)
-        alertsSentRelay++;
-        fwdSocket.sendTo(new Packet("VictimAlert", chunk),
-                         Ipv4Address::ALLONES_ADDRESS, RELAY_PORT);
-        EV_INFO << "[DRONE " << myDroneId << "] relay: " << msgId
-                << " → broadcast (sem equipe na tabela)\n";
+    if (best) {
+        alertsSentDirect++;
+        alertSocket.sendTo(new Packet("VictimAlert", chunk),
+                           Ipv4Address(best->ip.c_str()), ALERT_PORT);
+        EV_INFO << "[DRONE " << myDroneId << "] VictimAlert " << msgId
+                << " → " << bestId << " (" << best->ip
+                << ") avail=" << bestAvail << "\n";
+        return bestId;
     }
+
+    // Nenhuma equipe elegível: relay broadcast para drones vizinhos
+    alertsSentRelay++;
+    fwdSocket.sendTo(new Packet("VictimAlert", chunk),
+                     Ipv4Address::ALLONES_ADDRESS, RELAY_PORT);
+    EV_INFO << "[DRONE " << myDroneId << "] relay: " << msgId
+            << " → broadcast (sem equipe elegível)\n";
+    return "";
 }
 
 // ── Passos 8/9: recebe VictimAlert de outro drone, deduplica e repassa ───────
@@ -225,13 +253,15 @@ void SimpleDroneApp::handleVictimAlertRelay(Packet *pkt)
     EV_INFO << "[DRONE " << myDroneId << "] relay recebido: " << msgId
             << " de " << chunk->getDroneId() << "\n";
 
-    // Passo 9: repassa (relay não adiciona a pendingAlerts — quem originou é responsável)
+    // Passo 9: repassa para a melhor equipe conhecida (sem histórico de tentativas)
+    static const std::set<std::string> noExclude;
     forwardAlertOnce(msgId,
                      chunk->getDroneId(),
                      chunk->getOriginIp(),
                      chunk->getPosX(),
                      chunk->getPosY(),
-                     chunk->getSentAt());
+                     chunk->getSentAt(),
+                     noExclude);
     delete pkt;
 }
 
@@ -277,9 +307,17 @@ void SimpleDroneApp::retryPending()
             continue;
         }
         totalRetries++;
+        // Se todas as equipes conhecidas já foram tentadas, recomeça o ciclo
+        bool allTried = !p.triedTeams.empty();
+        for (auto& [id, e] : teamTable)
+            if (!p.triedTeams.count(id)) { allTried = false; break; }
+        if (allTried) p.triedTeams.clear();
+
         EV_INFO << "[DRONE " << myDroneId << "] store-forward: retry "
                 << p.retries << "/" << maxRetries << " para " << p.msgId << "\n";
-        forwardAlertOnce(p.msgId, p.droneId, p.originIp, p.posX, p.posY, p.sentAt);
+        std::string sel = forwardAlertOnce(p.msgId, p.droneId, p.originIp,
+                                           p.posX, p.posY, p.sentAt, p.triedTeams);
+        if (!sel.empty()) p.triedTeams.insert(sel);
         next.push_back(p);
     }
     pendingAlerts = std::move(next);
@@ -300,12 +338,15 @@ void SimpleDroneApp::checkTimeouts()
     }
 }
 
-void SimpleDroneApp::finish()
+SimpleDroneApp::~SimpleDroneApp()
 {
     cancelAndDelete(detectTimer);
     cancelAndDelete(timeoutTimer);
     cancelAndDelete(retryTimer);
+}
 
+void SimpleDroneApp::finish()
+{
     recordScalar("alertsGenerated",  alertsGenerated);
     recordScalar("alertsSentDirect", alertsSentDirect);
     recordScalar("alertsSentRelay",  alertsSentRelay);

@@ -145,8 +145,8 @@ Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 > ficavam ocupadas, o alerta caía no relay broadcast — porta que nenhuma equipe escuta — e
 > expirava. PDR saltou de ~3% para ~30% ao adicionar o fallback "qualquer equipe". Depois,
 > a seleção foi trocada para "todas as equipes da tabela" (independente de disponibilidade),
-> eliminando a dependência da ordem lexicográfica do map. Em rede esparsa (800 m de alcance
-> em 5 km²), apenas ~1 equipe está tipicamente ao alcance por drone — o efeito prático é
+> eliminando a dependência da ordem lexicográfica do map. Em rede esparsa (300 m de alcance
+> em 4 km²), apenas ~1 equipe está tipicamente ao alcance por drone — o efeito prático é
 > equivalente, mas a lógica é mais correta. Detalhes em `docs/scenario_reference.md` §8.1.
 
 ### SimpleDroneApp — estado interno relevante
@@ -177,13 +177,12 @@ Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 
 | Parâmetro | Valor | Fonte |
 |-----------|-------|-------|
-| Área | 5000 × 5000 m | [FEA-2024] |
-| numDrones / numTeams | 15 / 5 | calibração de densidade (ver scenario_reference.md) |
+| Área | 2000 × 2000 m | cenário SAR realista (k̄≈2,0 para r=300 m em 4 km²) |
+| numDrones / numTeams | 30 / 10 | k̄≈2,0 para r=300 m em 4 km² — [bettstetter2002minimum] |
 | Altitude drones | **100 m constante** | [garg2022directed] |
 | Velocidade drones | uniform(8, 15) m/s | cenário SAR urbano |
 | Velocidade embarcações | uniform(1.5, 3.0) m/s | embarcações de resgate em área alagada |
-| Potência drone | 20 mW → ~800 m | [OPP-MAN] |
-| Potência embarcação | 50 mW → ~1260 m | proporcional |
+| Potência (todos) | 2,9 mW → ~300 m @ 2,4 GHz (IEEE 802.11n/s) | [panda2019design] |
 | MAC buffer | 50 pacotes | [SCI-2019] |
 | victimInterval | 40 s (exponencial) | cenário moderado |
 | maxRetries / retryInterval | 5 / 10 s (janela 50 s) | validado empiricamente — aumentar piora o PDR (congestiona MAC) |

@@ -109,8 +109,10 @@ def compute_run_metrics(df):
         rows.append({
             'config': config,
             'run':    run,
-            # m1: PDR canônico — alertas chegaram ao destino (equipe/embarcação recebeu)
-            # Alinhado à definição da dissertação: "recebidas no destino / enviadas"
+            # m1: entregas físicas — soma de alertsReceived de TODAS as equipes / gerados.
+            # ATENÇÃO: pode exceder 100% se um alerta for recebido por múltiplas equipes
+            # (retry para equipe diferente após ACK perdido, ou relay bifurcado).
+            # Use m5_appack como PDR primário na dissertação (bounded 0–100%).
             'm1_pdr':       (received / generated * 100) if generated else 0.0,
             # m2: atraso de entrega fim-a-fim de 1 via (drone → equipe), ponderado
             'm2_e2e':       (delivDelay / received) if received else float('nan'),
@@ -153,18 +155,22 @@ def aggregate_metrics(run_df):
 # ── Gráficos ──────────────────────────────────────────────────────────────────
 
 METRICS = [
-    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',     '%',              True),
-    ('m2_e2e',      'Atraso de Entrega\n1 via (drone→equipe)','s',              False),
-    ('m3_retries',  'Retransmissões\npor Alerta Confirmado',  'tentativas',     False),
-    ('m4_overhead', 'Overhead de\nAlerta (msgs/confirmado)',  'msgs / confirm.', False),
-    ('m5_appack',   'AppACK\n(ciclo completo confirmado)',    '%',              True),
-    ('m6_availrate','Alertas a Equipe\nDISPONÍVEL (/ recebidos)','%',            True),
+    # m5_appack: métrica primária — alertsAcked/alertsGenerated, bounded 0–100%
+    ('m5_appack',   'Taxa de Confirmação\nde Alertas (AppACK)',   '%',               True),
+    ('m2_e2e',      'Atraso de Entrega\naté a Equipe',            's',               False),
+    ('m3_retries',  'Retransmissões\npor Alerta Confirmado',      'tentativas',      False),
+    ('m4_overhead', 'Overhead de Alerta\npor Confirmação',        'msgs / confirm.', False),
+    # m1_pdr: soma de alertsReceived (todas as equipes) / gerados — pode exceder 100%
+    ('m1_pdr',      'Recepções por Equipes\n(soma; pode >100%)', '%',               False),
+    ('m6_availrate','Alertas Recebidos com\nEquipe Disponível',   '%',               True),
 ]
 
 
 def plot_metrics(agg_df):
     configs = agg_df.index.tolist()
     colors  = [PALETTE[i % len(PALETTE)] for i in range(len(configs))]
+    # Rótulos do eixo X incluem n por configuração
+    x_labels = [f"{c}\n(n={int(agg_df.loc[c, 'n_runs'])})" for c in configs]
 
     fig, axes = plt.subplots(2, 3, figsize=(16, 9))
     axes_flat = axes.flatten()
@@ -174,25 +180,24 @@ def plot_metrics(agg_df):
         means = [agg_df.loc[c, f'{col}_mean'] for c in configs]
         stds  = [agg_df.loc[c, f'{col}_std']  for c in configs]
 
-        bars = ax.bar(configs, means, yerr=stds, capsize=4,
-                       color=colors, edgecolor='black', linewidth=0.6, width=0.5)
+        bars = ax.bar(x_labels, means, yerr=stds, capsize=4,
+                      color=colors, edgecolor='black', linewidth=0.6, width=0.5)
         ax.set_title(title, fontsize=11, fontweight='bold', pad=8)
         ax.set_ylabel(ylabel, fontsize=9)
-        ax.tick_params(axis='x', rotation=20, labelsize=8)
+        ax.tick_params(axis='x', rotation=15, labelsize=7.5)
 
         if is_pct:
             ax.set_ylim(0, 110)
             ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
 
         for bar, mean, std in zip(bars, means, stds):
-            if pd.notna(mean):
+            if pd.notna(mean) and mean > 0:
                 label = f'{mean:.1f}±{std:.1f}%' if is_pct else f'{mean:.3g}±{std:.2g}'
                 ax.text(bar.get_x() + bar.get_width() / 2,
                         bar.get_height() + std + ax.get_ylim()[1] * 0.01,
                         label, ha='center', va='bottom', fontsize=7.5, fontweight='bold')
 
-    n_runs = agg_df['n_runs'].iloc[0] if len(agg_df) else 0
-    fig.suptitle(f'ECHOSAR-Net — Métricas de Comunicação SAR (média ± desvio, n={n_runs} seeds)',
+    fig.suptitle('ECHOSAR-Net — Métricas de Comunicação SAR (média ± desvio-padrão)',
                  fontsize=13, fontweight='bold', y=1.01)
     plt.tight_layout()
     return fig

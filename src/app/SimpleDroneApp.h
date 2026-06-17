@@ -30,6 +30,7 @@ struct PendingAlert {
     double posX, posY;
     omnetpp::simtime_t sentAt;
     int retries = 0;
+    std::set<std::string> triedTeams;  // equipes já tentadas neste alerta
 };
 
 class SimpleDroneApp : public inet::ApplicationBase,
@@ -75,6 +76,7 @@ class SimpleDroneApp : public inet::ApplicationBase,
     omnetpp::simtime_t totalE2EDelay = 0;  // soma dos atrasos E2E confirmados
 
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
+    virtual ~SimpleDroneApp();
     virtual void initialize(int stage) override;
     virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
     virtual void finish() override;
@@ -97,11 +99,15 @@ class SimpleDroneApp : public inet::ApplicationBase,
 
     // ── Lógica de encaminhamento e retry ─────────────────────────────────────
     void detectVictim();                                // passo 7
-    void forwardAlertOnce(const std::string &msgId,
-                          const std::string &droneId,
-                          const std::string &originIp,
-                          double posX, double posY,
-                          omnetpp::simtime_t sentAt);   // passos 10/11/9
+    // Seleciona a melhor equipe (disponível mais próxima, senão qualquer mais próxima,
+    // senão relay broadcast). Retorna o teamId selecionado ou "" se foi relay.
+    // exclude: equipes já tentadas para este alerta — ignoradas na seleção.
+    std::string forwardAlertOnce(const std::string &msgId,
+                                 const std::string &droneId,
+                                 const std::string &originIp,
+                                 double posX, double posY,
+                                 omnetpp::simtime_t sentAt,
+                                 const std::set<std::string> &exclude = {});
     void retryPending();                                // passo 15
     void checkTimeouts();                               // passo 13
 };

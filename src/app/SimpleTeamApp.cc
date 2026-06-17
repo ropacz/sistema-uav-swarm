@@ -22,8 +22,13 @@ void SimpleTeamApp::initialize(int stage)
     if (stage == INITSTAGE_LOCAL) {
         myTeamId     = par("myTeamId").stdstringValue();
         sendInterval = par("sendInterval");
+        beaconJitter = par("beaconJitter");
         teamSpeed    = par("teamSpeed");
         serviceTime  = par("serviceTime");
+        if (beaconJitter == 0)
+            throw cRuntimeError("%s: beaconJitter=0 causa colisões MAC com múltiplas equipes "
+                                "(todas transmitem em t=sendInterval simultaneamente → PDR ~3%%). "
+                                "Use beaconJitter = sendInterval.", getFullPath().c_str());
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
         if (myTeamId.empty())
@@ -60,7 +65,7 @@ void SimpleTeamApp::initialize(int stage)
 
         sendTimer   = new cMessage("sendTimer");
         attendTimer = new cMessage("attendTimer");
-        scheduleAt(simTime() + sendInterval, sendTimer);
+        scheduleAt(simTime() + uniform(0, beaconJitter), sendTimer);
     }
 }
 
@@ -119,9 +124,21 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
         std::string msgId = chunk->getMsgId();
 
         if (seenAlerts.count(msgId)) {
-            // Duplicata — descarta silenciosamente (já processado)
-            EV_INFO << "[TEAM " << myTeamId << "] dedup: VictimAlert duplicado "
-                    << msgId << " descartado\n";
+            // Duplicata — reenviar ACK sem reprocessar métricas nem atendimento.
+            // Necessário porque o primeiro ACK pode ter sido perdido em trânsito;
+            // sem o reenvio, o drone retransmite até expirar mesmo já entregue.
+            EV_INFO << "[TEAM " << myTeamId << "] dedup: " << msgId
+                    << " — reenviando ACK idempotente\n";
+            std::string originIp = chunk->getOriginIp();
+            if (!originIp.empty()) {
+                auto ack = makeShared<VictimAckChunk>();
+                ack->setChunkLength(B(64));
+                ack->setMsgId(msgId.c_str());
+                ack->setTeamId(myTeamId.c_str());
+                ack->setSentAt(simTime());
+                ackTxSocket.sendTo(new Packet("VictimAck", ack),
+                                   Ipv4Address(originIp.c_str()), ACK_PORT);
+            }
             delete pkt;
             return;
         }
@@ -152,7 +169,11 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
                 << " busy=" << busyDuration << "s"
                 << " delay=" << (simTime() - chunk->getSentAt()) << "s\n";
 
-        // Muda status para ocupada apenas se estava disponível
+        // Limite do modelo: alertas recebidos enquanto ocupada são contabilizados
+        // (alertsReceivedBusy) mas não enfileirados — a equipe não despacha um
+        // segundo resgate nem estende o timer. Este modelo mede ENTREGA DE
+        // INFORMAÇÃO (a equipe recebeu o alerta?), não sucesso de resgate
+        // (a equipe atendeu a vítima?). Documentado em scenario_reference.md §8.
         if (available) {
             available = false;
             scheduleAt(simTime() + busyDuration, attendTimer);
@@ -183,11 +204,14 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
     delete pkt;
 }
 
-void SimpleTeamApp::finish()
+SimpleTeamApp::~SimpleTeamApp()
 {
     cancelAndDelete(sendTimer);
     cancelAndDelete(attendTimer);
+}
 
+void SimpleTeamApp::finish()
+{
     recordScalar("alertsReceived",          alertsReceived);
     recordScalar("alertsReceivedAvailable", alertsReceivedAvailable);
     recordScalar("alertsReceivedBusy",      alertsReceivedBusy);
