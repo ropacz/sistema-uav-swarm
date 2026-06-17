@@ -166,7 +166,7 @@ void SimpleDroneApp::detectVictim()
     alertsGenerated++;
 }
 
-// ── Passos 10/11/9: tenta equipe direta; senão relay broadcast ───────────────
+// ── Passos 10/11/9: envia para TODAS as equipes conhecidas; senão relay ───────
 
 void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
                                       const std::string &droneId,
@@ -174,17 +174,6 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
                                       double lat, double lon,
                                       simtime_t sentAt)
 {
-    // Passo 10: prioriza equipe disponível; sem nenhuma, cai para qualquer
-    // equipe conhecida (ocupada ainda recebe e confirma o alerta — quem
-    // decide o atendimento é outra camada, fora do escopo deste sistema).
-    // Só vai a relay broadcast se a tabela não tiver nenhuma equipe.
-    std::string teamIp;
-    for (auto& [id, e] : teamTable)
-        if (e.available && !e.ip.empty()) { teamIp = e.ip; break; }
-    if (teamIp.empty())
-        for (auto& [id, e] : teamTable)
-            if (!e.ip.empty()) { teamIp = e.ip; break; }
-
     auto chunk = makeShared<VictimAlertChunk>();
     chunk->setChunkLength(B(1024));
     chunk->setDroneId(droneId.c_str());
@@ -194,15 +183,21 @@ void SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
     chunk->setLon(lon);
     chunk->setSentAt(sentAt);
 
-    if (!teamIp.empty()) {
-        // Passo 11: unicast direto para equipe
+    // Envia para TODAS as equipes da tabela, independente de disponibilidade.
+    // O chunk é imutável e compartilhado (shared_ptr) entre os pacotes.
+    bool sentAny = false;
+    for (auto& [id, e] : teamTable) {
+        if (e.ip.empty()) continue;
         alertsSentDirect++;
         alertSocket.sendTo(new Packet("VictimAlert", chunk),
-                           Ipv4Address(teamIp.c_str()), ALERT_PORT);
+                           Ipv4Address(e.ip.c_str()), ALERT_PORT);
         EV_INFO << "[DRONE " << myDroneId << "] VictimAlert " << msgId
-                << " → equipe " << teamIp << "\n";
-    } else {
-        // Passo 9: relay broadcast para drones vizinhos
+                << " → " << id << " (" << e.ip << ")\n";
+        sentAny = true;
+    }
+
+    if (!sentAny) {
+        // Relay broadcast para drones vizinhos (tabela vazia)
         alertsSentRelay++;
         fwdSocket.sendTo(new Packet("VictimAlert", chunk),
                          Ipv4Address::ALLONES_ADDRESS, RELAY_PORT);

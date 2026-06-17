@@ -108,27 +108,27 @@ t=5s, 10s, 15s …  [passos 2–5]
 
 t=Exp(40s) por drone  [passos 7–12]
   SimpleDroneApp detecta vítima → msgId = droneId_N → insere em seenAlerts
-    ├─ 1ª prioridade: equipe DISPONÍVEL na teamTable → VictimAlert uni:5000 → SimpleTeamApp
-    ├─ 2ª prioridade: teamTable não vazia mas todas ocupadas →
-    │    VictimAlert uni:5000 → qualquer equipe conhecida (equipe ocupada ainda recebe
-    │    e confirma; decisão de qual equipe atende é de outra camada, fora de escopo)
-    └─ 3ª prioridade: teamTable vazia (nenhuma equipe conhecida) →
-         VictimAlert bcast:5004 → drones vizinhos (relay)
-         └─ drone relay: verifica seenAlerts (dedup), repassa seguindo a mesma prioridade
+    ├─ teamTable não vazia → VictimAlert uni:5000 para TODAS as equipes conhecidas
+    │    (independente de available; a que estiver no alcance recebe e confirma)
+    └─ teamTable vazia → VictimAlert bcast:5004 → drones vizinhos (relay)
+         └─ drone relay: verifica seenAlerts (dedup), repassa com a mesma lógica
   SimpleTeamApp  → dedup em seenAlerts → *** ALERTA *** → calcula busyDuration → available=false
                  → VictimAck uni:5002 → drone origem
-  SimpleDroneApp (origem) recebe VictimAck → remove de pendingAlerts
+  SimpleDroneApp (origem) recebe 1º VictimAck → remove de pendingAlerts
+    (ACKs subsequentes de outras equipes são ignorados — pendingAlerts já vazio para esse msgId)
 
 Timeout: drone remove equipe da teamTable após 30s sem TeamUpdate  [passo 13]
 Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 ```
 
-> **Nota de correção:** `forwardAlertOnce()` originalmente só considerava equipes **disponíveis**
-> (2ª prioridade ausente). Quando todas as equipes conhecidas ficavam ocupadas, todo alerta
-> caía no relay broadcast — porta que nenhuma equipe escuta — e expirava garantidamente.
-> Corrigido adicionando o fallback para "qualquer equipe conhecida" antes do relay.
-> PDR do baseline saltou de ~3% para ~30% com essa correção. Detalhes em
-> `docs/scenario_reference.md` §8.1.
+> **Nota de correção (histórico):** `forwardAlertOnce()` originalmente selecionava uma única
+> equipe por ordem de prioridade (disponível → qualquer → relay). Quando todas as equipes
+> ficavam ocupadas, o alerta caía no relay broadcast — porta que nenhuma equipe escuta — e
+> expirava. PDR saltou de ~3% para ~30% ao adicionar o fallback "qualquer equipe". Depois,
+> a seleção foi trocada para "todas as equipes da tabela" (independente de disponibilidade),
+> eliminando a dependência da ordem lexicográfica do map. Em rede esparsa (800 m de alcance
+> em 5 km²), apenas ~1 equipe está tipicamente ao alcance por drone — o efeito prático é
+> equivalente, mas a lógica é mais correta. Detalhes em `docs/scenario_reference.md` §8.1.
 
 ### SimpleDroneApp — estado interno relevante
 
