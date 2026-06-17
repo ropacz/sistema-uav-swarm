@@ -3,53 +3,50 @@
         Cenário ECHOSAR-Net — 3 edifícios urbanos de concreto.
         Área: 5000 x 5000 m  |  Drones: Z=100 m (constante)  |  Embarcações: Z=1,5 m
 
-        ALTURA: 120 m (acima dos 100 m dos drones) → qualquer caminho
-        horizontal entre drone e embarcação que cruzar o footprint do
-        edifício SEMPRE intersecta o volume [0..120 m], garantindo
-        atenuação dielétrica pela DielectricObstacleLoss independentemente
-        da posição vertical exata do drone.
+        POSICIONAMENTO: próximo das posições iniciais de 3 equipes de resgate,
+        bloqueando a linha de visada de drones vindos do interior da área.
 
-        Material 'concrete': resistivity=100 Ω·m, ε_r=4.5
-        Atenuação estimada: ~0.24 dB/m → para 10 m de espessura ≈ 2.4 dB
-        (+ ~1.5 dB de reflexão em 2 interfaces); links marginais (perto de
-        800 m de alcance) são bloqueados mesmo com poucos metros de concreto.
+        ALTURA: 120 m (acima dos 100 m dos drones) — garante que qualquer
+        cruzamento horizontal do footprint ativa DielectricObstacleLoss.
 
-        Posicionamento:
-          Obs-A (noroeste-centro) — cobre corredor drone↔equipes SW/SE
-          Obs-B (centro)          — cobre corredor drone↔equipe central/NE
-          Obs-C (leste-centro)    — cobre corredor drone↔equipes NW/SW
+        Material 'concrete': ε_r=4,5, σ≈0,01 S/m → ~0,24 dB/m @ 2,4 GHz.
+
+        Equipes de referência (posições iniciais):
+          team0 (SW)     → (600, 4400)   → Obs-A em (1050, 4100)
+          team4 (Centro) → (2500, 2500)  → Obs-B em (2750, 2750)
+          team2 (SE)     → (4400, 4400)  → Obs-C em (4050, 4100)
     -->
 
-    <!-- Obs-A: 400 x 300 x 120 m — noroeste-centro -->
+    <!-- Obs-A: 350 x 350 x 120 m — próximo de team0 (SW) -->
     <object id="1"
             name="Edificio-A"
-            position="center 1300 2000 60"
+            position="center 1050 4100 60"
             orientation="0 0 0"
-            shape="cuboid 400 300 120"
+            shape="cuboid 350 350 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="140 140 140"
-            opacity="0.75"/>
+            opacity="0.80"/>
 
-    <!-- Obs-B: 500 x 500 x 120 m — centro -->
+    <!-- Obs-B: 400 x 400 x 120 m — próximo de team4 (Centro) -->
     <object id="2"
             name="Edificio-B"
-            position="center 2700 2200 60"
+            position="center 2750 2750 60"
             orientation="0 0 0"
-            shape="cuboid 500 500 120"
+            shape="cuboid 400 400 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="120 120 120"
-            opacity="0.75"/>
+            opacity="0.80"/>
 
-    <!-- Obs-C: 350 x 400 x 120 m — leste-centro -->
+    <!-- Obs-C: 350 x 350 x 120 m — próximo de team2 (SE) -->
     <object id="3"
             name="Edificio-C"
-            position="center 3800 3200 60"
+            position="center 4050 4100 60"
             orientation="0 0 0"
-            shape="cuboid 350 400 120"
+            shape="cuboid 350 350 120"
             material="concrete"
             line-color="60 60 60"
             fill-color="140 140 140"
-            opacity="0.75"/>
+            opacity="0.80"/>
 </config>

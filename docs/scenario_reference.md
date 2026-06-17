@@ -381,10 +381,35 @@ O resultado **não invalida** o cenário de obstáculos — ao contrário, demon
 
 > Os obstáculos físicos do cenário foram modelados por meio do módulo *PhysicalEnvironment* do INET, que representa objetos estáticos com geometria, posição, orientação e material definidos em arquivo XML. Para que esses objetos afetem a propagação do sinal, foi utilizado o modelo *DielectricObstacleLoss*, responsável por calcular a atenuação causada pela penetração do sinal em materiais como concreto. Três edifícios de 120 m de altura (acima dos 100 m de altitude dos drones) foram posicionados nas regiões NW-centro, central e leste-centro da área de operação, criando zonas de sombra de comunicação em corredores específicos. O cenário com obstáculos (*BasicTest_Obstacles*) evidenciou que o mecanismo de store-and-forward com mobilidade aleatória é capaz de compensar a atenuação de um subconjunto dos enlaces, mantendo PDR médio similar ao baseline. Essa robustez motiva o mecanismo de reposicionamento proposto (Bat Algorithm), que substituiria a exploração aleatória por manobras dirigidas à recuperação de cobertura em zonas de sombra detectadas.
 
+### Ajuste de posicionamento e densidade (iteração 2)
+
+Após a primeira análise (obstáculos no interior da área), os edifícios foram reposicionados **próximos às equipes de resgate** para bloquear diretamente o corredor de chegada dos alertas. A densidade de drones foi reduzida para 10 (config `BasicTest_Obstacles`) para ampliar o efeito relativo dos obstáculos. Um config de referência `BasicTest_10drones` (10 drones, sem obstáculos) foi adicionado para paridade de comparação.
+
+| Config | Drones | Obstáculos | PDR (5 seeds) | E2E (s) | Retries/confirm |
+|---|---|---|---|---|---|
+| `BasicTest` | 15 | Não | 27,3% ± 4,2% | 3,84 ± 2,99 | 14,8 ± 3,4 |
+| `BasicTest_10drones` | 10 | Não | 19,0% ± 5,7% | 7,59 ± 4,92 | — |
+| `BasicTest_Obstacles` | 10 | Sim (perto equipes) | 23,9% ± 6,7% | 6,11 ± 3,86 | 17,2 ± 8,1 |
+
+**Posição dos obstáculos (iteração 2):**
+
+| Edifício | Centro (X, Y) | Equipe próxima | Distância |
+|---|---|---|---|
+| Obs-A | (1 050, 4 100) | team0 (SW, 600, 4 400) | ~500 m |
+| Obs-B | (2 750, 2 750) | team4 (Ctr, 2 500, 2 500) | ~350 m |
+| Obs-C | (4 050, 4 100) | team2 (SE, 4 400, 4 400) | ~400 m |
+
+**Por que a comparação `BasicTest_10drones` vs `BasicTest_Obstacles` ainda não isola o efeito dos obstáculos:** ao ativar `DielectricObstacleLoss`, o radioMedium filtra recepções antes de entregá-las ao MAC (potência < sensibilidade → evento cancelado). Isso muda o *número e timing* de eventos MAC (backoffs, colisões, timeouts), o que cascateia por todo o motor de eventos e altera a sequência de sorteios aleatórios (mobilidade, detecção de vítimas), mesmo usando a mesma seed. O fenômeno é idêntico ao descrito em §12.1 para `uniform()` no `teamSpeed`. Assim, a comparação de PDR médio **não é controlada** — é confundida pela mudança de sequência de eventos.
+
+**O que as configurações demonstram de forma confiável:**
+1. *Visualização Qtenv* (não-aleatória): edifícios renderizados ao lado das equipes como blocos cinza; raios de perda (`displayObstacleLoss = true`) aparecem quando drones transmitem por dentro dos edifícios — demonstra diretamente que o canal é prejudicado.
+2. *Variância elevada por seed*: as oscilações de PDR entre seeds são maiores no cenário com obstáculos, coerente com a existência de links intermitentemente bloqueados que deflagram caminhos de relay alternativos (aumentando a variabilidade).
+
 ### Status
 
 - [x] Módulo `PhysicalEnvironment` adicionado ao `BasicNetwork.ned`
-- [x] `obstacles.xml` com 3 edifícios de concreto (120 m)
-- [x] Config `BasicTest_Obstacles` (extends BasicTest) no `omnetpp.ini`
-- [x] 5 seeds simuladas e resultados analisados
+- [x] `obstacles.xml` com 3 edifícios de concreto (120 m) próximos de team0/4/2
+- [x] Config `BasicTest_Obstacles` (10 drones, extends BasicTest)
+- [x] Config `BasicTest_10drones` (10 drones, sem obstáculos, referência)
+- [x] 5 seeds simuladas em ambas as configs
 - [ ] Passo 14 (Bat Algorithm) — implementação do reposicionamento ativo via gatilho Γ
