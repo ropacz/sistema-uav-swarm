@@ -294,13 +294,31 @@ Os itens abaixo ainda precisam de revisão ou decisão antes da defesa:
 - [ ] `teamSpeed = 0,9 m/s` — média adequada para equipe em área severamente alagada?
 - [ ] Potência dos drones (`20 mW → ~800 m`) e equipes (`50 mW → ~1 260 m`) — calibradas com as referências usadas na dissertação?
 - [ ] `numDrones = 15` e `numTeams = 5` — densidade coerente com a área 5 km × 5 km da dissertação?
-- [ ] Tempo de simulação `300 s` — suficiente para cobrir os cenários comparativos, agora que o fix do §8.1 desbloqueou o encaminhamento? **Deferido deliberadamente**: variar para 600 s/900 s é um teste de baixo risco e fácil de rodar, mas a recomendação é consolidar primeiro este baseline (5 seeds, parâmetros fixos) antes de introduzir mais uma dimensão de variação — evita confundir o efeito da correção do §8.1 com o efeito do tempo de simulação.
+- [x] Tempo de simulação `300 s` — testado a 600 s em config isolada (`BasicTest_600s`). Ver §12.1.
 
 ### Resolvidos nesta sessão
 
 - [x] `maxRetries = 5` / `retryInterval = 10 s` (janela 50 s) — **mantido**. Testes empíricos mostraram que aumentar para 15 (janela 150 s) piora o PDR por congestionamento de broadcast, não melhora por TTL maior. Ver §8.1.
 - [x] PDR estruturalmente baixo (2–5%) — **causa raiz era bug na lógica de encaminhamento da aplicação**, não calibração de parâmetros. Corrigido em §8.1; PDR baseline agora em ~27% ± 7,3% (5 seeds).
 - [x] Resultado de seed única substituído por consolidação de 5 seeds (média ± desvio) — ver §11.
+
+## 12.1. Experimento — `teamSpeed`/`serviceTime` mais conservadores e `sim-time-limit = 600 s`
+
+Uma quarta análise externa sugeriu (a) `teamSpeed: 0,9 → uniform(0.4, 0.7) m/s`, (b) `serviceTime: 120 → 300 s`, e (c) reportar os resultados principais com `sim-time-limit = 600 s`. Em vez de aplicar direto no `BasicTest`, os três foram testados em configs isoladas (`[Config BasicTest_TeamCal]` e `[Config BasicTest_600s]` em `omnetpp.ini`, ambas com `extends = BasicTest`, 5 seeds cada) para não confundir o efeito de cada mudança com o da correção do §8.1 nem entre si.
+
+| Config | PDR (5 seeds) | Taxa AppACK | Overhead | Retries/entrega |
+|---|---|---|---|---|
+| `BasicTest` (baseline) | 27,0% ± 7,3% | 31,0% ± 8,6% | 23,6 ± 9,8 | 14,3 ± 6,0 |
+| `BasicTest_TeamCal` (teamSpeed↓, serviceTime↑) | 18,4% ± 5,3% | 21,3% ± 5,9% | 35,0 ± 11,9 | 23,2 ± 8,5 |
+| `BasicTest_600s` (sim-time 600 s) | 24,3% ± 3,7% | 25,9% ± 3,5% | 25,6 ± 5,2 | 15,9 ± 2,9 |
+
+**Análise — por que nenhuma das duas mudanças foi incorporada ao baseline:**
+
+1. **`teamSpeed`/`serviceTime` não deveriam, por construção, afetar a entrega.** Esses dois parâmetros só alimentam o cálculo de `busyDuration` em `SimpleTeamApp::socketDataArrived()`, que determina apenas *quando* o `attendTimer` devolve `available = true`. O envio do `VictimAck` é **incondicional** ao status `available` (roda fora do `if/else` que muda esse status — `SimpleTeamApp.cc` linhas 150–172). Além disso, o *fallback* de `forwardAlertOnce()` sempre escolhe a primeira equipe conhecida em ordem alfabética do `std::map` (`team0` antes de `team1`, …), **disponível ou não** — ou seja, o roteamento já ignora a disponibilidade na ausência de equipe livre. Com `busyDuration` calculado em ambas as configs (560 s–5 300 s, sempre maior que a janela de 300 s/600 s testada) excedendo o tempo de simulação na quase totalidade dos casos, nenhuma equipe chega a "recuperar" disponibilidade dentro da janela testada em **nenhuma das duas configs** — logo o mecanismo que essas mudanças deveriam afetar nem chega a ser exercitado de forma diferente.
+2. **A queda de 8,6 p.p. em `TeamCal` é mais provável de ser um artefato de RNG do que um efeito causal.** Trocar `teamSpeed` de escalar fixo (`0.9mps`) para uma expressão `uniform(0.4mps, 0.7mps)` consome um sorteio extra do gerador de números aleatórios por equipe na inicialização. Como o OMNeT++ usa por padrão um único stream de RNG global (sem `num-rngs`/`**.rng-0` configurado por módulo), esse sorteio extra desloca toda a sequência de eventos aleatórios subsequente (mobilidade, instantes de detecção de vítima, etc.) — mesmo usando "a mesma seed", os runs deixam de ser comparáveis ponto a ponto. Evidência a favor dessa hipótese: a queda por seed é **errática**, não uma translação uniforme (seed 0: 29,6%→26,2%, quase igual; seed 3: 28,7%→11,6%, quase à metade) — um efeito causal limpo do parâmetro tenderia a deslocar todos os seeds na mesma direção e magnitude relativa.
+3. **`sim-time-limit = 600 s` não melhora o PDR** (24,3% vs. 27,0%, dentro da margem de variação) — apenas dobra o número de eventos observados por run, o que reduz o desvio-padrão entre seeds (±3,7 vs. ±7,3) mas não move a taxa de entrega. Isso é coerente com a leitura de que o sistema é **limitado por capacidade** (poucas equipes, canal sujeito a contenção), não por tempo de exposição — estender a simulação não dá mais chances de sucesso a um alerta, apenas gera mais alertas competindo pela mesma capacidade.
+
+**Decisão:** manter `teamSpeed = 0.9mps`, `serviceTime = 120s` e `sim-time-limit = 300s` no `BasicTest` principal. As duas configs de teste permanecem no `omnetpp.ini` (não removidas — valor de registro negativo, mesmo padrão usado para `maxRetries = 15` em §8.1), mas não fazem parte do baseline reportado. Se o `teamSpeed`/`serviceTime` precisarem ser revisitados (por exemplo, quando o despacho de equipes deixar de ser um *round-robin* implícito e passar a depender de fato da disponibilidade — o que deve acontecer ao introduzir o Bat Algorithm), repetir o teste com `teamSpeed` como **escalar único** (não distribuição) para não introduzir o viés de RNG descrito no item 2.
 
 ### Próximo passo planejado
 
