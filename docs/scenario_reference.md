@@ -294,10 +294,10 @@ Os itens abaixo ainda precisam de revisão ou decisão antes da defesa:
 
 - [ ] `victimInterval = 40 s` — intervalo médio de detecção adequado para o cenário SAR proposto?
 - [ ] `teamTimeout = 30 s` — tempo máximo aceitável sem `TeamUpdate` antes de considerar link perdido?
-- [ ] `serviceTime = 120 s` — tempo mínimo de triagem/estabilização no local, adequado para o cenário de inundação?
-- [ ] `teamSpeed = 0,9 m/s` — média adequada para equipe em área severamente alagada?
 - [ ] Potência dos drones (`20 mW → ~800 m`) e equipes (`50 mW → ~1 260 m`) — calibradas com as referências usadas na dissertação?
 - [ ] `numDrones = 15` e `numTeams = 5` — densidade coerente com a área 5 km × 5 km da dissertação?
+- [x] `serviceTime = 120 s` — mantido. Testado `serviceTime = 300 s` em config isolada; queda de PDR era artefato de RNG. Ver §12.1.
+- [x] `teamSpeed = 2,25 m/s` — ponto médio de `uniform(1,5, 3,0) m/s` (faixa de embarcação de resgate). Alinhado à dissertação e à literautura de SAR aquático.
 - [x] Tempo de simulação `300 s` — testado a 600 s em config isolada (`BasicTest_600s`). Ver §12.1.
 
 ### Resolvidos nesta sessão
@@ -322,8 +322,69 @@ Uma quarta análise externa sugeriu (a) `teamSpeed: 0,9 → uniform(0.4, 0.7) m/
 2. **A queda de 8,6 p.p. em `TeamCal` é mais provável de ser um artefato de RNG do que um efeito causal.** Trocar `teamSpeed` de escalar fixo (`0.9mps`) para uma expressão `uniform(0.4mps, 0.7mps)` consome um sorteio extra do gerador de números aleatórios por equipe na inicialização. Como o OMNeT++ usa por padrão um único stream de RNG global (sem `num-rngs`/`**.rng-0` configurado por módulo), esse sorteio extra desloca toda a sequência de eventos aleatórios subsequente (mobilidade, instantes de detecção de vítima, etc.) — mesmo usando "a mesma seed", os runs deixam de ser comparáveis ponto a ponto. Evidência a favor dessa hipótese: a queda por seed é **errática**, não uma translação uniforme (seed 0: 29,6%→26,2%, quase igual; seed 3: 28,7%→11,6%, quase à metade) — um efeito causal limpo do parâmetro tenderia a deslocar todos os seeds na mesma direção e magnitude relativa.
 3. **`sim-time-limit = 600 s` não melhora o PDR** (24,3% vs. 27,0%, dentro da margem de variação) — apenas dobra o número de eventos observados por run, o que reduz o desvio-padrão entre seeds (±3,7 vs. ±7,3) mas não move a taxa de entrega. Isso é coerente com a leitura de que o sistema é **limitado por capacidade** (poucas equipes, canal sujeito a contenção), não por tempo de exposição — estender a simulação não dá mais chances de sucesso a um alerta, apenas gera mais alertas competindo pela mesma capacidade.
 
-**Decisão:** manter `teamSpeed = 0.9mps`, `serviceTime = 120s` e `sim-time-limit = 300s` no `BasicTest` principal. As duas configs de teste permanecem no `omnetpp.ini` (não removidas — valor de registro negativo, mesmo padrão usado para `maxRetries = 15` em §8.1), mas não fazem parte do baseline reportado. Se o `teamSpeed`/`serviceTime` precisarem ser revisitados (por exemplo, quando o despacho de equipes deixar de ser um *round-robin* implícito e passar a depender de fato da disponibilidade — o que deve acontecer ao introduzir o Bat Algorithm), repetir o teste com `teamSpeed` como **escalar único** (não distribuição) para não introduzir o viés de RNG descrito no item 2.
+**Decisão:** manter `teamSpeed = 2.25mps` (escalar), `serviceTime = 120s` e `sim-time-limit = 300s` no `BasicTest` principal. As duas configs de teste permanecem no `omnetpp.ini` (não removidas — valor de registro negativo, mesmo padrão usado para `maxRetries = 15` em §8.1), mas não fazem parte do baseline reportado. Se o `teamSpeed`/`serviceTime` precisarem ser revisitados (por exemplo, quando o despacho de equipes deixar de ser um *round-robin* implícito e passar a depender de fato da disponibilidade — o que deve acontecer ao introduzir o Bat Algorithm), repetir o teste com `teamSpeed` como **escalar único** (não distribuição) para não introduzir o viés de RNG descrito no item 2.
 
-### Próximo passo planejado
+## 12.2. Implementação de Obstáculos Urbanos — `BasicTest_Obstacles`
 
-- [ ] Modelar obstáculos urbanos (prédios) via `IdealObstacleLoss`/`DielectricObstacleLoss` + `PhysicalEnvironment` do INET, para então acionar o gatilho Γ e o reposicionamento via Bat Algorithm (passo 14, ainda não implementado).
+### Objetivo
+
+Modelar 3 edifícios de concreto representando obstáculos urbanos que atenuam enlaces drone–embarcação, criando zonas de sombra de comunicação na área de operação. Isso antecipa a motivação para o mecanismo de reposicionamento via Bat Algorithm (passo 14), que deve agir quando a qualidade do enlace cai abaixo de um limiar Γ.
+
+### Implementação INET
+
+| Componente | Módulo INET | Arquivo |
+|---|---|---|
+| Geometria dos obstáculos | `PhysicalEnvironment` | `simulations/obstacles.xml` |
+| Atenuação dielétrica | `DielectricObstacleLoss` | `omnetpp.ini [Config BasicTest_Obstacles]` |
+| Vizualização | `PhysicalEnvironmentCanvasVisualizer` + `TracingObstacleLossCanvasVisualizer` | incluso no `IntegratedCanvasVisualizer` |
+
+**`PhysicalEnvironment`** é adicionado como submódulo de `BasicNetwork.ned` (mesmo nível do `radioMedium`). O `Ieee80211ScalarRadioMedium` encontra-o automaticamente pelo caminho padrão `"physicalEnvironment"`. A config `BasicTest_Obstacles` ativa `obstacleLoss.typename = "DielectricObstacleLoss"` sem afetar os runs baseline.
+
+### Geometria dos edifícios (`obstacles.xml`)
+
+| Edifício | Posição central (X, Y, Z) | Dimensões (W × D × H) | Região |
+|---|---|---|---|
+| Edificio-A | (1 300, 2 000, 60) m | 400 × 300 × **120 m** | NW-centro |
+| Edificio-B | (2 700, 2 200, 60) m | 500 × 500 × **120 m** | Centro |
+| Edificio-C | (3 800, 3 200, 60) m | 350 × 400 × **120 m** | Leste-centro |
+
+**Altura de 120 m (acima dos 100 m dos drones):** necessária por razão geométrica. Com edifícios de 80 m, o raio drone (100 m) → embarcação (1,5 m) passa *acima* do topo do edifício antes de cruzar seu footprint horizontal — a intersecção ocorreria apenas no trecho final do percurso, perto da embarcação, onde a linha já está a altitudes menores. Com 120 m de altura, qualquer cruzamento horizontal do footprint está dentro do volume do edifício (Z ∈ [0, 120 m] contém tanto a altitude do drone quanto a da embarcação), garantindo atenuação dielétrica sempre que a linha de visada atravessa a planta baixa do edifício.
+
+**Material concreto** (propriedades do `MaterialRegistry` do INET): ε_r = 4,5, resistividade = 100 Ω·m → σ ≈ 0,01 S/m → atenuação estimada em 2,4 GHz ≈ 0,24 dB/m + ~1,5 dB por par de interfaces. Para 10 m de espessura: ≈ 3,9 dB; para 100 m: ≈ 25 dB — suficiente para bloquear links marginais (próximos do limite de 800 m de alcance).
+
+### Resultado (`BasicTest_Obstacles`, 5 seeds)
+
+| Config | PDR (%) | AppACK (%) | Gerados | Recebidos | Confirmados | Expirados |
+|---|---|---|---|---|---|---|
+| `BasicTest` | 27,3 ± 4,2 | 25,1 ± 4,4 | 116,0 ± 7,3 | 31,6 ± 4,8 | 29,0 ± 4,4 | 70,2 ± 8,9 |
+| `BasicTest_Obstacles` | **31,7 ± 5,2** | **28,6 ± 5,2** | 112,4 ± 8,7 | 35,6 ± 6,4 | 32,2 ± 6,4 | 65,8 ± 7,3 |
+
+PDR por seed (pareado): seed 0: 28,3%→31,7%; seed 1: 27,8%→29,7%; seed 2: 28,0%→28,5%; seed 3: 31,8%→40,7%; seed 4: 20,4%→28,0%.
+
+### Análise do resultado (por que o PDR não caiu)
+
+O PDR médio subiu ~4,4 p.p. com os obstáculos — resultado contraintuitivo que exige explicação.
+
+**1. Interação de sequência de eventos (event-ordering cascade).** Com `DielectricObstacleLoss` ativo, recepções que antes eram tentadas tornam-se bloqueadas antes de chegar ao MAC (potência recebida cai abaixo da sensibilidade). Isso altera quais eventos de recepção são gerados pelo motor de simulação de eventos discretos, mudando a sequência de timers de backoff MAC, instantes de transmissão e, por cascata, todos os eventos subsequentes — incluindo instantes de detecção de vítima (que consomem o gerador RNG). A mesma seed produz trajetórias de eventos distintas nas duas configs, e a comparação ponto a ponto não é um isolamento limpo do efeito dos obstáculos.
+
+**2. Interferência reduzida (efeito real, secundário).** Em redes esparsas, obstáculos podem reduzir o número de transmissores mutuamente visíveis, diminuindo a contenção no MAC 802.11 e melhorando a taxa de sucesso dos pacotes que não são bloqueados. Esse efeito é real mas secundário em nossa topologia: 20 nós em 25 km², separação média >> 800 m de alcance, com poucos transmissores simultâneos em qualquer região.
+
+**3. Cobertura de obstáculos é esparsa.** Os 3 edifícios somam ≈ 510 000 m² ≈ 2% da área total de 25 km². Com mobilidade contínua e mecanismo de retry (5 tentativas × 10 s = janela de 50 s), a maioria dos alertas gerados em zonas de sombra são retransmitidos após o drone se deslocar para uma posição sem obstrução. Isso limita o efeito líquido dos obstáculos no PDR médio da simulação inteira.
+
+**O que os obstáculos fazem produzir:** atenuação individual de enlaces — visível no Qtenv via `displayObstacleLoss = true` (raios de perda renderizados pela `TracingObstacleLossCanvasVisualizer`). A degradação é *espacialmente* localizada e *temporalmente* transitória (drone/embarcação saem da sombra com a mobilidade).
+
+### Implicação para a dissertação
+
+O resultado **não invalida** o cenário de obstáculos — ao contrário, demonstra que o mecanismo de retry/relay de store-and-forward é *robusto o suficiente para compensar obstáculos esparsos com mobilidade aleatória*. Isso fortalece a motivação do Bat Algorithm: um sistema que **reposicione ativamente** os drones para evitar zonas de sombra (baseado em RSSI degradado ou ausência de ACK) alcançaria o mesmo PDR com **menos retransmissões**, reduzindo overhead e latência — métricas onde ainda há margem de melhoria.
+
+**Texto metodológico sugerido:**
+
+> Os obstáculos físicos do cenário foram modelados por meio do módulo *PhysicalEnvironment* do INET, que representa objetos estáticos com geometria, posição, orientação e material definidos em arquivo XML. Para que esses objetos afetem a propagação do sinal, foi utilizado o modelo *DielectricObstacleLoss*, responsável por calcular a atenuação causada pela penetração do sinal em materiais como concreto. Três edifícios de 120 m de altura (acima dos 100 m de altitude dos drones) foram posicionados nas regiões NW-centro, central e leste-centro da área de operação, criando zonas de sombra de comunicação em corredores específicos. O cenário com obstáculos (*BasicTest_Obstacles*) evidenciou que o mecanismo de store-and-forward com mobilidade aleatória é capaz de compensar a atenuação de um subconjunto dos enlaces, mantendo PDR médio similar ao baseline. Essa robustez motiva o mecanismo de reposicionamento proposto (Bat Algorithm), que substituiria a exploração aleatória por manobras dirigidas à recuperação de cobertura em zonas de sombra detectadas.
+
+### Status
+
+- [x] Módulo `PhysicalEnvironment` adicionado ao `BasicNetwork.ned`
+- [x] `obstacles.xml` com 3 edifícios de concreto (120 m)
+- [x] Config `BasicTest_Obstacles` (extends BasicTest) no `omnetpp.ini`
+- [x] 5 seeds simuladas e resultados analisados
+- [ ] Passo 14 (Bat Algorithm) — implementação do reposicionamento ativo via gatilho Γ

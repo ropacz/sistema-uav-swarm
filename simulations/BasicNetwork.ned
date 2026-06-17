@@ -1,5 +1,6 @@
 package echosar.simulations;
 
+import inet.environment.common.PhysicalEnvironment;
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.physicallayer.wireless.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
 import inet.node.inet.WirelessHost;
@@ -15,6 +16,9 @@ network BasicNetwork
     submodules:
         visualizer: IntegratedCanvasVisualizer {
             @display("p=40,40");
+        }
+        physicalEnvironment: PhysicalEnvironment {
+            @display("p=40,280;i=misc/town");
         }
         configurator: Ipv4NetworkConfigurator {
             @display("p=40,120;i=block/cogwheel_s");
