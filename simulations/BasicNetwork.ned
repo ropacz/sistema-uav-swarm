@@ -11,34 +11,36 @@ network BasicNetwork
     parameters:
         int numDrones = default(10);
         int numTeams  = default(3);
-        // bgb: canvas Qtenv 2 km × 2 km; bgg: grade 200 m; fundo neutro
-        @display("bgb=2000,2000;bgg=200,1,grey95;bgc=white");
+        // bgb: canvas Qtenv 5 km × 5 km; bgg: grade 500 m; fundo neutro
+        @display("bgb=5000,5000;bgg=500,1,grey95;bgc=white");
 
     submodules:
         // ── Módulos de infraestrutura ─────────────────────────────────────────
-        // Posicionados à esquerda da área (x=75), espaçados 350 unidades em Y.
+        // Posicionados à esquerda do canvas (x<0): fora da área de mobilidade
+        // (constraintAreaMinX=0) — nunca sobrepostos com nós móveis.
+        // is=s (small) para ficarem visíveis sem poluir a área de simulação.
         visualizer: IntegratedCanvasVisualizer {
-            @display("p=75,150;i=block/app2;is=s");
+            @display("p=-200,1000;i=block/app2;is=s");
         }
         physicalEnvironment: PhysicalEnvironment {
-            @display("p=75,500;i=misc/town;is=s");
+            @display("p=-200,1200;i=misc/town;is=s");
         }
         configurator: Ipv4NetworkConfigurator {
-            @display("p=75,850;i=block/cogwheel_s;is=s");
+            @display("p=-200,1400;i=block/cogwheel_s;is=s");
         }
         radioMedium: Ieee80211ScalarRadioMedium {
-            @display("p=75,1200;i=misc/sun;is=s");
+            @display("p=-200,1600;i=misc/sun;is=s");
         }
         // ── Drones: AodvRouter (FANET ad-hoc com roteamento AODV multi-hop) ───
         drone[numDrones]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.SimpleDroneApp";
-            @display("i=misc/drone,#3399ff,40");
+            @display("i=misc/drone,#3399ff,50");
         }
         // ── Embarcações de resgate: AodvRouter (mesmo stack de rede) ──────────
         team[numTeams]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.SimpleTeamApp";
-            @display("i=block/user,#33aa33,50");
+            @display("i=block/user,#33aa33,60");
         }
 }

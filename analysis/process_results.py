@@ -85,10 +85,6 @@ def compute_run_metrics(df):
         def s(name):
             return g[g['name'] == name]['value'].sum()
 
-        def avg(name):
-            vals = g[(g['name'] == name) & (g['value'] >= 0)]['value']
-            return vals.mean() if len(vals) else float('nan')
-
         generated = s('alertsGenerated')
         acked     = s('alertsAcked')
         expired   = s('alertsExpired')
@@ -152,6 +148,30 @@ def aggregate_metrics(run_df):
     return agg
 
 
+# Configs excluídas do gráfico de comparação principal.
+#
+# Gráfico final mostra apenas:
+#   BasicTest_Piloto       — validação funcional (300 s)
+#   Cenario_SemObstaculos  — experimento principal, baseline FANET (900 s)
+#   Cenario_ComObstaculos  — experimento principal, com obstáculos  (900 s)
+#
+# Tudo mais é análise complementar, base de herança, regressão ou stale.
+PLOT_EXCLUDE = {
+    # ── configs base (não executar diretamente) ──
+    'BasicTest',
+    # ── análise complementar (executar após resultados principais) ──
+    'Cenario_Favoravel',
+    'Cenario_Intermediario',
+    'Cenario_Degradado',
+    # ── stale: parâmetros antigos (2 km, 2,9 mW, 30 drones) ──
+    'BasicTest_1500m',
+    # ── testes / não adotados ──
+    'SmokeTest_Beacons',
+    'BasicTest_Visual',
+    'BasicTest_TeamCal',
+    'BasicTest_600s',
+}
+
 # ── Gráficos ──────────────────────────────────────────────────────────────────
 
 METRICS = [
@@ -166,41 +186,54 @@ METRICS = [
 ]
 
 
-def plot_metrics(agg_df):
-    configs = agg_df.index.tolist()
-    colors  = [PALETTE[i % len(PALETTE)] for i in range(len(configs))]
-    # Rótulos do eixo X incluem n por configuração
+METRIC_SLUGS = {
+    'm5_appack':   'appack',
+    'm2_e2e':      'atraso',
+    'm3_retries':  'retransmissoes',
+    'm4_overhead': 'overhead',
+    'm1_pdr':      'pdr',
+    'm6_availrate':'disponibilidade',
+}
+
+
+def _plot_single(agg_df, col, title, ylabel, is_pct):
+    configs  = agg_df.index.tolist()
+    colors   = [PALETTE[i % len(PALETTE)] for i in range(len(configs))]
     x_labels = [f"{c}\n(n={int(agg_df.loc[c, 'n_runs'])})" for c in configs]
 
-    fig, axes = plt.subplots(2, 3, figsize=(16, 9))
-    axes_flat = axes.flatten()
+    fig, ax = plt.subplots(figsize=(7, 5))
+    means = [agg_df.loc[c, f'{col}_mean'] for c in configs]
+    stds  = [agg_df.loc[c, f'{col}_std']  for c in configs]
 
-    for ax_idx, (col, title, ylabel, is_pct) in enumerate(METRICS):
-        ax = axes_flat[ax_idx]
-        means = [agg_df.loc[c, f'{col}_mean'] for c in configs]
-        stds  = [agg_df.loc[c, f'{col}_std']  for c in configs]
+    bars = ax.bar(x_labels, means, yerr=stds, capsize=5,
+                  color=colors, edgecolor='black', linewidth=0.7, width=0.5)
+    ax.set_title(title, fontsize=12, fontweight='bold', pad=10)
+    ax.set_ylabel(ylabel, fontsize=10)
+    ax.tick_params(axis='x', rotation=15, labelsize=9)
+    ax.tick_params(axis='y', labelsize=9)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
-        bars = ax.bar(x_labels, means, yerr=stds, capsize=4,
-                      color=colors, edgecolor='black', linewidth=0.6, width=0.5)
-        ax.set_title(title, fontsize=11, fontweight='bold', pad=8)
-        ax.set_ylabel(ylabel, fontsize=9)
-        ax.tick_params(axis='x', rotation=15, labelsize=7.5)
+    if is_pct:
+        ax.set_ylim(0, 110)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
 
-        if is_pct:
-            ax.set_ylim(0, 110)
-            ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
+    for bar, mean, std in zip(bars, means, stds):
+        if pd.notna(mean) and mean > 0:
+            label = f'{mean:.1f}±{std:.1f}%' if is_pct else f'{mean:.3g}±{std:.2g}'
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + std + ax.get_ylim()[1] * 0.01,
+                    label, ha='center', va='bottom', fontsize=8.5, fontweight='bold')
 
-        for bar, mean, std in zip(bars, means, stds):
-            if pd.notna(mean) and mean > 0:
-                label = f'{mean:.1f}±{std:.1f}%' if is_pct else f'{mean:.3g}±{std:.2g}'
-                ax.text(bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + std + ax.get_ylim()[1] * 0.01,
-                        label, ha='center', va='bottom', fontsize=7.5, fontweight='bold')
-
-    fig.suptitle('ECHOSAR-Net — Métricas de Comunicação SAR (média ± desvio-padrão)',
-                 fontsize=13, fontweight='bold', y=1.01)
     plt.tight_layout()
     return fig
+
+
+def plot_metrics(agg_df):
+    figures = {}
+    for col, title, ylabel, is_pct in METRICS:
+        figures[col] = _plot_single(agg_df, col, title, ylabel, is_pct)
+    return figures
 
 
 # ── Tabela resumo ─────────────────────────────────────────────────────────────
@@ -243,12 +276,16 @@ def main():
     agg_df = aggregate_metrics(run_df)
     print_summary(agg_df)
 
-    fig = plot_metrics(agg_df)
+    plot_df  = agg_df[~agg_df.index.isin(PLOT_EXCLUDE)]
+    figures  = plot_metrics(plot_df)
 
-    for ext in ('pdf', 'png'):
-        out = os.path.join(FIGURES_DIR, f'metrics.{ext}')
-        fig.savefig(out, bbox_inches='tight', dpi=150)
-        print(f"Figura salva: {out}")
+    for col, fig in figures.items():
+        slug = METRIC_SLUGS[col]
+        for ext in ('pdf', 'png'):
+            out = os.path.join(FIGURES_DIR, f'metric_{slug}.{ext}')
+            fig.savefig(out, bbox_inches='tight', dpi=150)
+            print(f"Figura salva: {out}")
+        plt.close(fig)
 
     plt.close(fig)
 

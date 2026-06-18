@@ -46,11 +46,20 @@ void SimpleDroneApp::initialize(int stage)
         teamSocket.setBroadcast(true);
         teamSocket.bind(TEAM_UPDATE_PORT);
 
-        // Socket: envia DroneStatus (ACK) unicast para equipe
+        // Portas únicas por drone para sockets de envio, necessárias para que o
+        // MessageDispatcher do INET consiga rotear ICMPs de volta ao socket correto.
+        // Faixa 9000–9059 (até 20 drones × 3 sockets): sem conflito com app ports 5000–5004.
+        int idx = getParentModule()->getIndex();
+
+        // Socket: envia DroneStatus unicast para equipe
         ackSocket.setOutputGate(gate("socketOut"));
+        ackSocket.setCallback(this);
+        ackSocket.bind(9000 + idx * 3);
 
         // Socket: envia VictimAlert unicast para equipe
         alertSocket.setOutputGate(gate("socketOut"));
+        alertSocket.setCallback(this);
+        alertSocket.bind(9001 + idx * 3);
 
         // Socket: recebe VictimAlert relay de outros drones (passo 8)
         relaySocket.setOutputGate(gate("socketOut"));
@@ -60,7 +69,9 @@ void SimpleDroneApp::initialize(int stage)
 
         // Socket: envia VictimAlert relay em broadcast para drones vizinhos (passo 9)
         fwdSocket.setOutputGate(gate("socketOut"));
+        fwdSocket.setCallback(this);
         fwdSocket.setBroadcast(true);
+        fwdSocket.bind(9002 + idx * 3);
 
         // Socket: recebe VictimAck da equipe (passo 12)
         ackRxSocket.setOutputGate(gate("socketOut"));
@@ -96,6 +107,12 @@ void SimpleDroneApp::handleMessageWhenUp(cMessage *msg)
         relaySocket.processMessage(msg);
     } else if (ackRxSocket.belongsToSocket(msg)) {
         ackRxSocket.processMessage(msg);
+    } else if (alertSocket.belongsToSocket(msg)) {
+        alertSocket.processMessage(msg);  // consome ICMP errors do socket de envio
+    } else if (ackSocket.belongsToSocket(msg)) {
+        ackSocket.processMessage(msg);
+    } else if (fwdSocket.belongsToSocket(msg)) {
+        fwdSocket.processMessage(msg);
     } else {
         delete msg;
     }
@@ -135,7 +152,7 @@ void SimpleDroneApp::handleTeamUpdate(Packet *pkt)
     Coord pos = mob->getCurrentPosition();
 
     auto resp = makeShared<DroneStatusChunk>();
-    resp->setChunkLength(B(512));
+    resp->setChunkLength(B(128));
     resp->setDroneId(myDroneId.c_str());
     resp->setSentAt(simTime());
     resp->setPosX(pos.x);
@@ -157,7 +174,7 @@ void SimpleDroneApp::detectVictim()
     std::string msgId = myDroneId + "_" + std::to_string(++victimCounter);
     seenAlerts.insert(msgId);
 
-    EV_INFO << "[DRONE " << myDroneId << "] vitima detectada → " << msgId << "\n";
+    EV_INFO << "[DRONE " << myDroneId << "] alerta sintético gerado → " << msgId << "\n";
 
     PendingAlert pa;
     pa.msgId    = msgId;
@@ -190,7 +207,7 @@ std::string SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
                                               const std::set<std::string> &exclude)
 {
     auto chunk = makeShared<VictimAlertChunk>();
-    chunk->setChunkLength(B(1024));
+    chunk->setChunkLength(B(256));
     chunk->setDroneId(droneId.c_str());
     chunk->setMsgId(msgId.c_str());
     chunk->setOriginIp(originIp.c_str());

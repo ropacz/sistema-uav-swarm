@@ -89,7 +89,7 @@ class SimpleDroneApp : public inet::ApplicationBase,
     virtual void socketDataArrived(inet::UdpSocket *socket,
                                    inet::Packet *pkt) override;
     virtual void socketErrorArrived(inet::UdpSocket *,
-                                    inet::Indication *) override {}
+                                    inet::Indication *ind) override { delete ind; }
     virtual void socketClosed(inet::UdpSocket *) override {}
 
     // ── Handlers de mensagem ─────────────────────────────────────────────────

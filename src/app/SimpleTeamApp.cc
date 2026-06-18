@@ -46,9 +46,14 @@ void SimpleTeamApp::initialize(int stage)
             }
         }
 
+        // Faixa 9100–9115 (até 8 equipes × 2 sockets): sem conflito com outros ports.
+        int idx = getParentModule()->getIndex();
+
         // Socket: envia TeamUpdate em broadcast
         sendSocket.setOutputGate(gate("socketOut"));
+        sendSocket.setCallback(this);
         sendSocket.setBroadcast(true);
+        sendSocket.bind(9100 + idx * 2);
 
         // Socket: recebe DroneStatus (ACK de posição do drone)
         statusSocket.setOutputGate(gate("socketOut"));
@@ -62,6 +67,8 @@ void SimpleTeamApp::initialize(int stage)
 
         // Socket: envia VictimAck unicast de volta ao drone origem (passo 12)
         ackTxSocket.setOutputGate(gate("socketOut"));
+        ackTxSocket.setCallback(this);
+        ackTxSocket.bind(9101 + idx * 2);
 
         sendTimer   = new cMessage("sendTimer");
         attendTimer = new cMessage("attendTimer");
@@ -83,6 +90,10 @@ void SimpleTeamApp::handleMessageWhenUp(cMessage *msg)
         statusSocket.processMessage(msg);
     } else if (alertSocket.belongsToSocket(msg)) {
         alertSocket.processMessage(msg);
+    } else if (sendSocket.belongsToSocket(msg)) {
+        sendSocket.processMessage(msg);
+    } else if (ackTxSocket.belongsToSocket(msg)) {
+        ackTxSocket.processMessage(msg);
     } else {
         delete msg;
     }
@@ -94,7 +105,7 @@ void SimpleTeamApp::sendUpdate()
     Coord pos = mob->getCurrentPosition();
 
     auto chunk = makeShared<TeamUpdateChunk>();
-    chunk->setChunkLength(B(512));
+    chunk->setChunkLength(B(128));
     chunk->setTeamId(myTeamId.c_str());
     chunk->setIpAddress(myIp.c_str());
     chunk->setAvailable(available);
