@@ -17,6 +17,7 @@ simple SimpleTeamApp like IApp
         double beaconJitter @unit(s)  = default(this.sendInterval);
         double teamSpeed @unit(mps)   = default(7mps);
         double serviceTime @unit(s)   = default(120s);
+        bool   enableProbeAck         = default(false); // [BA] envia ProbeAck ao drone após DroneStatus
         @display("i=block/user,green,50");
     gates:
         input socketIn @labels(UdpControlInfo/up);

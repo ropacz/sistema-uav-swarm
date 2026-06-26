@@ -10,6 +10,7 @@
 #include "messages/DroneStatus_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAck_m.h"
+#include "messages/ProbeAck_m.h"
 #include "ports.h"
 
 namespace echosar {
@@ -34,6 +35,7 @@ class SimpleTeamApp : public inet::ApplicationBase,
     double teamSpeed     = 7.0;
     double serviceTime   = 120.0;
     bool   available    = true;   // false enquanto equipe está atendendo
+    bool   enableProbeAck = false; // [BA] responde DroneStatus com ProbeAck
 
     std::set<std::string> seenAlerts;  // deduplicação de VictimAlerts recebidos
 

@@ -20,11 +20,12 @@ void SimpleTeamApp::initialize(int stage)
 {
     ApplicationBase::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
-        myTeamId     = par("myTeamId").stdstringValue();
-        sendInterval = par("sendInterval");
-        beaconJitter = par("beaconJitter");
-        teamSpeed    = par("teamSpeed");
-        serviceTime  = par("serviceTime");
+        myTeamId      = par("myTeamId").stdstringValue();
+        sendInterval  = par("sendInterval");
+        beaconJitter  = par("beaconJitter");
+        teamSpeed     = par("teamSpeed");
+        serviceTime   = par("serviceTime");
+        enableProbeAck = par("enableProbeAck");
         if (beaconJitter == 0)
             throw cRuntimeError("%s: beaconJitter=0 causa colisões MAC com múltiplas equipes "
                                 "(todas transmitem em t=sendInterval simultaneamente → PDR ~3%%). "
@@ -128,6 +129,20 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
                 << " pos=(" << chunk->getPosX() << ","
                 << chunk->getPosY() << "," << chunk->getPosZ()
                 << ") RTT=" << (simTime() - chunk->getSentAt()) << "s\n";
+
+        // [BA] ProbeAck: confirmação para medição de ARR + validação pós-reposicionamento
+        if (enableProbeAck) {
+            auto srcAddr = pkt->getTag<L3AddressInd>()->getSrcAddress();
+            auto ack = makeShared<ProbeAckChunk>();
+            ack->setChunkLength(B(64));
+            ack->setDroneId(chunk->getDroneId());
+            ack->setTeamId(myTeamId.c_str());
+            ack->setSentAt(chunk->getSentAt());  // chave de correlação ARR
+            ackTxSocket.sendTo(new Packet("ProbeAck", ack),
+                               srcAddr.toIpv4(), PROBE_ACK_PORT);
+            EV_INFO << "[TEAM " << myTeamId << "] ProbeAck → "
+                    << srcAddr << " sentAt=" << chunk->getSentAt() << "\n";
+        }
 
     } else if (socket == &alertSocket && pkt->hasAtFront<VictimAlertChunk>()) {
         // Passo 11: recebe VictimAlert de drone (direto ou via relay)

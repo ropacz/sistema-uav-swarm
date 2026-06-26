@@ -34,7 +34,11 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/app/SimpleDroneApp.o \
     $O/app/SimpleTeamApp.o \
+    $O/control/BatOptimizer.o \
+    $O/control/ObstacleSensor.o \
+    $O/mobility/BatControlledMobility.o \
     $O/messages/DroneStatus_m.o \
+    $O/messages/ProbeAck_m.o \
     $O/messages/TeamUpdate_m.o \
     $O/messages/VictimAck_m.o \
     $O/messages/VictimAlert_m.o
@@ -42,6 +46,7 @@ OBJS = \
 # Message files
 MSGFILES = \
     messages/DroneStatus.msg \
+    messages/ProbeAck.msg \
     messages/TeamUpdate.msg \
     messages/VictimAck.msg \
     messages/VictimAlert.msg

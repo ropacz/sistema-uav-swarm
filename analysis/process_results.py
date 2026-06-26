@@ -98,10 +98,6 @@ def compute_run_metrics(df):
         # Atraso de entrega (1 via): soma bruta no lado da equipe / nº recebidos.
         # Média global PONDERADA do run (não média de médias por módulo).
         delivDelay = s('totalDeliveryDelay')
-        # Alertas que chegaram a equipe DISPONÍVEL vs OCUPADA
-        availRecv = s('alertsReceivedAvailable')
-        busyRecv  = s('alertsReceivedBusy')
-
         rows.append({
             'config': config,
             'run':    run,
@@ -109,34 +105,28 @@ def compute_run_metrics(df):
             # ATENÇÃO: pode exceder 100% se um alerta for recebido por múltiplas equipes
             # (retry para equipe diferente após ACK perdido, ou relay bifurcado).
             # Use m5_appack como PDR primário na dissertação (bounded 0–100%).
-            'm1_pdr':       (received / generated * 100) if generated else 0.0,
+            'm1_pdr':      (received / generated * 100) if generated else 0.0,
             # m2: atraso de entrega fim-a-fim de 1 via (drone → equipe), ponderado
-            'm2_e2e':       (delivDelay / received) if received else float('nan'),
-            'm3_retries':   (retries / acked) if acked else 0.0,
-            'm4_overhead':  (sent / acked) if acked else 0.0,
+            'm2_e2e':      (delivDelay / received) if received else float('nan'),
+            'm3_retries':  (retries / acked) if acked else 0.0,
+            'm4_overhead': (sent / acked) if acked else 0.0,
             # m5: taxa de sucesso do ciclo completo (drone recebeu VictimAck de volta)
-            # Era a definição anterior de PDR; renomeado para distinguir dos dois sentidos
-            'm5_appack':    (acked / generated * 100) if generated else 0.0,
-            # m6: dos alertas entregues, fração que encontrou equipe DISPONÍVEL
-            'm6_availrate': (availRecv / received * 100) if received else 0.0,
+            'm5_appack':   (acked / generated * 100) if generated else 0.0,
             'alertsGenerated': generated,
             'alertsAcked':     acked,
             'alertsExpired':   expired,
             'totalRetries':    retries,
             'alertsSent':      sent,
             'alertsReceived':  received,
-            'availRecv':       availRecv,
-            'busyRecv':        busyRecv,
         })
     return pd.DataFrame(rows)
 
 
 # ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
 
-METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack', 'm6_availrate']
+METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack']
 COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
-               'totalRetries', 'alertsSent', 'alertsReceived',
-               'availRecv', 'busyRecv']
+               'totalRetries', 'alertsSent', 'alertsReceived']
 
 
 def aggregate_metrics(run_df):
@@ -151,12 +141,13 @@ def aggregate_metrics(run_df):
 # Configs excluídas do gráfico de comparação principal.
 #
 # Gráfico final mostra apenas:
-#   BasicTest_Piloto       — validação funcional (300 s)
 #   Cenario_SemObstaculos  — experimento principal, baseline FANET (900 s)
 #   Cenario_ComObstaculos  — experimento principal, com obstáculos  (900 s)
 #
-# Tudo mais é análise complementar, base de herança, regressão ou stale.
+# Para incluir a validação piloto, remova 'BasicTest_Piloto' do set abaixo.
 PLOT_EXCLUDE = {
+    # ── validação funcional (opcional — remover para comparar com cenários principais) ──
+    'BasicTest_Piloto',
     # ── configs base (não executar diretamente) ──
     'BasicTest',
     # ── análise complementar (executar após resultados principais) ──
@@ -176,13 +167,12 @@ PLOT_EXCLUDE = {
 
 METRICS = [
     # m5_appack: métrica primária — alertsAcked/alertsGenerated, bounded 0–100%
-    ('m5_appack',   'Taxa de Confirmação\nde Alertas (AppACK)',   '%',               True),
-    ('m2_e2e',      'Atraso de Entrega\naté a Equipe',            's',               False),
-    ('m3_retries',  'Retransmissões\npor Alerta Confirmado',      'tentativas',      False),
-    ('m4_overhead', 'Overhead de Alerta\npor Confirmação',        'msgs / confirm.', False),
+    ('m5_appack',   'Taxa de Confirmação de Aplicação (AppACK)',    'AppACK [%]',      True),
+    ('m2_e2e',      'Latência de Entrega Fim a Fim (OWD)',          'OWD [s]',         False),
+    ('m3_retries',  'Overhead de Retransmissão (ARQ)',              'retx / alerta',   False),
+    ('m4_overhead', 'Overhead de Transmissão',                      'msgs / alerta',   False),
     # m1_pdr: soma de alertsReceived (todas as equipes) / gerados — pode exceder 100%
-    ('m1_pdr',      'Recepções por Equipes\n(soma; pode >100%)', '%',               False),
-    ('m6_availrate','Alertas Recebidos com\nEquipe Disponível',   '%',               True),
+    ('m1_pdr',      'Taxa de Entrega de Pacotes (PDR)\n(Σ recepções / gerados; pode >100%)', 'PDR [%]', False),
 ]
 
 
@@ -192,7 +182,6 @@ METRIC_SLUGS = {
     'm3_retries':  'retransmissoes',
     'm4_overhead': 'overhead',
     'm1_pdr':      'pdr',
-    'm6_availrate':'disponibilidade',
 }
 
 
@@ -244,17 +233,14 @@ def print_summary(agg_df):
         row = agg_df.loc[config]
         n = int(row['n_runs'])
         print(f"\n  [{config}]  n={n} seeds")
-        print(f"    PDR (%)                {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
-        print(f"    Atraso entrega 1via(s) {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
-        print(f"    Retries/confirmado     {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
-        print(f"    Overhead               {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
-        print(f"    AppACK (%)             {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
-        print(f"    Alerta→disponível (%)  {row['m6_availrate_mean']:.3f} ± {row['m6_availrate_std']:.3f}")
+        print(f"    PDR [%]                {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
+        print(f"    OWD [s]                {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
+        print(f"    ARQ Overhead (retx/al) {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
+        print(f"    TX Overhead (msgs/al)  {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
+        print(f"    AppACK Rate [%]        {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
         print(f"    Gerados (total)    {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
         print(f"    Confirmados        {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
         print(f"    Expirados          {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
-        print(f"    →equipe disponível {row['availRecv_mean']:.1f} ± {row['availRecv_std']:.1f}  "
-              f"→ocupada {row['busyRecv_mean']:.1f} ± {row['busyRecv_std']:.1f}")
     print("\n╚═══════════════════════════════════════════════════════════════════╝\n")
 
 
