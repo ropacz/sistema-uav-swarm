@@ -1,7 +1,5 @@
 #include "SimpleTeamApp.h"
 
-#include <cmath>
-
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
@@ -23,8 +21,7 @@ void SimpleTeamApp::initialize(int stage)
         myTeamId     = par("myTeamId").stdstringValue();
         sendInterval = par("sendInterval");
         beaconJitter = par("beaconJitter");
-        teamSpeed    = par("teamSpeed");
-        serviceTime  = par("serviceTime");
+        deliveryDelayVec.setName("deliveryDelay");
         if (beaconJitter == 0)
             throw cRuntimeError("%s: beaconJitter=0 causa colisões MAC com múltiplas equipes "
                                 "(todas transmitem em t=sendInterval simultaneamente → PDR ~3%%). "
@@ -70,8 +67,7 @@ void SimpleTeamApp::initialize(int stage)
         ackTxSocket.setCallback(this);
         ackTxSocket.bind(9101 + idx * 2);
 
-        sendTimer   = new cMessage("sendTimer");
-        attendTimer = new cMessage("attendTimer");
+        sendTimer = new cMessage("sendTimer");
         scheduleAt(simTime() + uniform(0, beaconJitter), sendTimer);
     }
 }
@@ -82,9 +78,6 @@ void SimpleTeamApp::handleMessageWhenUp(cMessage *msg)
         if (msg == sendTimer) {
             sendUpdate();
             scheduleAt(simTime() + sendInterval, sendTimer);
-        } else if (msg == attendTimer) {
-            available = true;
-            EV_INFO << "[TEAM " << myTeamId << "] atendimento concluído → disponível\n";
         }
     } else if (statusSocket.belongsToSocket(msg)) {
         statusSocket.processMessage(msg);
@@ -108,7 +101,7 @@ void SimpleTeamApp::sendUpdate()
     chunk->setChunkLength(B(128));
     chunk->setTeamId(myTeamId.c_str());
     chunk->setIpAddress(myIp.c_str());
-    chunk->setAvailable(available);
+    chunk->setAvailable(true);
     chunk->setPosX(pos.x);
     chunk->setPosY(pos.y);
 
@@ -155,44 +148,16 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
         }
         seenAlerts.insert(msgId);
         alertsReceived++;
-        totalDeliveryDelay += simTime() - chunk->getSentAt();
+        simtime_t delay = simTime() - chunk->getSentAt();
+        totalDeliveryDelay += delay;
+        deliveryDelayVec.record(delay.dbl());
 
-        // Métrica: o alerta chegou com a equipe DISPONÍVEL ou OCUPADA?
-        // (a entrega ocorre em ambos os casos; isto mede quantos alertas
-        //  encontraram a equipe livre para atender de imediato)
-        if (available) alertsReceivedAvailable++;
-        else           alertsReceivedBusy++;
-
-        // Calcula distância e tempo de deslocamento até a vítima
-        auto *mob = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
-        Coord myPos = mob->getCurrentPosition();
-        double dx       = chunk->getPosX() - myPos.x;
-        double dy       = chunk->getPosY() - myPos.y;
-        double distance = std::sqrt(dx*dx + dy*dy);
-        double travelTime   = distance / teamSpeed;
-        double busyDuration = travelTime + serviceTime;
+        alertsReceivedAvailable++;
 
         EV_INFO << "[TEAM " << myTeamId << "] *** ALERTA de " << chunk->getDroneId()
                 << " msgId=" << msgId
                 << " vitima em (" << chunk->getPosX() << "," << chunk->getPosY()
-                << ") dist=" << distance << "m"
-                << " travel=" << travelTime << "s"
-                << " busy=" << busyDuration << "s"
-                << " delay=" << (simTime() - chunk->getSentAt()) << "s\n";
-
-        // Limite do modelo: alertas recebidos enquanto ocupada são contabilizados
-        // (alertsReceivedBusy) mas não enfileirados — a equipe não despacha um
-        // segundo resgate nem estende o timer. Este modelo mede ENTREGA DE
-        // INFORMAÇÃO (a equipe recebeu o alerta?), não sucesso de resgate
-        // (a equipe atendeu a vítima?). Documentado em scenario_reference.md §8.
-        if (available) {
-            available = false;
-            scheduleAt(simTime() + busyDuration, attendTimer);
-            EV_INFO << "[TEAM " << myTeamId << "] → OCUPADA por " << busyDuration
-                    << "s (retorna livre em t=" << (simTime() + busyDuration) << "s)\n";
-        } else {
-            EV_INFO << "[TEAM " << myTeamId << "] → já OCUPADA, alerta registrado\n";
-        }
+                << ") delay=" << delay << "s\n";
 
         // Passo 12: envia VictimAck para o drone ORIGEM do alerta (via originIp)
         std::string originIp = chunk->getOriginIp();
@@ -218,14 +183,12 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
 SimpleTeamApp::~SimpleTeamApp()
 {
     cancelAndDelete(sendTimer);
-    cancelAndDelete(attendTimer);
 }
 
 void SimpleTeamApp::finish()
 {
     recordScalar("alertsReceived",          alertsReceived);
     recordScalar("alertsReceivedAvailable", alertsReceivedAvailable);
-    recordScalar("alertsReceivedBusy",      alertsReceivedBusy);
     recordScalar("teamUpdatesSent",         teamUpdatesSent);
     recordScalar("droneStatusReceived",     droneStatusReceived);
     // Soma bruta dos atrasos de entrega (1 via) — permite média global ponderada

@@ -26,24 +26,20 @@ class SimpleTeamApp : public inet::ApplicationBase,
 
     // ── Estado ───────────────────────────────────────────────────────────────
     omnetpp::cMessage *sendTimer   = nullptr;
-    omnetpp::cMessage *attendTimer = nullptr;   // dispara quando atendimento encerra
     std::string myTeamId;
     std::string myIp;
     double sendInterval  = 5.0;
-    double beaconJitter  = 5.0;   // s — offset inicial; deve ser > 0 (ver NED)
-    double teamSpeed     = 7.0;
-    double serviceTime   = 120.0;
-    bool   available    = true;   // false enquanto equipe está atendendo
+    double beaconJitter  = 5.0;
 
     std::set<std::string> seenAlerts;  // deduplicação de VictimAlerts recebidos
 
     // ── Contadores de métricas ────────────────────────────────────────────
-    int alertsReceived          = 0;  // VictimAlerts únicos recebidos (pós-dedup)
-    int alertsReceivedAvailable = 0;  // recebidos com a equipe DISPONÍVEL
-    int alertsReceivedBusy      = 0;  // recebidos com a equipe OCUPADA
-    int teamUpdatesSent         = 0;  // TeamUpdate broadcasts enviados
-    int droneStatusReceived     = 0;  // DroneStatus recebidos
-    omnetpp::simtime_t totalDeliveryDelay = 0;  // soma dos atrasos de entrega (1 via)
+    int alertsReceived          = 0;
+    int alertsReceivedAvailable = 0;
+    int teamUpdatesSent         = 0;
+    int droneStatusReceived     = 0;
+    omnetpp::simtime_t totalDeliveryDelay = 0;
+    omnetpp::cOutVector deliveryDelayVec;
 
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
     virtual ~SimpleTeamApp();

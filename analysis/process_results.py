@@ -98,9 +98,8 @@ def compute_run_metrics(df):
         # Atraso de entrega (1 via): soma bruta no lado da equipe / nº recebidos.
         # Média global PONDERADA do run (não média de médias por módulo).
         delivDelay = s('totalDeliveryDelay')
-        # Alertas que chegaram a equipe DISPONÍVEL vs OCUPADA
+        # Alertas que chegaram a equipe DISPONÍVEL
         availRecv = s('alertsReceivedAvailable')
-        busyRecv  = s('alertsReceivedBusy')
 
         rows.append({
             'config': config,
@@ -157,15 +156,12 @@ def aggregate_metrics(run_df):
 #
 # Tudo mais é análise complementar, base de herança, regressão ou stale.
 PLOT_EXCLUDE = {
-    # ── configs base (não executar diretamente) ──
     'BasicTest',
-    # ── análise complementar (executar após resultados principais) ──
+    'BasicTest_Piloto',
+    'BasicTest_1500m',
     'Cenario_Favoravel',
     'Cenario_Intermediario',
     'Cenario_Degradado',
-    # ── stale: parâmetros antigos (2 km, 2,9 mW, 30 drones) ──
-    'BasicTest_1500m',
-    # ── testes / não adotados ──
     'SmokeTest_Beacons',
     'BasicTest_Visual',
     'BasicTest_TeamCal',
@@ -177,11 +173,10 @@ PLOT_EXCLUDE = {
 METRICS = [
     # m5_appack: métrica primária — alertsAcked/alertsGenerated, bounded 0–100%
     ('m5_appack',   'Taxa de Confirmação\nde Alertas (AppACK)',   '%',               True),
-    ('m2_e2e',      'Atraso de Entrega\naté a Equipe',            's',               False),
-    ('m3_retries',  'Retransmissões\npor Alerta Confirmado',      'tentativas',      False),
-    ('m4_overhead', 'Overhead de Alerta\npor Confirmação',        'msgs / confirm.', False),
-    # m1_pdr: soma de alertsReceived (todas as equipes) / gerados — pode exceder 100%
-    ('m1_pdr',      'Recepções por Equipes\n(soma; pode >100%)', '%',               False),
+    ('m2_e2e',      'Delay\n(drone → equipe)',                    's',               False),
+    ('m3_retries',  'Retransmissões\npor Alerta',                  'tentativas',      False),
+    ('m4_overhead', 'Overhead de Alerta\n(msgs / alerta)',         'msgs / alerta',   False),
+    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',         '%',               True),
     ('m6_availrate','Alertas Recebidos com\nEquipe Disponível',   '%',               True),
 ]
 
@@ -215,7 +210,7 @@ def _plot_single(agg_df, col, title, ylabel, is_pct):
     ax.spines['right'].set_visible(False)
 
     if is_pct:
-        ax.set_ylim(0, 110)
+        ax.set_ylim(0, 100)
         ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
 
     for bar, mean, std in zip(bars, means, stds):
@@ -245,7 +240,7 @@ def print_summary(agg_df):
         n = int(row['n_runs'])
         print(f"\n  [{config}]  n={n} seeds")
         print(f"    PDR (%)                {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
-        print(f"    Atraso entrega 1via(s) {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
+        print(f"    Delay (s)              {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
         print(f"    Retries/confirmado     {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
         print(f"    Overhead               {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
         print(f"    AppACK (%)             {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")

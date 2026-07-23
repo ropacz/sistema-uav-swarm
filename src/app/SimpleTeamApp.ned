@@ -15,8 +15,6 @@ simple SimpleTeamApp like IApp
         // O jitter distribui as transmissões iniciais no tempo e evita essa
         // regressão. Valor zero é rejeitado em initialize(). Mantenha = sendInterval.
         double beaconJitter @unit(s)  = default(this.sendInterval);
-        double teamSpeed @unit(mps)   = default(7mps);
-        double serviceTime @unit(s)   = default(120s);
         @display("i=block/user,green,50");
     gates:
         input socketIn @labels(UdpControlInfo/up);

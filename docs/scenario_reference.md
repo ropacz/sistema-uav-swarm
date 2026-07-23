@@ -83,3 +83,28 @@ Devem ser tratados como **premissas experimentais calibradas**: número exato de
 Priorize testar: número de UAVs, número de equipes, alcance/potência de transmissão, densidade de obstáculos, intervalo de vítimas, beacon interval, timeout de equipe, timeout de ACK, número máximo de retransmissões, velocidade dos UAVs, velocidade dos barcos, altitude e tamanho das mensagens.
 
 Esses parâmetros afetam diretamente conectividade, congestionamento, atraso, PDR e tempo de confirmação.
+
+## 6. Hipótese de pesquisa
+
+Um mecanismo adaptativo que monitora continuamente métricas de qualidade da
+comunicação (ex.: RSSI, PDR local, perda de vizinhos na `teamTable`/tabela de
+roteamento) e reposiciona UAVs de forma cooperativa pode restaurar ou preservar
+a conectividade entre drones e equipes de resgate em cenários com obstáculos,
+melhorando o desempenho da rede **sem depender de sensores dedicados** para
+detectar esses obstáculos.
+
+Implicações para o desenho experimental:
+
+- O mecanismo reage a **efeito** (degradação observada nas métricas de
+  comunicação), não a **causa** (posição/geometria do obstáculo) — não exige
+  mapeamento prévio do ambiente nem sensoriamento de obstáculo dedicado.
+- Cenário `Cenario_ComObstaculos` (§4, coluna "Obstáculos": moderados/muitos)
+  é o ambiente natural para testar a hipótese; `Cenario_SemObstaculos` serve de
+  controle (mecanismo não deve prejudicar desempenho quando não há degradação
+  a corrigir).
+- Métrica de sucesso: comparação do PDR/AppACK/atraso (§3) entre
+  `Cenario_ComObstaculos` com e sem o mecanismo adaptativo ativo — ganho
+  esperado no primeiro sem regressão no cenário sem obstáculos.
+- Reposicionamento cooperativo implica troca de informação entre drones
+  (ex.: piggyback de RSSI/qualidade de enlace no `DroneStatus` ou mensagem
+  dedicada) — a decidir na implementação.

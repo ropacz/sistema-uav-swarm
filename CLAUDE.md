@@ -127,27 +127,24 @@ t=5s, 10s, 15s …  [passos 2–5]
 
 t=Exp(40s) por drone  [passos 7–12]
   SimpleDroneApp detecta vítima → msgId = droneId_N → insere em seenAlerts
-    ├─ teamTable não vazia → VictimAlert uni:5000 para TODAS as equipes conhecidas
-    │    (independente de available; a que estiver no alcance recebe e confirma)
-    └─ teamTable vazia → VictimAlert bcast:5004 → drones vizinhos (relay)
+    ├─ teamTable não vazia → forwardAlertOnce() seleciona UMA equipe
+    │    (disponível + mais próxima; senão qualquer + mais próxima) →
+    │    VictimAlert uni:5000 só pra ela
+    └─ nenhuma equipe elegível → VictimAlert bcast:5004 → drones vizinhos (relay)
          └─ drone relay: verifica seenAlerts (dedup), repassa com a mesma lógica
-  SimpleTeamApp  → dedup em seenAlerts → *** ALERTA *** → calcula busyDuration → available=false
-                 → VictimAck uni:5002 → drone origem
-  SimpleDroneApp (origem) recebe 1º VictimAck → remove de pendingAlerts
-    (ACKs subsequentes de outras equipes são ignorados — pendingAlerts já vazio para esse msgId)
+  SimpleTeamApp → dedup em seenAlerts → *** ALERTA *** → VictimAck uni:5002 → drone origem
+  SimpleDroneApp (origem) recebe VictimAck → remove de pendingAlerts
 
 Timeout: drone remove equipe da teamTable após 30s sem TeamUpdate  [passo 13]
-Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
+Store-forward: retry a cada retryInterval=10s, até maxRetries=5 — cada retry exclui
+as equipes já tentadas (`PendingAlert::triedTeams`) para tentar outra  [passo 15]
 ```
 
-> **Nota de correção (histórico):** `forwardAlertOnce()` originalmente selecionava uma única
-> equipe por ordem de prioridade (disponível → qualquer → relay). Quando todas as equipes
-> ficavam ocupadas, o alerta caía no relay broadcast — porta que nenhuma equipe escuta — e
-> expirava. PDR saltou de ~3% para ~30% ao adicionar o fallback "qualquer equipe". Depois,
-> a seleção foi trocada para "todas as equipes da tabela" (independente de disponibilidade),
-> eliminando a dependência da ordem lexicográfica do map. Em rede esparsa (300 m de alcance
-> em 4 km²), apenas ~1 equipe está tipicamente ao alcance por drone — o efeito prático é
-> equivalente, mas a lógica é mais correta. Detalhes em `docs/scenario_reference.md` §8.1.
+> **Nota:** `forwardAlertOnce()` seleciona UMA equipe por chamada (não broadcast pra
+> todas). `SimpleTeamApp` não modela mais ocupação (`available` é sempre `true` no
+> `TeamUpdate`) — a preferência "disponível" na seleção do drone é hoje um no-op;
+> a escolha reduz efetivamente a "mais próxima entre as não excluídas". Métrica
+> `alertsReceivedAvailable`/`m6_availrate` fica sempre ~100% enquanto isso não mudar.
 
 ### SimpleDroneApp — estado interno relevante
 
@@ -166,31 +163,17 @@ Store-forward: retry a cada retryInterval=10s, até maxRetries=5  [passo 15]
 
 - Descobre próprio IP via `L3AddressResolver` → `IInterfaceTable` no `initialize()`
 - `seenAlerts: set<string>` — deduplicação de VictimAlerts recebidos via relay
-- `available: bool` — false enquanto atende vítima; `attendTimer` restaura para true após
-  `busyDuration = distância/teamSpeed + serviceTime` (parâmetros `teamSpeed`, `serviceTime` no NED)
 - Sockets: `sendSocket` (broadcast), `statusSocket` (bind 5003), `alertSocket` (bind 5000), `ackTxSocket` (sem bind)
-- Contadores de métrica: `alertsReceived`, `alertsReceivedAvailable`/`alertsReceivedBusy` (alerta chegou
-  com equipe livre vs ocupada), `teamUpdatesSent`, `droneStatusReceived`, `totalDeliveryDelay`/`meanDeliveryDelay`
+- Contadores de métrica: `alertsReceived`, `alertsReceivedAvailable`, `teamUpdatesSent`,
+  `droneStatusReceived`, `totalDeliveryDelay`/`meanDeliveryDelay`
   (atraso de entrega **1-via**, drone→equipe — esta é a métrica de "atraso fim-a-fim" reportada)
 
-### Parâmetros-chave do BasicTest
+### Parâmetros-chave
 
-| Parâmetro | Valor | Fonte |
-|-----------|-------|-------|
-| Área | 2000 × 2000 m | cenário SAR realista (k̄≈2,0 para r=300 m em 4 km²) |
-| numDrones / numTeams | 30 / 10 | k̄≈2,0 para r=300 m em 4 km² — [bettstetter2002minimum] |
-| Altitude drones | **100 m constante** | [garg2022directed] |
-| Velocidade drones | uniform(8, 15) m/s | cenário SAR urbano |
-| Velocidade embarcações | uniform(1.5, 3.0) m/s | embarcações de resgate em área alagada |
-| Potência (todos) | 2,9 mW → ~300 m @ 2,4 GHz (IEEE 802.11n/s) | [panda2019design] |
-| MAC buffer | 50 pacotes | [SCI-2019] |
-| victimInterval | 40 s (exponencial) | cenário moderado |
-| maxRetries / retryInterval | 5 / 10 s (janela 50 s) | validado empiricamente — aumentar piora o PDR (congestiona MAC) |
-| serviceTime / teamSpeed | 120 s / 2.25 m/s | ponto médio da faixa de embarcação |
-| sim-time-limit | 300 s | [FEA-2024] |
-
-Rastreabilidade completa em `docs/params_reference.md`.  
-Referência consolidada do cenário (topologia, métricas, histórico de correções) em `docs/scenario_reference.md`.
+Fonte de verdade única: `simulations/omnetpp.ini` (config `BasicTest`). Não duplicar
+valores numéricos aqui — a tabela ficava obsoleta a cada ajuste de cenário sem que
+este arquivo fosse atualizado junto. Parâmetros recomendados pela literatura, config
+final e hipótese de pesquisa: `docs/scenario_reference.md`.
 
 ### Visualização (`mediumVisualizer`)
 
@@ -222,7 +205,7 @@ Calcula **6 métricas** por config (média ± desvio entre seeds):
 
 PDR e AppACK são distintos: PDR mede chegada ao destino, AppACK mede ciclo completo. **Com AODV
 os dois praticamente coincidem** (gap < 0,5 p.p.), pois o `VictimAck` volta multi-hop — antes o
-gap era ~2 p.p. por ACK single-hop. Ver `docs/scenario_reference.md` §10/§13 para fórmulas e análise.  
+gap era ~2 p.p. por ACK single-hop.  
 As configs `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR` ainda não estão no `.ini`.
 
 ## Namespaces
