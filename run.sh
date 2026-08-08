@@ -6,7 +6,7 @@
 #   ./run.sh -r 2                  → seed específico
 #   ./run.sh -c Cenario_ComObstaculos → config diferente
 #   ./run.sh --gui                 → Qtenv (janela gráfica)
-#   ./run.sh --info                → log INFO (verboso; padrão é WARN)
+#   ./run.sh --info                → log INFO (verboso; desliga express-mode p/ aparecer)
 #   ./run.sh --build               → compila antes de rodar
 #
 # Todos os seeds rodam em UMA invocação do OMNeT++ (sem loop externo).
@@ -20,12 +20,13 @@ CONFIG=BasicTest_Piloto
 RUN=""        # vazio = todos os seeds definidos por repeat= no ini
 UI=Cmdenv
 LOG_LEVEL=WARN
+EXPRESS=true
 BUILD=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gui)    UI=Qtenv ;;
-        --info)   LOG_LEVEL=INFO ;;
+        --info)   LOG_LEVEL=INFO; EXPRESS=false ;;
         --build)  BUILD=true ;;
         -c)       CONFIG="$2"; shift ;;
         -r)       RUN="$2";   shift ;;
@@ -54,7 +55,7 @@ if [[ "$UI" == "Qtenv" ]]; then
 else
     opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated \
         -c "cd simulations && ./run -u Cmdenv -c $CONFIG $RUN_ARG \
-            --cmdenv-express-mode=true \
+            --cmdenv-express-mode=$EXPRESS \
             --cmdenv-log-level=$LOG_LEVEL \
             --cmdenv-status-frequency=30s"
 fi

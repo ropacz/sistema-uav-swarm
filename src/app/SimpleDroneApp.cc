@@ -19,7 +19,7 @@ void SimpleDroneApp::initialize(int stage)
     ApplicationBase::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
         myDroneId     = par("myDroneId").stdstringValue();
-        victimInterval = par("victimInterval");
+        alertInterval  = par("alertInterval");
         teamTimeout    = par("teamTimeout");
         retryInterval  = par("retryInterval");
         maxRetries     = par("maxRetries");
@@ -78,11 +78,11 @@ void SimpleDroneApp::initialize(int stage)
         ackRxSocket.setCallback(this);
         ackRxSocket.bind(ACK_PORT);
 
-        detectTimer  = new cMessage("detect");
+        alertTimer   = new cMessage("alert");
         timeoutTimer = new cMessage("timeout");
         retryTimer   = new cMessage("retry");
 
-        scheduleAt(simTime() + exponential(victimInterval), detectTimer);
+        scheduleAt(simTime() + exponential(alertInterval), alertTimer);
         scheduleAt(simTime() + teamTimeout,                 timeoutTimer);
         scheduleAt(simTime() + retryInterval,               retryTimer);
     }
@@ -91,9 +91,9 @@ void SimpleDroneApp::initialize(int stage)
 void SimpleDroneApp::handleMessageWhenUp(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        if (msg == detectTimer) {
-            detectVictim();
-            scheduleAt(simTime() + exponential(victimInterval), detectTimer);
+        if (msg == alertTimer) {
+            generateAlert();
+            scheduleAt(simTime() + exponential(alertInterval), alertTimer);
         } else if (msg == timeoutTimer) {
             checkTimeouts();
             scheduleAt(simTime() + teamTimeout, timeoutTimer);
@@ -141,11 +141,10 @@ void SimpleDroneApp::handleTeamUpdate(Packet *pkt)
     e.ip        = chunk->getIpAddress();
     e.posX      = chunk->getPosX();
     e.posY      = chunk->getPosY();
-    e.available = chunk->getAvailable();
     e.lastSeen  = simTime();
 
     EV_INFO << "[DRONE " << myDroneId << "] tabela: " << chunk->getTeamId()
-            << " ip=" << e.ip << " disponivel=" << e.available << "\n";
+            << " ip=" << e.ip << "\n";
 
     // Passo 5: envia DroneStatus (ACK) unicast para a equipe
     auto *mob = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
@@ -164,14 +163,14 @@ void SimpleDroneApp::handleTeamUpdate(Packet *pkt)
     delete pkt;
 }
 
-// ── Passo 7: drone detecta vítima e inicia o fluxo de alerta ─────────────────
+// ── Passo 7: drone gera alerta sintético e inicia o fluxo de notificação ─────
 
-void SimpleDroneApp::detectVictim()
+void SimpleDroneApp::generateAlert()
 {
     auto *mob = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord pos = mob->getCurrentPosition();
 
-    std::string msgId = myDroneId + "_" + std::to_string(++victimCounter);
+    std::string msgId = myDroneId + "_" + std::to_string(++alertCounter);
     seenAlerts.insert(msgId);
 
     EV_INFO << "[DRONE " << myDroneId << "] alerta sintético gerado → " << msgId << "\n";
@@ -192,8 +191,8 @@ void SimpleDroneApp::detectVictim()
     alertsGenerated++;
 }
 
-// ── Passos 10/11/9: seleciona UMA equipe (disponível mais próxima → qualquer
-//    mais próxima → relay broadcast). Retorna o teamId escolhido ou "".
+// ── Passos 10/11/9: seleciona UMA equipe (mais próxima → relay broadcast).
+//    Retorna o teamId escolhido ou "".
 //
 // Política de seleção única evita fan-out de múltiplos unicasts simultâneos,
 // que saturariam o MAC e disparariam múltiplas descobertas de rota no AODV.
@@ -215,21 +214,17 @@ std::string SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
     chunk->setPosY(posY);
     chunk->setSentAt(sentAt);
 
-    // Seleciona a melhor equipe: disponível + mais próxima; senão qualquer + mais próxima.
+    // Seleciona a equipe conhecida mais próxima (entre as não excluídas).
     // Usa distância ao quadrado para evitar sqrt (mesma ordenação, sem dependência extra).
     const TeamEntry *best  = nullptr;
     std::string      bestId;
     double           bestDist2 = 1e30;
-    bool             bestAvail = false;
 
     for (auto& [id, e] : teamTable) {
         if (e.ip.empty() || exclude.count(id)) continue;
         double dx = e.posX - posX, dy = e.posY - posY;
         double d2 = dx*dx + dy*dy;
-        bool win = !best
-                || (e.available && !bestAvail)
-                || (e.available == bestAvail && d2 < bestDist2);
-        if (win) { best = &e; bestId = id; bestDist2 = d2; bestAvail = e.available; }
+        if (!best || d2 < bestDist2) { best = &e; bestId = id; bestDist2 = d2; }
     }
 
     if (best) {
@@ -237,8 +232,7 @@ std::string SimpleDroneApp::forwardAlertOnce(const std::string &msgId,
         alertSocket.sendTo(new Packet("VictimAlert", chunk),
                            Ipv4Address(best->ip.c_str()), ALERT_PORT);
         EV_INFO << "[DRONE " << myDroneId << "] VictimAlert " << msgId
-                << " → " << bestId << " (" << best->ip
-                << ") avail=" << bestAvail << "\n";
+                << " → " << bestId << " (" << best->ip << ")\n";
         return bestId;
     }
 
@@ -357,7 +351,7 @@ void SimpleDroneApp::checkTimeouts()
 
 SimpleDroneApp::~SimpleDroneApp()
 {
-    cancelAndDelete(detectTimer);
+    cancelAndDelete(alertTimer);
     cancelAndDelete(timeoutTimer);
     cancelAndDelete(retryTimer);
 }

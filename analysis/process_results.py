@@ -91,15 +91,13 @@ def compute_run_metrics(df):
         retries   = s('totalRetries')
         # alertsSentDirect/alertsSentRelay já contam toda transmissão de
         # VictimAlert (originada OU relayed) — forwardAlertOnce() incrementa
-        # um dos dois em toda chamada, seja por detectVictim() ou por
+        # um dos dois em toda chamada, seja por generateAlert() ou por
         # handleVictimAlertRelay(). Não somar alertsRelayed aqui (duplicaria).
         sent      = s('alertsSentDirect') + s('alertsSentRelay')
         received  = s('alertsReceived')
         # Atraso de entrega (1 via): soma bruta no lado da equipe / nº recebidos.
         # Média global PONDERADA do run (não média de médias por módulo).
         delivDelay = s('totalDeliveryDelay')
-        # Alertas que chegaram a equipe DISPONÍVEL
-        availRecv = s('alertsReceivedAvailable')
 
         rows.append({
             'config': config,
@@ -116,26 +114,21 @@ def compute_run_metrics(df):
             # m5: taxa de sucesso do ciclo completo (drone recebeu VictimAck de volta)
             # Era a definição anterior de PDR; renomeado para distinguir dos dois sentidos
             'm5_appack':    (acked / generated * 100) if generated else 0.0,
-            # m6: dos alertas entregues, fração que encontrou equipe DISPONÍVEL
-            'm6_availrate': (availRecv / received * 100) if received else 0.0,
             'alertsGenerated': generated,
             'alertsAcked':     acked,
             'alertsExpired':   expired,
             'totalRetries':    retries,
             'alertsSent':      sent,
             'alertsReceived':  received,
-            'availRecv':       availRecv,
-            'busyRecv':        busyRecv,
         })
     return pd.DataFrame(rows)
 
 
 # ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
 
-METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack', 'm6_availrate']
+METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack']
 COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
-               'totalRetries', 'alertsSent', 'alertsReceived',
-               'availRecv', 'busyRecv']
+               'totalRetries', 'alertsSent', 'alertsReceived']
 
 
 def aggregate_metrics(run_df):
@@ -177,7 +170,6 @@ METRICS = [
     ('m3_retries',  'Retransmissões\npor Alerta',                  'tentativas',      False),
     ('m4_overhead', 'Overhead de Alerta\n(msgs / alerta)',         'msgs / alerta',   False),
     ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',         '%',               True),
-    ('m6_availrate','Alertas Recebidos com\nEquipe Disponível',   '%',               True),
 ]
 
 
@@ -187,7 +179,6 @@ METRIC_SLUGS = {
     'm3_retries':  'retransmissoes',
     'm4_overhead': 'overhead',
     'm1_pdr':      'pdr',
-    'm6_availrate':'disponibilidade',
 }
 
 
@@ -244,12 +235,9 @@ def print_summary(agg_df):
         print(f"    Retries/confirmado     {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
         print(f"    Overhead               {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
         print(f"    AppACK (%)             {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
-        print(f"    Alerta→disponível (%)  {row['m6_availrate_mean']:.3f} ± {row['m6_availrate_std']:.3f}")
         print(f"    Gerados (total)    {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
         print(f"    Confirmados        {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
         print(f"    Expirados          {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
-        print(f"    →equipe disponível {row['availRecv_mean']:.1f} ± {row['availRecv_std']:.1f}  "
-              f"→ocupada {row['busyRecv_mean']:.1f} ± {row['busyRecv_std']:.1f}")
     print("\n╚═══════════════════════════════════════════════════════════════════╝\n")
 
 

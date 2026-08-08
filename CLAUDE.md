@@ -57,9 +57,9 @@ O flag `-I.` é crítico: coloca `src/` no include path para que `#include "mess
 ## Run Commands
 
 ```bash
-./run.sh              # Cmdenv, log INFO, BasicTest run 0
+./run.sh              # Cmdenv, log WARN (padrão, rápido), BasicTest_Piloto, todos os seeds
 ./run.sh --gui        # Qtenv (janela gráfica)
-./run.sh --warn       # log WARN (mais rápido)
+./run.sh --info       # log INFO + desliga express-mode (só assim EV_INFO aparece)
 ./run.sh --build      # compila antes de rodar
 ./run.sh -c OutraConf # config diferente
 ./run.sh -r 2         # seed/run 2
@@ -67,6 +67,9 @@ O flag `-I.` é crítico: coloca `src/` no include path para que `#include "mess
 
 O script `simulations/run` invoca `../src/sistema_dbg` (binário debug com INET linkado).  
 Usar sempre esse script em vez de `opp_run` — `opp_run` não tem INET linkado e falha.
+
+⚠️ `--cmdenv-express-mode` é `true` por padrão (necessário pra rodar rápido) e suprime todo
+`EV_INFO`/`EV_WARN` independente do `--cmdenv-log-level` — só `--info` desliga o express-mode.
 
 ## Architecture
 
@@ -107,9 +110,9 @@ aplicação (`RELAY_PORT`) permanece como mecanismo de DESCOBERTA de equipe para
 
 | Arquivo           | Chunk              | Campos                                          | Tamanho |
 |-------------------|--------------------|-------------------------------------------------|---------|
-| `TeamUpdate.msg`  | `TeamUpdateChunk`  | teamId, ipAddress, posX, posY, available        | 512 B   |
-| `DroneStatus.msg` | `DroneStatusChunk` | droneId, posX/Y/Z, sentAt                      | 512 B   |
-| `VictimAlert.msg` | `VictimAlertChunk` | droneId, msgId, **originIp**, posX, posY, sentAt | 1024 B  |
+| `TeamUpdate.msg`  | `TeamUpdateChunk`  | teamId, ipAddress, posX, posY                   | 128 B   |
+| `DroneStatus.msg` | `DroneStatusChunk` | droneId, posX/Y/Z, sentAt                      | 128 B   |
+| `VictimAlert.msg` | `VictimAlertChunk` | droneId, msgId, **originIp**, posX, posY, sentAt | 256 B   |
 | `VictimAck.msg`   | `VictimAckChunk`   | msgId, teamId, sentAt                           | 64 B    |
 
 > `posX`/`posY` são coordenadas **cartesianas** do playground (m), não geográficas — antes
@@ -125,8 +128,8 @@ t=5s, 10s, 15s …  [passos 2–5]
   SimpleTeamApp[0..4] ──[TeamUpdate bcast:5001]──▶ SimpleDroneApp[0..14]
   SimpleDroneApp      ──[DroneStatus uni:5003]───▶ SimpleTeamApp
 
-t=Exp(40s) por drone  [passos 7–12]
-  SimpleDroneApp detecta vítima → msgId = droneId_N → insere em seenAlerts
+t=Exp(alertInterval) por drone  [passos 7–12]
+  SimpleDroneApp gera alerta sintético → msgId = droneId_N → insere em seenAlerts
     ├─ teamTable não vazia → forwardAlertOnce() seleciona UMA equipe
     │    (disponível + mais próxima; senão qualquer + mais próxima) →
     │    VictimAlert uni:5000 só pra ela
@@ -141,18 +144,18 @@ as equipes já tentadas (`PendingAlert::triedTeams`) para tentar outra  [passo 1
 ```
 
 > **Nota:** `forwardAlertOnce()` seleciona UMA equipe por chamada (não broadcast pra
-> todas). `SimpleTeamApp` não modela mais ocupação (`available` é sempre `true` no
-> `TeamUpdate`) — a preferência "disponível" na seleção do drone é hoje um no-op;
-> a escolha reduz efetivamente a "mais próxima entre as não excluídas". Métrica
-> `alertsReceivedAvailable`/`m6_availrate` fica sempre ~100% enquanto isso não mudar.
+> todas) — a mais próxima entre as equipes conhecidas não excluídas. O modelo de
+> ocupação de equipe (`available`/`alertsReceivedAvailable`/métrica m6) foi
+> removido do código: era um no-op desde que `SimpleTeamApp` parou de modelar
+> ocupação (commit `d627c0f`).
 
 ### SimpleDroneApp — estado interno relevante
 
-- `teamTable: map<string, TeamEntry>` — ip, posX, posY, available, lastSeen por equipe
+- `teamTable: map<string, TeamEntry>` — ip, posX, posY, lastSeen por equipe
 - `seenAlerts: set<string>` — msgIds já vistos (deduplicação de relay)
 - `pendingAlerts: vector<PendingAlert>` — alertas pendentes de confirmação (store-forward)
-- `victimCounter` — gera msgId único (`droneId_N`)
-- Timers: `detectTimer` (Exp 40s), `timeoutTimer` (30s), `retryTimer` (10s)
+- `alertCounter` — gera msgId único (`droneId_N`)
+- Timers: `alertTimer` (Exp `alertInterval`), `timeoutTimer` (30s), `retryTimer` (10s)
 - Sockets: `teamSocket` (bind 5001), `ackSocket` (sem bind), `alertSocket` (sem bind),
   `relaySocket` (bind 5004), `fwdSocket` (sem bind), `ackRxSocket` (bind 5002)
 - Contadores de métrica: `alertsGenerated`, `alertsSentDirect`, `alertsSentRelay`, `alertsRelayed`,
@@ -164,7 +167,7 @@ as equipes já tentadas (`PendingAlert::triedTeams`) para tentar outra  [passo 1
 - Descobre próprio IP via `L3AddressResolver` → `IInterfaceTable` no `initialize()`
 - `seenAlerts: set<string>` — deduplicação de VictimAlerts recebidos via relay
 - Sockets: `sendSocket` (broadcast), `statusSocket` (bind 5003), `alertSocket` (bind 5000), `ackTxSocket` (sem bind)
-- Contadores de métrica: `alertsReceived`, `alertsReceivedAvailable`, `teamUpdatesSent`,
+- Contadores de métrica: `alertsReceived`, `teamUpdatesSent`,
   `droneStatusReceived`, `totalDeliveryDelay`/`meanDeliveryDelay`
   (atraso de entrega **1-via**, drone→equipe — esta é a métrica de "atraso fim-a-fim" reportada)
 
@@ -196,17 +199,21 @@ python3 analysis/process_results.py   # gera analysis/figures/metrics.{pdf,png}
 ```
 
 Parser próprio em regex (sem dependência de `omnetpp.scave`) lê os `.sca` em `simulations/results/`.  
-Calcula **6 métricas** por config (média ± desvio entre seeds):
+Calcula **5 métricas** por config (média ± desvio entre seeds):
 1. **PDR** canônico (`alertsReceived/alertsGenerated`) — chegada ao destino;
 2. **Atraso de entrega 1-via** (drone→equipe), ponderado (`Σ totalDeliveryDelay / Σ alertsReceived`);
 3. Retransmissões por confirmação; 4. Overhead de alerta;
-5. **AppACK** (`alertsAcked/alertsGenerated`) — ciclo completo confirmado;
-6. **Alertas a equipe DISPONÍVEL** (`alertsReceivedAvailable/alertsReceived`) — fração que chegou com equipe livre.
+5. **AppACK** (`alertsAcked/alertsGenerated`) — ciclo completo confirmado.
 
 PDR e AppACK são distintos: PDR mede chegada ao destino, AppACK mede ciclo completo. **Com AODV
 os dois praticamente coincidem** (gap < 0,5 p.p.), pois o `VictimAck` volta multi-hop — antes o
-gap era ~2 p.p. por ACK single-hop.  
-As configs `Baseline_FixedPower`, `Baseline_NoCooperation`, `ECHOSAR` ainda não estão no `.ini`.
+gap era ~2 p.p. por ACK single-hop.
+
+Configs disponíveis no `.ini`: `BasicTest` (900s, principal), `BasicTest_Piloto` (300s,
+validação), `Cenario_SemObstaculos`/`Cenario_ComObstaculos` (baseline vs. obstáculos físicos),
+`Cenario_Favoravel`, `Cenario_Intermediario`, `Cenario_Degradado`, `SmokeTest_Beacons`
+(regressão), `BasicTest_Visual` (Qtenv). Obstáculos físicos ficam fora do escopo atual de
+trabalho (foco é a comunicação FANET básica drone↔equipe).
 
 ## Namespaces
 

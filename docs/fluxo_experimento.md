@@ -6,12 +6,13 @@
 
 O ponto central a esclarecer: **o ALERTA parte do DRONE, não da equipe.**
 
-A equipe de resgate não sabe onde estão as vítimas. São os drones que sobrevoam
-a área e detectam vítimas. Ao detectar, o drone envia o alerta para a equipe.
-A equipe, ao receber, confirma com um ACK.
+A equipe de resgate não sabe onde estão as vítimas. Os drones que sobrevoam
+a área geram eventos sintéticos de alerta (não há detecção real nem sensor).
+Ao gerar, o drone envia o alerta para a equipe. A equipe, ao receber, confirma
+com um ACK.
 
 ```
-DRONE detecta vítima
+DRONE gera alerta sintético
     │
     │  VictimAlert (256 B)
     ▼
@@ -53,10 +54,10 @@ DRONE  ──[DroneStatus unicast, 128 B]──▶  EQUIPE
 
 ### 2.3 Detecção de vítima e alerta (drone → equipe)  ← **o "alerta"**
 
-Quando um drone detecta uma vítima (evento sintético com intervalo médio de
-40 s, distribuição exponencial), ele:
+Quando um drone gera um alerta sintético (intervalo médio configurável,
+distribuição exponencial — não há detecção real nem sensor), ele:
 
-1. Seleciona a equipe **disponível mais próxima** na sua tabela.
+1. Seleciona a equipe conhecida **mais próxima** na sua tabela.
 2. Envia o `VictimAlert` (256 B com coordenadas da vítima) via unicast AODV.
 
 ```
@@ -71,9 +72,8 @@ encaminhado em broadcast para drones vizinhos, que repassam com a mesma lógica
 
 Ao receber o `VictimAlert`, a equipe:
 
-1. Registra a ocorrência e calcula o tempo de deslocamento até a vítima.
-2. Marca-se como **ocupada** pelo período de deslocamento + atendimento.
-3. Envia o `VictimAck` (64 B) **de volta ao drone de origem** via AODV
+1. Registra a ocorrência (deduplicada por `msgId`).
+2. Envia o `VictimAck` (64 B) **de volta ao drone de origem** via AODV
    multi-hop (usando o `originIp` do alerta).
 
 ```

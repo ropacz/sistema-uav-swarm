@@ -101,7 +101,6 @@ void SimpleTeamApp::sendUpdate()
     chunk->setChunkLength(B(128));
     chunk->setTeamId(myTeamId.c_str());
     chunk->setIpAddress(myIp.c_str());
-    chunk->setAvailable(true);
     chunk->setPosX(pos.x);
     chunk->setPosY(pos.y);
 
@@ -152,8 +151,6 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
         totalDeliveryDelay += delay;
         deliveryDelayVec.record(delay.dbl());
 
-        alertsReceivedAvailable++;
-
         EV_INFO << "[TEAM " << myTeamId << "] *** ALERTA de " << chunk->getDroneId()
                 << " msgId=" << msgId
                 << " vitima em (" << chunk->getPosX() << "," << chunk->getPosY()
@@ -188,7 +185,6 @@ SimpleTeamApp::~SimpleTeamApp()
 void SimpleTeamApp::finish()
 {
     recordScalar("alertsReceived",          alertsReceived);
-    recordScalar("alertsReceivedAvailable", alertsReceivedAvailable);
     recordScalar("teamUpdatesSent",         teamUpdatesSent);
     recordScalar("droneStatusReceived",     droneStatusReceived);
     // Soma bruta dos atrasos de entrega (1 via) — permite média global ponderada

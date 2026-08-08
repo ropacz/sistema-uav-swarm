@@ -35,7 +35,6 @@ class SimpleTeamApp : public inet::ApplicationBase,
 
     // ── Contadores de métricas ────────────────────────────────────────────
     int alertsReceived          = 0;
-    int alertsReceivedAvailable = 0;
     int teamUpdatesSent         = 0;
     int droneStatusReceived     = 0;
     omnetpp::simtime_t totalDeliveryDelay = 0;

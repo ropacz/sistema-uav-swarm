@@ -32,7 +32,6 @@ METRICS = [
     ("m3_retries",  "Retransmissões\npor Alerta",              "Retransmissões",       False),
     ("m4_overhead", "Overhead de Alerta\n(msgs / alerta)",     "Overhead (msgs)",      False),
     ("m1_pdr",      "PDR\n(alertas recebidos / gerados)",      "PDR (%)",              True),
-    ("m6_availrate","Alertas Recebidos com\nEquipe Disponível","Alertas Disponível (%)",True),
 ]
 
 METRIC_SLUGS = {
@@ -41,7 +40,6 @@ METRIC_SLUGS = {
     "m3_retries":  "retransmissoes",
     "m4_overhead": "overhead",
     "m1_pdr":      "pdr",
-    "m6_availrate":"disponibilidade",
 }
 
 FIGURES_DIR = os.path.join(os.path.dirname(__file__), "figures")

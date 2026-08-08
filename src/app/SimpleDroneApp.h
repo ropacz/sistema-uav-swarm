@@ -19,7 +19,6 @@ namespace echosar {
 struct TeamEntry {
     std::string ip;
     double posX = 0, posY = 0;
-    bool available = false;
     omnetpp::simtime_t lastSeen;
 };
 
@@ -49,24 +48,24 @@ class SimpleDroneApp : public inet::ApplicationBase,
     std::string myDroneId;
     std::string myIp;
     std::map<std::string, TeamEntry> teamTable;
-    int victimCounter = 0;
+    int alertCounter = 0;
 
     std::set<std::string>    seenAlerts;    // deduplicação de msgIds recebidos
     std::vector<PendingAlert> pendingAlerts; // store-and-forward de alertas originados
 
     // ── Timers ───────────────────────────────────────────────────────────────
-    omnetpp::cMessage *detectTimer  = nullptr;
+    omnetpp::cMessage *alertTimer   = nullptr;
     omnetpp::cMessage *timeoutTimer = nullptr;
     omnetpp::cMessage *retryTimer   = nullptr;
 
     // ── Parâmetros NED ───────────────────────────────────────────────────────
-    double victimInterval = 20.0;
+    double alertInterval  = 20.0;
     double teamTimeout    = 30.0;
     double retryInterval  = 10.0;
     int    maxRetries     = 5;
 
     // ── Contadores de métricas ────────────────────────────────────────────
-    int alertsGenerated  = 0;  // vítimas detectadas → pendingAlerts criados
+    int alertsGenerated  = 0;  // alertas sintéticos gerados → pendingAlerts criados
     int alertsSentDirect = 0;  // VictimAlert unicast → equipe
     int alertsSentRelay  = 0;  // VictimAlert broadcast relay → drones
     int alertsRelayed    = 0;  // alertas de outro drone recebidos e repassados
@@ -98,9 +97,9 @@ class SimpleDroneApp : public inet::ApplicationBase,
     void handleVictimAck(inet::Packet *pkt);           // passo 12
 
     // ── Lógica de encaminhamento e retry ─────────────────────────────────────
-    void detectVictim();                                // passo 7
-    // Seleciona a melhor equipe (disponível mais próxima, senão qualquer mais próxima,
-    // senão relay broadcast). Retorna o teamId selecionado ou "" se foi relay.
+    void generateAlert();                               // passo 7
+    // Seleciona a equipe conhecida mais próxima; senão relay broadcast.
+    // Retorna o teamId selecionado ou "" se foi relay.
     // exclude: equipes já tentadas para este alerta — ignoradas na seleção.
     std::string forwardAlertOnce(const std::string &msgId,
                                  const std::string &droneId,
