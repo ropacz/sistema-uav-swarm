@@ -13,37 +13,40 @@ Dissertação de mestrado — PPGCAP/UDESC.
 
 ## Cenário BasicTest
 
-- **30 drones** com mobilidade GaussMarkov, altitude constante **100 m**, 8–15 m/s
-- **10 embarcações de resgate** com RandomWaypoint, Z = 1,5 m, 1,5–3,0 m/s
-- **Área**: 2000 × 2000 m — grau médio k̄ ≈ 2,05 (rede moderadamente esparsa)
-- **Tempo**: 300 s, 5 seeds (`repeat = 5`)
+- **20 drones** com mobilidade GaussMarkov, altitude **80–120 m**, 8–15 m/s
+- **5 embarcações de resgate** com RandomWaypoint, Z = 1,5 m, 1,5–3,0 m/s
+- **Área**: 5000 × 5000 m — grau médio k̄ ≈ 1,5 (rede esparsa)
+- **Tempo**: 900 s, 10 seeds (`repeat = 10`) — `BasicTest_Piloto` roda o mesmo cenário em 300 s
+  para validação rápida
 - **Roteamento**: AODV multi-hop (`AodvRouter`)
-- **Resultado**: PDR ≈ 86,8 % ± 6,9 % (AppACK, 5 seeds)
+- Não há vítima física nem sensor de detecção: os drones geram **alertas sintéticos**
+  (intervalo exponencial, parâmetro `alertInterval`) para avaliar a comunicação FANET.
 
 > Modelo mede **entrega de informação** (alerta chegou à equipe), não sucesso de resgate.
 
 ### Fluxos de mensagens
 
 ```
-equipe  ──[TeamUpdate  bcast 5001]──▶  drone          a cada 5 s (jitter inicial)
+equipe  ──[TeamUpdate  bcast 5001]──▶  drone          a cada sendInterval (jitter inicial)
 drone   ──[DroneStatus uni   5003]──▶  equipe          ACK com posição 3D
-drone   ──[VictimAlert uni   5000]──▶  equipe          ao detectar vítima (Exp 40 s)
-equipe  ──[VictimAck   uni   5002]──▶  drone origem    confirmação fim a fim (AODV)
-drone   ──[VictimAlert bcast 5004]──▶  drones viz.     relay quando sem equipe
+drone   ──[VictimAlert uni   5000]──▶  equipe          alerta sintético (Exp alertInterval)
+equipe  ──[VictimAck   uni   5002]──▶  drone origem    confirmação fim a fim (AODV multi-hop)
+drone   ──[VictimAlert bcast 5004]──▶  drones viz.     relay quando sem equipe conhecida
 ```
 
 ### Parâmetros de rádio
 
 | Parâmetro | Valor |
 |-----------|-------|
-| Potência (todos) | 2,9 mW |
-| Alcance nominal (FreeSpace) | ≈ 300 m |
-| Alcance horizontal drone–equipe (3D) | ≈ 283 m |
+| Potência drone | 20 mW |
+| Potência equipe | 50 mW |
+| Alcance efetivo (FreeSpace) drone–drone | ≈ 700–800 m |
+| Alcance efetivo (FreeSpace) equipe | ≈ 1200 m |
 | Sensibilidade | −85 dBm |
 | Frequência | 2,4 GHz |
 
-> Referências: [FEA-2024] journal-fea.com · [SCI-2019] Tropea et al. (Scitepress) · [OPP-MAN] omnet-manual.com  
-> Detalhes em [`docs/params_reference.md`](docs/params_reference.md)
+> Detalhes e justificativa dos parâmetros em [`docs/scenario_reference.md`](docs/scenario_reference.md)
+> e [`docs/tabela_parametros.md`](docs/tabela_parametros.md).
 
 ## Build & Run
 
@@ -63,7 +66,7 @@ opp_env run inet-4.5.4 -w /caminho/workspace --no-isolated \
 
 # Opções do run.sh
 ./run.sh --build      # compila antes de rodar
-./run.sh --warn       # log WARN (mais rápido)
+./run.sh --info       # log INFO (desliga express-mode; padrão é WARN)
 ./run.sh -c Config    # outra configuração
 ./run.sh -r 2         # seed diferente
 ```
@@ -78,15 +81,18 @@ src/
     ports.h                     # constantes de porta UDP
   messages/
     TeamUpdate.msg              # beacon da equipe
-    DroneStatus.msg             # ACK do drone
-    VictimAlert.msg             # alerta de vítima
+    DroneStatus.msg             # ACK de posição do drone
+    VictimAlert.msg             # alerta sintético do drone
+    VictimAck.msg               # confirmação da equipe
 simulations/
   BasicNetwork.ned              # topologia
   omnetpp.ini                   # configurações
 analysis/
-  process_results.py            # pós-processamento: PDR, latência, energia
+  process_results.py            # pós-processamento: PDR, atraso, retries, overhead, AppACK
 docs/
-  params_reference.md           # rastreabilidade de parâmetros ↔ literatura
+  scenario_reference.md         # parâmetros ↔ literatura, hipótese de pesquisa
+  tabela_parametros.md          # valores prontos para a tabela LaTeX da dissertação
+  fluxo_experimento.md          # esclarecimentos sobre o fluxo drone→equipe→ACK
 ```
 
 ## Busca no UserGuide
