@@ -12,6 +12,7 @@ src/messages/*_m.h
 
 # ── Figuras geradas pelo script de análise ────────────────────────────────────
 analysis/figures/
+analysis/parquet/
 
 # ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────
 .cproject
