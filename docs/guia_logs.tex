@@ -149,19 +149,44 @@ o alerta chega? Em quanto tempo? Quantas retransmissões precisou?
 Por padrão, a simulação roda em modo ``express'' (rápido, sem imprimir eventos)
 para não desperdiçar tempo de CPU. Para ver as mensagens de aplicação
 (\texttt{[DRONE]}, \texttt{[TEAM]}), é preciso pedir o nível \texttt{INFO}
-explicitamente:
+explicitamente. \texttt{run.sh} oferece duas flags para isso:
 
 \begin{lstlisting}[style=shellcmd]
-./run.sh --info -c SmokeTest_Beacons
+./run.sh --info   -c SmokeTest_Beacons   # TUDO: PHY/MAC/AODV/app, muito verboso
+./run.sh --msglog -c SmokeTest_Beacons   # só troca de mensagens (app), resto em WARN
 \end{lstlisting}
 
-\begin{explica}[O que a flag \texttt{--info} faz de verdade]
-O script \texttt{run.sh} passa duas flags ao motor de simulação: \texttt{--cmdenv-log-level}
-(qual severidade mostrar) e \texttt{--cmdenv-express-mode} (se os eventos são
-impressos ou não). \textbf{As duas precisam estar certas} --- só pedir
-\texttt{log-level=INFO} não basta se o express-mode estiver ligado, porque ele
-suprime a impressão de qualquer evento independente do nível. \texttt{--info}
-cuida das duas coisas.
+\begin{explica}[O que as flags fazem de verdade]
+O script \texttt{run.sh} passa duas flags ao motor de simulação:
+\texttt{--cmdenv-log-level} (qual severidade mostrar) e
+\texttt{--cmdenv-express-mode} (se os eventos são impressos ou não).
+\textbf{As duas precisam estar certas} --- só pedir \texttt{log-level=INFO}
+não basta se o express-mode estiver ligado, porque ele suprime a impressão
+de qualquer evento independente do nível. \texttt{--msglog} desliga o
+express-mode mas mantém o nível global em \texttt{WARN}, contando com um
+override específico do módulo de aplicação (\texttt{**.app[0].cmdenv-log-level
+= INFO} no \texttt{omnetpp.ini}) para mostrar só as mensagens
+\texttt{[DRONE]}/\texttt{[TEAM]} --- o resultado é $\sim$18\% do volume de
+linhas do \texttt{--info} puro, muito mais fácil de ler.
+\end{explica}
+
+\begin{explica}[Duas pegadinhas reais de \texttt{cmdenv-log-level} --- horas de debugging]
+\textbf{1. A flag crua vira teto global.} Passar
+\texttt{--cmdenv-log-level=WARN} na linha de comando (sem o prefixo
+\texttt{**.}) cria uma entrada de configuração especial que \textbf{ignora
+qualquer override por módulo no ini} --- mesmo com
+\texttt{**.app[0].cmdenv-log-level=INFO} certo no arquivo, o log fica
+vazio. É preciso usar \texttt{--**.cmdenv-log-level=WARN} (com o prefixo)
+para que a flag participe da resolução por especificidade normal, como
+qualquer parâmetro NED --- só assim o override mais específico
+(\texttt{app[0]}) consegue vencer o geral. \\[4pt]
+\textbf{2. O nível não herda de módulo composto para submódulos.} Definir
+\texttt{**.drone[16].cmdenv-log-level=INFO} \textbf{não} liga o log dos
+submódulos internos (\texttt{app[0]}, \texttt{aodv}, \texttt{wlan[0].mac},
+\texttt{wlan[0].radio}...) --- esses só logam em \texttt{EV\_INFO} dentro do
+próprio código deles, então o padrão precisa casar exatamente com o módulo
+que \emph{chama} a macro. Para pegar tudo dentro de um nó, é preciso um
+\texttt{**} no meio do padrão: \texttt{**.drone[16].**.cmdenv-log-level=INFO}.
 \end{explica}
 
 \newpage
@@ -299,6 +324,204 @@ novo nas métricas --- evita retransmitir o alerta inteiro por perda só do ACK.
 
 \newpage
 % ══════════════════════════════════════════════════════════════════════════
+\section{Log estruturado: de texto a tabela consultável}
+
+Ler milhares de linhas de log na tela não escala para estudar padrões (quantos
+alertas expiraram? qual a distribuição de retries?). O pipeline
+\texttt{analysis/parse\_message\_log.py} converte o log de
+\texttt{--msglog}/\texttt{--info} numa tabela em formato longo --- 1 linha
+por evento de troca de mensagem --- exportável para CSV ou Parquet e
+consultável via SQL.
+
+\subsection{Como o parser resolve o tempo}
+
+A linha de log da aplicação (\texttt{[INFO]\ [DRONE ...] ...}) \textbf{não
+carrega timestamp} --- o simtime só aparece no cabeçalho de evento do
+Cmdenv, que vem antes:
+
+\begin{lstlisting}[style=simlog]
+** Event #2511  t=14.715488171128  98% completed  (98% total)   BasicNetwork.team[1].app[0] (SimpleTeamApp, id=186)
+[INFO]	[TEAM team1] DroneStatus de drone[0] pos=(2500,2500,100) RTT=0.000204403078s
+\end{lstlisting}
+
+\begin{explica}[Por que isso funciona sem ambiguidade]
+O simulador é orientado a eventos discretos e \textbf{single-threaded} ---
+cada \texttt{** Event \#N} é processado até o fim antes do próximo começar.
+O parser varre o arquivo linha a linha, guarda o \texttt{t=} mais recente
+visto, e o aplica a toda linha \texttt{[INFO]}/\texttt{[WARN]} seguinte até
+o próximo cabeçalho de evento --- sem risco de misturar tempos de eventos
+diferentes.
+\end{explica}
+
+\subsection{16 tipos de evento reconhecidos}
+
+Cada linha \texttt{[DRONE ...]}/\texttt{[TEAM ...]} bate contra uma lista de
+expressões regulares (uma por formato de mensagem do código-fonte) e vira uma
+linha da tabela com colunas: \texttt{time}, \texttt{event}, \texttt{drone\_id},
+\texttt{team\_id}, \texttt{msg\_id}, \texttt{peer\_id}, \texttt{ip},
+\texttt{x}, \texttt{y}, \texttt{z}, \texttt{delay}, \texttt{retries},
+\texttt{max\_retries} --- nulas quando não se aplicam ao evento.
+
+\begin{center}
+\begin{tabular}{@{}llp{7.6cm}@{}}
+\toprule
+\textbf{Evento} & \textbf{Origem} & \textbf{Quando ocorre} \\
+\midrule
+\texttt{team\_table\_update}   & drone & atualiza entrada da \texttt{teamTable} ao receber \texttt{TeamUpdate} \\
+\texttt{alert\_generated}      & drone & alerta sintético criado \\
+\texttt{alert\_sent\_direct}   & drone & \texttt{VictimAlert} unicast a uma equipe conhecida \\
+\texttt{alert\_sent\_relay}    & drone & \texttt{VictimAlert} broadcast (sem equipe elegível) \\
+\texttt{alert\_dedup\_drone}   & drone & descarta relay já visto (\texttt{seenAlerts}) \\
+\texttt{alert\_relay\_received}& drone & recebeu relay de outro drone e vai repassar \\
+\texttt{ack\_received}         & drone & \texttt{VictimAck} recebido, remove de \texttt{pendingAlerts} \\
+\texttt{alert\_expired}        & drone & descartado após \texttt{maxRetries} sem ACK \\
+\texttt{retry}                 & drone & tentativa de store-forward \\
+\texttt{team\_timeout}         & drone & remove equipe inativa da \texttt{teamTable} \\
+\texttt{team\_update\_sent}    & equipe & beacon \texttt{TeamUpdate} enviado \\
+\texttt{drone\_status\_received}& equipe & \texttt{DroneStatus} recebido, RTT calculado \\
+\texttt{alert\_dedup\_team}    & equipe & reenvia ACK idempotente p/ alerta já visto \\
+\texttt{alert\_received}       & equipe & \texttt{*** ALERTA} --- entrega confirmada \\
+\texttt{ack\_sent}             & equipe & \texttt{VictimAck} enviado ao \texttt{originIp} \\
+\texttt{unexpected\_packet}    & equipe & pacote não reconhecido no socket \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Do log ao Parquet consultável}
+
+\begin{lstlisting}[style=shellcmd]
+# roda a sim com --msglog, parseia e converte para parquet numa chamada
+analysis/export_messages_parquet.sh BasicTest_Piloto 0
+
+# ou manualmente:
+./run.sh --msglog -c BasicTest_Piloto -r 0 > /tmp/run.log
+python3 analysis/parse_message_log.py /tmp/run.log > /tmp/messages.csv
+\end{lstlisting}
+
+\begin{explica}[Por que Parquet e não só CSV]
+O CSV já é útil, mas o Parquet é columnar e indexável --- consultas por
+\texttt{msg\_id} ou \texttt{event} em dezenas de milhares de linhas rodam
+em milissegundos via \texttt{duckdb}, sem precisar carregar tudo em memória
+como um DataFrame pandas. E o formato é o mesmo já usado por
+\texttt{analysis/export\_parquet.sh} para os \texttt{.sca}/\texttt{.vec} ---
+um único jeito de consultar métricas agregadas e eventos linha-a-linha lado
+a lado.
+\end{explica}
+
+\begin{lstlisting}[style=shellcmd]
+# reconstroi o ciclo completo de um alerta especifico
+duckdb -c "SELECT * FROM read_parquet('analysis/parquet/BasicTest_Piloto-0_messages.parquet')
+           WHERE msg_id='drone[0]_1' ORDER BY time"
+
+# distribuicao de eventos (visao geral do que aconteceu na simulacao)
+duckdb -c "SELECT event, count(*) FROM read_parquet('analysis/parquet/BasicTest_Piloto-0_messages.parquet')
+           GROUP BY event ORDER BY 2 DESC"
+
+# alertas gerados antes do drone conhecer qualquer equipe (candidatos a falha por isolamento)
+duckdb -c "
+WITH first_team AS (
+  SELECT drone_id, min(time) AS first_seen
+  FROM read_parquet('analysis/parquet/BasicTest_Piloto-0_messages.parquet')
+  WHERE event='team_table_update' GROUP BY drone_id)
+SELECT m.msg_id, m.time AS generated_at, f.first_seen
+FROM read_parquet('analysis/parquet/BasicTest_Piloto-0_messages.parquet') m
+JOIN first_team f USING (drone_id)
+WHERE m.event='alert_generated' AND m.time < f.first_seen
+ORDER BY m.time"
+\end{lstlisting}
+
+\newpage
+% ══════════════════════════════════════════════════════════════════════════
+\section{Estudo de caso: por que um alerta não chega}
+\label{sec:estudo-caso}
+
+Esta seção documenta uma investigação real feita neste projeto ---
+\texttt{drone[6]\_1} gerado em \texttt{BasicTest\_Piloto} (seed 0) expirou
+após 5 retries sem nunca ser confirmado, mesmo tendo sido \textbf{relayado
+com sucesso} até um drone que conhecia a equipe destino. O caminho até a
+causa raiz mostra como cruzar os três níveis de log (app, tabela de
+Parquet, PHY/MAC/ARP bruto).
+
+\subsection{Passo 1 --- a tabela de mensagens mostra o quê, não o porquê}
+
+\begin{lstlisting}[style=simlog]
+t=6.55028635543   [DRONE drone[6]] alerta sintetico gerado -> drone[6]_1
+t=6.55028635543   [DRONE drone[6]] relay: drone[6]_1 -> broadcast (sem equipe elegivel)
+t=6.551187119027  [DRONE drone[16]] relay recebido: drone[6]_1 de drone[6]
+t=6.551187119027  [DRONE drone[16]] VictimAlert drone[6]_1 -> team0 (10.0.0.21)
+t=10.0            [DRONE drone[6]] store-forward: retry 1/5 para drone[6]_1
+   ... (mais 4 retries, um por 10s) ...
+t=60.0            [DRONE drone[6]] store-forward: descartando drone[6]_1 apos 5 tentativas
+\end{lstlisting}
+
+\begin{explica}[O que a tabela de eventos já revela]
+O drone origem (\texttt{drone[6]}) não conhecia nenhuma equipe, então fez
+relay em broadcast. Um vizinho (\texttt{drone[16]}) recebeu o relay,
+\textbf{conhecia} \texttt{team0} e reenviou o \texttt{VictimAlert} unicast
+para lá --- o mecanismo de relay funcionou como projetado. Mas
+\texttt{team0} nunca gerou o log \texttt{*** ALERTA de drone[6]}: o pacote
+se perdeu em algum lugar entre \texttt{drone[16]} e \texttt{team0}, mesmo
+sendo vizinhos diretos. A tabela de eventos de aplicação não diz onde ---
+para isso, é preciso descer de camada.
+\end{explica}
+
+\subsection{Passo 2 --- IP diz que a rota está boa}
+
+\begin{lstlisting}[style=simlog]
+t=6.551187119027  drone[16].ipv4.ip  Finding route for source <unspec> with destination 10.0.0.21
+t=6.551187119027  drone[16].ipv4.ip  Active route found: destination = 10.0.0.21,
+                                     prefixLength = 32, nextHop = 10.0.0.21, metric = 1, interface = wlan0
+\end{lstlisting}
+
+O AODV está satisfeito: rota ativa, 1 salto, próximo salto é o próprio
+destino. Se a investigação parasse aqui, pareceria bug de roteamento ---
+mas a rota AODV é só metade da história.
+
+\subsection{Passo 3 --- ARP é a causa raiz real}
+
+\begin{lstlisting}[style=simlog]
+t=1.506  drone[16].ipv4.arp  ARP request for 10.0.0.21 timed out, resending
+t=2.506  drone[16].ipv4.arp  ARP request for 10.0.0.21 timed out, resending
+t=3.506  drone[16].ipv4.arp  ARP timeout, max retry count 3 for 10.0.0.21 reached.
+t=3.506  drone[16].ipv4.arp  ARP resolution failed for 10.0.0.21,  dropping 7 packets
+t=5.447  drone[16].ipv4.arp  ARP request for 10.0.0.21 timed out, resending
+t=6.447  drone[16].ipv4.arp  ARP request for 10.0.0.21 timed out, resending
+t=7.447  drone[16].ipv4.arp  ARP timeout, max retry count 3 for 10.0.0.21 reached.
+t=7.447  drone[16].ipv4.arp  ARP resolution failed for 10.0.0.21,  dropping 9 packets
+\end{lstlisting}
+
+\begin{explica}[O gap entre AODV e ARP]
+AODV resolve rota \textbf{IP $\to$ próximo salto}; ARP resolve
+\textbf{IP $\to$ endereço MAC} --- são caches independentes. A rota AODV
+para \texttt{team0} já existia (RREP recebido antes), mas o cache ARP de
+\texttt{drone[16]} para esse mesmo IP nunca foi preenchido: o \emph{ARP
+request} sai em broadcast, tenta 3 vezes (retry a cada 1s), e
+\texttt{team0} nunca responde --- provável colisão do broadcast num
+instante de contenção de canal alta (rede densa, muitos nós tentando
+transmitir). Quando o timeout final bate, \textbf{todos os pacotes
+enfileirados para aquele destino são descartados de uma vez} ---
+\texttt{VictimAlert drone[6]\_1} estava entre os 9 descartados em
+\texttt{t=7.447}, apesar do AODV achar a rota perfeitamente boa. Uma rota
+ativa não garante ARP resolvido --- são duas camadas que podem divergir.
+\end{explica}
+
+\begin{explica}[Como reproduzir esta investigação]
+\begin{enumerate}[leftmargin=1.3em, itemsep=2pt]
+\item Rode com \texttt{--msglog}, exporte para parquet, ache um
+\texttt{msg\_id} com \texttt{event='alert\_expired'}.
+\item Consulte esse \texttt{msg\_id} no parquet (\texttt{ORDER BY time}) para
+ver a cadeia de retries e quem tentou relayar.
+\item Identifique o par (drone que tentou enviar, IP de destino) e o
+instante aproximado da falha.
+\item Rode de novo com \texttt{--info} completo, mas com
+\texttt{--sim-time-limit} curto (poucos segundos ao redor do instante de
+interesse) para manter o log gerenciável, e grep pelos módulos
+\texttt{ipv4.ip}/\texttt{ipv4.arp} desse par de nós.
+\end{enumerate}
+\end{explica}
+
+\newpage
+% ══════════════════════════════════════════════════════════════════════════
 \section{Por baixo do capô: rádio, MAC e roteamento AODV}
 
 Tudo que foi mostrado até aqui (\texttt{[DRONE]}/\texttt{[TEAM]}) é log de
@@ -396,6 +619,41 @@ Isso só acontece \textbf{uma vez} por par origem/destino (enquanto a rota
 estiver ativa --- \texttt{activeRouteTimeout=5s}). Depois disso, os pacotes
 seguintes só aparecem como \texttt{Active route found}, sem todo o handshake
 RREQ/RREP de novo.
+\end{explica}
+
+\subsection{ARP --- a camada esquecida entre AODV e o rádio}
+
+Ter uma rota AODV ativa não é suficiente para transmitir: o quadro 802.11
+precisa de um endereço \textbf{MAC} de destino, e quem resolve IP $\to$ MAC
+é o ARP --- uma camada totalmente separada, com seu próprio cache e
+timeout.
+
+\begin{lstlisting}[style=simlog]
+[INFO]	Received (inet::Packet)arpREQ (28 B) from network protocol.
+[INFO]	IPv4 address 10.0.0.11 not recognized, dropping ARP packet
+   ...
+[INFO]	ARP resolution completed for 10.0.0.11. Sending 1 waiting packets from the queue
+   ...
+[INFO]	ARP request for 10.0.0.21 timed out, resending
+[INFO]	ARP timeout, max retry count 3 for 10.0.0.21 reached.
+[INFO]	ARP resolution failed for 10.0.0.21,  dropping 7 packets
+\end{lstlisting}
+
+\begin{explica}[Leitura linha a linha]
+\textbf{ARP request/reply}: quando um nó precisa mandar algo a um IP sem
+MAC resolvido, ele transmite um \emph{ARP request} em broadcast (``quem
+tem esse IP?''); o dono responde com \emph{ARP reply} unicast. \\
+\textbf{``not recognized, dropping''}: um nó recebeu um ARP request/reply
+que não é destinado a ele (broadcast alcança todo mundo no alcance de
+rádio) --- comportamento normal, não é erro. \\
+\textbf{``resolution completed... Sending N waiting packets''}: enquanto o
+ARP não resolve, os pacotes de dados para aquele destino ficam
+\textbf{enfileirados} (não descartados ainda) --- assim que a resposta
+chega, a fila inteira é liberada de uma vez. \\
+\textbf{``timed out, resending'' / ``max retry count''}: se o ARP reply não
+chega, o request é reenviado (até 3 vezes neste cenário); esgotadas as
+tentativas, \textbf{toda a fila daquele destino é descartada} --- este é o
+mecanismo por trás do estudo de caso da Seção~\ref{sec:estudo-caso}.
 \end{explica}
 
 \newpage
@@ -538,8 +796,11 @@ coincidem, porque o \texttt{VictimAck} também consegue voltar vários saltos
 AODV & Protocolo de roteamento reativo multi-hop --- descobre rotas sob demanda (RREQ/RREP), sem tabelas estáticas \\
 RREQ / RREP & \emph{Route Request} / \emph{Route Reply} --- mensagens do AODV para descobrir e confirmar uma rota \\
 SNR / BER & Relação sinal-ruído / taxa de erro de bit --- determinam se um quadro de rádio é decodificado com sucesso \\
-ARP & Protocolo que resolve IP $\to$ endereço MAC antes de enviar um quadro no enlace \\
+ARP & Protocolo que resolve IP $\to$ endereço MAC antes de enviar um quadro no enlace --- cache e timeout independentes da rota AODV; pode falhar mesmo com rota AODV ativa \\
 FANET & Flying Ad-hoc Network --- rede ad hoc formada pelos próprios drones em voo \\
+\texttt{--msglog} & Flag do \texttt{run.sh}: log INFO só da aplicação (\texttt{[DRONE]}/\texttt{[TEAM]}), resto em WARN --- usa \texttt{parse\_message\_log.py} para virar tabela \\
+Parquet & Formato de arquivo columnar; aqui guarda tanto métricas agregadas (\texttt{.sca}/\texttt{.vec} via \texttt{export\_parquet.sh}) quanto eventos de mensagem linha-a-linha (via \texttt{export\_messages\_parquet.sh}) \\
+DuckDB & Motor SQL embutido usado para consultar os arquivos Parquet direto do terminal, sem servidor de banco \\
 Relay & Repasse de um alerta por um drone que não tem equipe conhecida, esperando que um vizinho tenha \\
 Store-forward & Estratégia de reter o alerta e reenviar periodicamente até receber ACK ou esgotar tentativas \\
 Dedup / \texttt{seenAlerts} & Conjunto de \texttt{msgId} já vistos, evita processar/retransmitir o mesmo alerta duas vezes \\
@@ -553,8 +814,9 @@ Seed / run & Uma execução independente da simulação com número aleatório d
 \vspace{1cm}
 \begin{center}
 \small\itshape
-Gerado a partir do código em \texttt{src/app/\{SimpleDroneApp,SimpleTeamApp\}.\{h,cc,ned\}} \\
-e de uma execução real de \texttt{SmokeTest\_Beacons} --- ver \texttt{CLAUDE.md} para detalhes de arquitetura.
+Gerado a partir do código em \texttt{src/app/\{SimpleDroneApp,SimpleTeamApp\}.\{h,cc,ned\}}, \\
+de execuções reais de \texttt{SmokeTest\_Beacons} e \texttt{BasicTest\_Piloto}, e do pipeline \\
+\texttt{analysis/parse\_message\_log.py} --- ver \texttt{CLAUDE.md} para detalhes de arquitetura.
 \end{center}
 
 \end{document}
