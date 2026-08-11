@@ -6,7 +6,9 @@
 #   ./run.sh -r 2                  → seed específico
 #   ./run.sh -c Cenario_ComObstaculos → config diferente
 #   ./run.sh --gui                 → Qtenv (janela gráfica)
-#   ./run.sh --info                → log INFO (verboso; desliga express-mode p/ aparecer)
+#   ./run.sh --info                → log INFO global (MUITO verboso: PHY/MAC/AODV inclusos)
+#   ./run.sh --msglog              → log INFO só de app[0] (troca de mensagens), resto em WARN
+#                                     → use com analysis/parse_message_log.py
 #   ./run.sh --build               → compila antes de rodar
 #
 # Todos os seeds rodam em UMA invocação do OMNeT++ (sem loop externo).
@@ -27,11 +29,12 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --gui)    UI=Qtenv ;;
         --info)   LOG_LEVEL=INFO; EXPRESS=false ;;
+        --msglog) LOG_LEVEL=WARN; EXPRESS=false ;;
         --build)  BUILD=true ;;
         -c)       CONFIG="$2"; shift ;;
         -r)       RUN="$2";   shift ;;
         -h|--help)
-            echo "Uso: $0 [-c Config] [-r seed] [--gui] [--info] [--build]"
+            echo "Uso: $0 [-c Config] [-r seed] [--gui] [--info] [--msglog] [--build]"
             exit 0 ;;
         *)
             echo "Opção desconhecida: $1 (use --help)" >&2
@@ -56,6 +59,7 @@ else
     opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated \
         -c "cd simulations && ./run -u Cmdenv -c $CONFIG $RUN_ARG \
             --cmdenv-express-mode=$EXPRESS \
-            --cmdenv-log-level=$LOG_LEVEL \
+            --**.cmdenv-log-level=$LOG_LEVEL \
+            --**.app[0].cmdenv-log-level=INFO \
             --cmdenv-status-frequency=30s"
 fi
