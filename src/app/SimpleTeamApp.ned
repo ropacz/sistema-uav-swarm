@@ -16,6 +16,8 @@ simple SimpleTeamApp like IApp
         // regressão. Valor zero é rejeitado em initialize(). Mantenha = sendInterval.
         double beaconJitter @unit(s)  = default(this.sendInterval);
         @display("i=block/user,green,50");
+        @signal[deliveryDelay](type="simtime_t");
+        @statistic[deliveryDelay](title="delivery delay"; source="deliveryDelay"; unit="s"; record=vector,histogram,mean; interpolationmode=none);
     gates:
         input socketIn @labels(UdpControlInfo/up);
         output socketOut @labels(UdpControlInfo/down);

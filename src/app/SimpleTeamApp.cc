@@ -21,7 +21,7 @@ void SimpleTeamApp::initialize(int stage)
         myTeamId     = par("myTeamId").stdstringValue();
         sendInterval = par("sendInterval");
         beaconJitter = par("beaconJitter");
-        deliveryDelayVec.setName("deliveryDelay");
+        deliveryDelaySignal = registerSignal("deliveryDelay");
         if (beaconJitter == 0)
             throw cRuntimeError("%s: beaconJitter=0 causa colisões MAC com múltiplas equipes "
                                 "(todas transmitem em t=sendInterval simultaneamente → PDR ~3%%). "
@@ -149,7 +149,7 @@ void SimpleTeamApp::socketDataArrived(UdpSocket *socket, Packet *pkt)
         alertsReceived++;
         simtime_t delay = simTime() - chunk->getSentAt();
         totalDeliveryDelay += delay;
-        deliveryDelayVec.record(delay.dbl());
+        emit(deliveryDelaySignal, delay);
 
         EV_INFO << "[TEAM " << myTeamId << "] *** ALERTA de " << chunk->getDroneId()
                 << " msgId=" << msgId

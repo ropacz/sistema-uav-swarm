@@ -38,7 +38,7 @@ class SimpleTeamApp : public inet::ApplicationBase,
     int teamUpdatesSent         = 0;
     int droneStatusReceived     = 0;
     omnetpp::simtime_t totalDeliveryDelay = 0;
-    omnetpp::cOutVector deliveryDelayVec;
+    omnetpp::simsignal_t deliveryDelaySignal = SIMSIGNAL_NULL;
 
     // ── Ciclo de vida INET ───────────────────────────────────────────────────
     virtual ~SimpleTeamApp();
