@@ -14,6 +14,9 @@ src/messages/*_m.h
 analysis/figures/
 analysis/parquet/
 
+# ── Logs de exemplo regeneráveis (só o .md explicativo é versionado) ─────────
+analysis/examples/*.log
+
 # ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────
 .cproject
 .project
