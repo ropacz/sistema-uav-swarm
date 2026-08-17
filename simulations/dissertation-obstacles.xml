@@ -1,0 +1,10 @@
+<config>
+    <!-- Two 3 x 2 x 5 m concrete obstacles. Their tops remain below every
+         scientific-scenario UAV, so air-air LOS is unobstructed by geometry. -->
+    <object id="101" name="SAR-OB-1" position="center 530 500 2.5"
+            orientation="0 0 0" shape="cuboid 3 2 5" material="concrete"
+            line-color="80 80 80" fill-color="140 140 140" opacity="0.85"/>
+    <object id="102" name="SAR-OB-2" position="center 700 300 2.5"
+            orientation="0 0 0" shape="cuboid 3 2 5" material="concrete"
+            line-color="80 80 80" fill-color="140 140 140" opacity="0.85"/>
+</config>

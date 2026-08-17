@@ -21,9 +21,9 @@ Copy `.env.example` to `.env` and adjust the workspace path before running tools
 make makefiles                    # regenerate src/Makefile with opp_makemake
 make                              # debug build
 make clean                        # remove debug build products
-./run.sh --build                  # build, then run BasicTest in Cmdenv
+./run.sh --build                  # build, then run Validation_Direct in Cmdenv
 ./run.sh --gui                    # run interactively in Qtenv
-./run.sh -c BasicTest -r 2        # run a specific configuration and seed
+./run.sh -c Validation_BaOn -r 0  # run a specific configuration and seed
 python3 analysis/process_results.py
 ```
 
@@ -31,7 +31,7 @@ Run commands through the configured `opp_env` environment when OMNeT++ tools are
 
 ## Coding Style & Naming Conventions
 
-Match the existing C++ style: four-space indentation, braces on the next line for functions, `camelCase` variables and methods, and `PascalCase` module/message types. Keep code inside the `echosar` namespace. Name paired OMNeT++ files consistently, for example `SimpleDroneApp.{h,cc,ned}`. Use uppercase names for shared constants such as `TEAM_UPDATE_PORT`.
+Match the existing C++ style: four-space indentation, braces on the next line for functions, `camelCase` variables and methods, and `PascalCase` module/message types. Keep code inside the `echosar` namespace. Name paired OMNeT++ files consistently, for example `DroneApp.{h,cc,ned}`. Use uppercase names for shared constants such as `TEAM_UPDATE_PORT`.
 
 For Python, follow PEP 8, use four spaces, and prefer `snake_case`. Preserve concise comments that explain simulation intent or metric semantics.
 

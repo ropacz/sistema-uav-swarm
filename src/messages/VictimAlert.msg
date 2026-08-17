@@ -4,10 +4,21 @@ namespace echosar;
 
 class VictimAlertChunk extends inet::FieldsChunk
 {
-    string droneId;
-    string msgId;
-    string originIp;  // IP do drone que originou o alerta (rota o ACK de volta ao criador)
-    double posX;      // coordenada cartesiana X da vítima no playground (m)
-    double posY;      // coordenada cartesiana Y da vítima no playground (m)
-    simtime_t sentAt;
+    string alertId;
+    string messageId;
+    string victimId;
+    string originDroneId;
+    string originDroneAddress;
+    double victimPositionX;
+    double victimPositionY;
+    double victimPositionZ;
+    double dronePositionX;
+    double dronePositionY;
+    double dronePositionZ;
+    int waypointId;
+    int64 sequenceNumber;
+    int attemptNumber;
+    simtime_t generationTimestamp;
+    simtime_t transmissionTimestamp;
+    simtime_t timeToLive;
 }

@@ -5,12 +5,16 @@ import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.physicallayer.wireless.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
 import inet.node.aodv.AodvRouter;
 import inet.visualizer.canvas.integrated.IntegratedCanvasVisualizer;
+import echosar.node.SarDrone;
+import echosar.scenario.SarScenarioManager;
+import echosar.scenario.StaticVictim;
 
 network BasicNetwork
 {
     parameters:
         int numDrones = default(10);
         int numTeams  = default(3);
+        int numVictims = default(0);
         // bgb: canvas Qtenv 5 km × 5 km; bgg: grade 500 m; fundo neutro
         @display("bgb=5000,5000;bgg=500,1,grey95;bgc=white");
 
@@ -31,16 +35,20 @@ network BasicNetwork
         radioMedium: Ieee80211ScalarRadioMedium {
             @display("p=-200,1600;i=misc/sun;is=s");
         }
+        scenarioManager: SarScenarioManager {
+            @display("p=-200,1800;i=block/control;is=s");
+        }
         // ── Drones: AodvRouter (FANET ad-hoc com roteamento AODV multi-hop) ───
-        drone[numDrones]: AodvRouter {
+        drone[numDrones]: SarDrone {
             numApps = 1;
-            app[0].typename = "echosar.app.SimpleDroneApp";
+            app[0].typename = "echosar.app.DroneApp";
             @display("i=misc/drone,#3399ff,50");
         }
         // ── Embarcações de resgate: AodvRouter (mesmo stack de rede) ──────────
         team[numTeams]: AodvRouter {
             numApps = 1;
-            app[0].typename = "echosar.app.SimpleTeamApp";
+            app[0].typename = "echosar.app.TeamApp";
             @display("i=block/user,#33aa33,60");
         }
+        victim[numVictims]: StaticVictim;
 }

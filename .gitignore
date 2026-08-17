@@ -12,7 +12,6 @@ src/messages/*_m.h
 
 # ── Figuras geradas pelo script de análise ────────────────────────────────────
 analysis/figures/
-analysis/parquet/
 
 # ── Logs de exemplo regeneráveis (só o .md explicativo é versionado) ─────────
 analysis/examples/*.log

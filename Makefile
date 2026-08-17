@@ -1,4 +1,7 @@
-INET_ROOT = /Users/rodrigo/omnetpp-workspace/inet-4.5.4
+-include .env
+WORKSPACE ?= $(abspath ..)
+INET_VERSION ?= inet-4.5.4
+INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug

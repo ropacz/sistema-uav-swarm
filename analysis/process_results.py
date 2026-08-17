@@ -1,277 +1,193 @@
-"""Pós-processamento dos resultados da simulação ECHOSAR-Net.
+"""Aggregate ECHOSAR-Net OMNeT++ scalars and compare paired BA runs.
 
-Uso:
-    python3 analysis/process_results.py
-
-Calcula as 5 métricas por seed (run) e agrega por configuração como
-média ± desvio-padrão entre seeds — não soma todos os runs num único pool.
-
-Saída: analysis/figures/metrics.pdf  +  analysis/figures/metrics.png
+Usage: python3 analysis/process_results.py [results-directory]
+Outputs CSV tables and four PNG/PDF figures under analysis/figures.
 """
 
+from __future__ import annotations
+
+import glob
+import math
+import os
 import re
 import sys
-import os
-import glob
+from statistics import NormalDist
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-
-RESULTS_DIR = os.path.join(os.path.dirname(__file__), '..', 'simulations', 'results')
-FIGURES_DIR = os.path.join(os.path.dirname(__file__), 'figures')
-os.makedirs(FIGURES_DIR, exist_ok=True)
-
-PALETTE = plt.cm.tab10.colors
 
 
-# ── Parser de .sca ────────────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESULTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "simulations", "results")
+OUTPUT = os.path.join(ROOT, "analysis", "figures")
+os.makedirs(OUTPUT, exist_ok=True)
 
-def parse_sca(path):
-    """Lê um arquivo .sca e devolve DataFrame [config, run, module, name, value].
 
-    `run` é extraído do nome do arquivo (ex.: BasicTest-3.sca → run="BasicTest-3"),
-    não do conteúdo — garante uma chave estável mesmo que o atributo `run` interno
-    do .sca mude de formato.
-    """
-    config = "unknown"
-    run = os.path.splitext(os.path.basename(path))[0]
+def parse_sca(path: str) -> tuple[dict[str, str], pd.DataFrame]:
+    attrs: dict[str, str] = {}
     rows = []
-    with open(path, encoding="utf-8", errors="replace") as f:
-        for line in f:
-            m = re.match(r'attr configname "?([^"\n]+)"?', line)
-            if m:
-                config = m.group(1).strip()
+    with open(path, encoding="utf-8", errors="replace") as source:
+        for line in source:
+            attr = re.match(r'attr (\S+) "?([^"\n]+)"?', line)
+            if attr:
+                attrs[attr.group(1)] = attr.group(2).strip()
                 continue
-            m = re.match(r'scalar (\S+) "?([^"]+)"? ([\d.eE+\-nan]+)', line)
-            if m:
+            scalar = re.match(r'scalar (\S+) "?([^"\n]+?)"? ([^\s]+)$', line)
+            if scalar:
                 try:
-                    value = float(m.group(3))
+                    value = float(scalar.group(3))
                 except ValueError:
                     continue
-                rows.append({
-                    'config': config,
-                    'run':    run,
-                    'module': m.group(1),
-                    'name':   m.group(2),
-                    'value':  value,
-                })
-    return pd.DataFrame(rows)
+                rows.append((scalar.group(1), scalar.group(2).strip(), value))
+    attrs.setdefault("configname", "unknown")
+    attrs.setdefault("seedset", attrs.get("repetition", "0"))
+    return attrs, pd.DataFrame(rows, columns=["module", "name", "value"])
 
 
-def load_all_scalars():
-    """Lê todos os .sca em RESULTS_DIR e concatena."""
-    files = glob.glob(os.path.join(RESULTS_DIR, '*.sca'))
-    if not files:
-        raise FileNotFoundError(f"Nenhum arquivo .sca encontrado em {RESULTS_DIR}")
-    frames = [parse_sca(f) for f in files]
-    df = pd.concat(frames, ignore_index=True)
-    # remove valores inválidos (-1 = sem dados)
-    df = df[df['value'] >= 0]
-    return df
+def scalar_sum(frame: pd.DataFrame, name: str) -> float:
+    values = frame.loc[frame["name"] == name, "value"]
+    return float(values.sum()) if len(values) else 0.0
 
 
-# ── Cálculo das 5 métricas por seed (run) ────────────────────────────────────
-#
-# alertsReceived (equipe recebeu VictimAlert) e alertsAcked (drone origem
-# recebeu VictimAck) são conceitos distintos: o primeiro mede entrega até a
-# equipe, o segundo mede o ciclo completo confirmado fim a fim. O PDR e o
-# overhead usam alertsAcked como critério de sucesso para manter os dois
-# coerentes entre si.
-
-def compute_run_metrics(df):
-    rows = []
-    for (config, run), g in df.groupby(['config', 'run']):
-        def s(name):
-            return g[g['name'] == name]['value'].sum()
-
-        generated = s('alertsGenerated')
-        acked     = s('alertsAcked')
-        expired   = s('alertsExpired')
-        retries   = s('totalRetries')
-        # alertsSentDirect/alertsSentRelay já contam toda transmissão de
-        # VictimAlert (originada OU relayed) — forwardAlertOnce() incrementa
-        # um dos dois em toda chamada, seja por generateAlert() ou por
-        # handleVictimAlertRelay(). Não somar alertsRelayed aqui (duplicaria).
-        sent      = s('alertsSentDirect') + s('alertsSentRelay')
-        received  = s('alertsReceived')
-        # Atraso de entrega (1 via): soma bruta no lado da equipe / nº recebidos.
-        # Média global PONDERADA do run (não média de médias por módulo).
-        delivDelay = s('totalDeliveryDelay')
-
-        rows.append({
-            'config': config,
-            'run':    run,
-            # m1: entregas físicas — soma de alertsReceived de TODAS as equipes / gerados.
-            # ATENÇÃO: pode exceder 100% se um alerta for recebido por múltiplas equipes
-            # (retry para equipe diferente após ACK perdido, ou relay bifurcado).
-            # Use m5_appack como PDR primário na dissertação (bounded 0–100%).
-            'm1_pdr':       (received / generated * 100) if generated else 0.0,
-            # m2: atraso de entrega fim-a-fim de 1 via (drone → equipe), ponderado
-            'm2_e2e':       (delivDelay / received) if received else float('nan'),
-            'm3_retries':   (retries / acked) if acked else 0.0,
-            'm4_overhead':  (sent / acked) if acked else 0.0,
-            # m5: taxa de sucesso do ciclo completo (drone recebeu VictimAck de volta)
-            # Era a definição anterior de PDR; renomeado para distinguir dos dois sentidos
-            'm5_appack':    (acked / generated * 100) if generated else 0.0,
-            'alertsGenerated': generated,
-            'alertsAcked':     acked,
-            'alertsExpired':   expired,
-            'totalRetries':    retries,
-            'alertsSent':      sent,
-            'alertsReceived':  received,
+def load_runs() -> pd.DataFrame:
+    records = []
+    for path in glob.glob(os.path.join(RESULTS, "*.sca")):
+        attrs, frame = parse_sca(path)
+        generated = scalar_sum(frame, "uniqueAlertsGenerated")
+        acked = scalar_sum(frame, "uniqueAlertsAcked")
+        attempts = scalar_sum(frame, "alertAttemptsSent")
+        received_attempts = scalar_sum(frame, "attemptsReceived")
+        rtt_total = scalar_sum(frame, "totalRTT")
+        delay_total = scalar_sum(frame, "totalDeliveryDelay")
+        alert_age_total = scalar_sum(frame, "totalAlertAgeAtReception")
+        distance = scalar_sum(frame, "baDistance")
+        recovery_samples = scalar_sum(frame, "recoverySamples")
+        validation_samples = scalar_sum(frame, "repositionValidationSamples")
+        pre_rssi_samples = scalar_sum(frame, "preRepositionRssiSamples")
+        post_rssi_samples = scalar_sum(frame, "postRepositionRssiSamples")
+        records.append({
+            "config": attrs["configname"],
+            "seed": int(float(attrs["seedset"])),
+            "run_file": os.path.basename(path),
+            "appack_pct": 100 * acked / generated if generated else math.nan,
+            "pdr_pct": 100 * received_attempts / attempts if attempts else math.nan,
+            "one_way_delay_s": delay_total / received_attempts if received_attempts else math.nan,
+            "alert_age_at_reception_s": alert_age_total / received_attempts if received_attempts else math.nan,
+            "rtt_s": rtt_total / acked if acked else math.nan,
+            "attempts_per_alert": attempts / generated if generated else math.nan,
+            "ba_distance_m": distance / generated if generated else 0.0,
+            "alerts_generated": generated,
+            "alerts_acked": acked,
+            "alerts_expired": scalar_sum(frame, "alertsExpired"),
+            "duplicates": scalar_sum(frame, "duplicateAlerts"),
+            "ba_activations": scalar_sum(frame, "baActivations"),
+            "successful_repositions": scalar_sum(frame, "successfulRepositions"),
+            "failed_repositions": scalar_sum(frame, "failedRepositions"),
+            "degradation_indications": scalar_sum(frame, "degradationIndications"),
+            "sensor_confirmations": scalar_sum(frame, "sensorConfirmations"),
+            "sensor_rejections": scalar_sum(frame, "sensorRejections"),
+            "recovery_time_s": scalar_sum(frame, "totalRecoveryTime") / recovery_samples
+                if recovery_samples else math.nan,
+            "pre_reposition_pdr": scalar_sum(frame, "preRepositionPdrSum") / validation_samples
+                if validation_samples else math.nan,
+            "post_reposition_pdr": scalar_sum(frame, "postRepositionPdrSum") / validation_samples
+                if validation_samples else math.nan,
+            "pre_reposition_rssi_dbm": scalar_sum(frame, "preRepositionRssiSum") / pre_rssi_samples
+                if pre_rssi_samples else math.nan,
+            "post_reposition_rssi_dbm": scalar_sum(frame, "postRepositionRssiSum") / post_rssi_samples
+                if post_rssi_samples else math.nan,
         })
+    if not records:
+        raise FileNotFoundError(f"No .sca files in {RESULTS}")
+    return pd.DataFrame(records)
+
+
+def ci95(values: pd.Series) -> float:
+    clean = values.dropna()
+    if len(clean) < 2:
+        return 0.0
+    degrees = len(clean) - 1
+    z = NormalDist().inv_cdf(0.975)
+    # Cornish-Fisher expansion for the two-sided Student-t critical value.
+    critical = z + (z**3 + z) / (4 * degrees) + \
+        (5 * z**5 + 16 * z**3 + 3 * z) / (96 * degrees**2)
+    return critical * clean.std(ddof=1) / math.sqrt(len(clean))
+
+
+def aggregate(runs: pd.DataFrame) -> pd.DataFrame:
+    metrics = [column for column in runs.columns if column not in {"config", "seed", "run_file"}]
+    rows = []
+    for config, frame in runs.groupby("config"):
+        row = {"config": config, "n": frame["seed"].nunique()}
+        for metric in metrics:
+            clean = frame[metric].dropna()
+            row[f"{metric}_mean"] = clean.mean() if len(clean) else math.nan
+            row[f"{metric}_median"] = clean.median() if len(clean) else math.nan
+            row[f"{metric}_std"] = clean.std(ddof=1) if len(clean) > 1 else math.nan
+            row[f"{metric}_ci95"] = ci95(clean)
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
-# ── Agregação entre seeds: média ± desvio-padrão (não soma tudo num pool) ───
-
-METRIC_COLS = ['m1_pdr', 'm2_e2e', 'm3_retries', 'm4_overhead', 'm5_appack']
-COUNT_COLS  = ['alertsGenerated', 'alertsAcked', 'alertsExpired',
-               'totalRetries', 'alertsSent', 'alertsReceived']
-
-
-def aggregate_metrics(run_df):
-    agg = run_df.groupby('config')[METRIC_COLS + COUNT_COLS].agg(['mean', 'std'])
-    agg.columns = ['_'.join(c) for c in agg.columns]
-    agg['n_runs'] = run_df.groupby('config')['run'].nunique()
-    # std é NaN com n=1 run — trata como 0 para não quebrar barras de erro
-    agg = agg.fillna(0.0)
-    return agg
-
-
-# Configs excluídas do gráfico de comparação principal.
-#
-# Gráfico final mostra apenas:
-#   BasicTest_Piloto       — validação funcional (300 s)
-#   Cenario_SemObstaculos  — experimento principal, baseline FANET (900 s)
-#   Cenario_ComObstaculos  — experimento principal, com obstáculos  (900 s)
-#
-# Tudo mais é análise complementar, base de herança, regressão ou stale.
-PLOT_EXCLUDE = {
-    'BasicTest',
-    'BasicTest_Piloto',
-    'BasicTest_1500m',
-    'Cenario_Favoravel',
-    'Cenario_Intermediario',
-    'Cenario_Degradado',
-    'SmokeTest_Beacons',
-    'BasicTest_Visual',
-    'BasicTest_TeamCal',
-    'BasicTest_600s',
-}
-
-# ── Gráficos ──────────────────────────────────────────────────────────────────
-
-METRICS = [
-    # m5_appack: métrica primária — alertsAcked/alertsGenerated, bounded 0–100%
-    ('m5_appack',   'Taxa de Confirmação\nde Alertas (AppACK)',   '%',               True),
-    ('m2_e2e',      'Delay\n(drone → equipe)',                    's',               False),
-    ('m3_retries',  'Retransmissões\npor Alerta',                  'tentativas',      False),
-    ('m4_overhead', 'Overhead de Alerta\n(msgs / alerta)',         'msgs / alerta',   False),
-    ('m1_pdr',      'PDR\n(alertas recebidos / gerados)',         '%',               True),
-]
+def paired(runs: pd.DataFrame) -> pd.DataFrame:
+    control = "Experiment_Control_BaOff"
+    proposed = "Experiment_Proposed_BaOn"
+    metrics = ["appack_pct", "one_way_delay_s", "attempts_per_alert", "ba_distance_m"]
+    left = runs[runs.config == control].set_index("seed")
+    right = runs[runs.config == proposed].set_index("seed")
+    if left.index.has_duplicates or right.index.has_duplicates:
+        raise ValueError("Experiment configurations contain duplicate seeds")
+    if (not left.empty or not right.empty) and set(left.index) != set(right.index):
+        raise ValueError("Paired experiment is incomplete: BA on/off seed sets differ")
+    common = left.index.intersection(right.index)
+    rows = []
+    for metric in metrics:
+        difference = right.loc[common, metric] - left.loc[common, metric]
+        t_statistic = difference.mean() / (difference.std(ddof=1) / math.sqrt(len(difference))) \
+            if len(difference) > 1 and difference.std(ddof=1) > 0 else math.nan
+        rows.append({"metric": metric, "n_pairs": len(common),
+                     "mean_difference_proposed_minus_control": difference.mean(),
+                     "median_difference": difference.median(),
+                     "std_difference": difference.std(ddof=1), "ci95": ci95(difference),
+                     "paired_t_statistic": t_statistic})
+    return pd.DataFrame(rows)
 
 
-METRIC_SLUGS = {
-    'm5_appack':   'appack',
-    'm2_e2e':      'atraso',
-    'm3_retries':  'retransmissoes',
-    'm4_overhead': 'overhead',
-    'm1_pdr':      'pdr',
-}
+def plot(runs: pd.DataFrame) -> None:
+    selected = runs[runs.config.isin(["Experiment_Control_BaOff", "Experiment_Proposed_BaOn"])]
+    if selected.empty:
+        return
+    os.environ.setdefault("MPLCONFIGDIR", "/tmp/echosar-matplotlib")
+    os.environ.setdefault("XDG_CACHE_HOME", "/tmp/echosar-cache")
+    import matplotlib.pyplot as plt
+    for metric, label in [("appack_pct", "AppACK (%)"),
+                          ("one_way_delay_s", "One-way delay (s)"),
+                          ("attempts_per_alert", "Attempts per alert"),
+                          ("ba_distance_m", "BA displacement per alert (m)")]:
+        summary = selected.groupby("config")[metric].agg(["mean", "std"])
+        ax = summary["mean"].plot.bar(yerr=summary["std"].fillna(0), capsize=5,
+                                      color=["#777777", "#2878b5"])
+        ax.set_ylabel(label)
+        ax.set_xlabel("")
+        ax.tick_params(axis="x", rotation=12)
+        ax.spines[["top", "right"]].set_visible(False)
+        plt.tight_layout()
+        slug = metric.replace("_pct", "")
+        plt.savefig(os.path.join(OUTPUT, f"metric_{slug}.png"), dpi=160)
+        plt.savefig(os.path.join(OUTPUT, f"metric_{slug}.pdf"))
+        plt.close()
 
 
-def _plot_single(agg_df, col, title, ylabel, is_pct):
-    configs  = agg_df.index.tolist()
-    colors   = [PALETTE[i % len(PALETTE)] for i in range(len(configs))]
-    x_labels = [f"{c}\n(n={int(agg_df.loc[c, 'n_runs'])})" for c in configs]
-
-    fig, ax = plt.subplots(figsize=(7, 5))
-    means = [agg_df.loc[c, f'{col}_mean'] for c in configs]
-    stds  = [agg_df.loc[c, f'{col}_std']  for c in configs]
-
-    bars = ax.bar(x_labels, means, yerr=stds, capsize=5,
-                  color=colors, edgecolor='black', linewidth=0.7, width=0.5)
-    ax.set_title(title, fontsize=12, fontweight='bold', pad=10)
-    ax.set_ylabel(ylabel, fontsize=10)
-    ax.tick_params(axis='x', rotation=15, labelsize=9)
-    ax.tick_params(axis='y', labelsize=9)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-
-    if is_pct:
-        ax.set_ylim(0, 100)
-        ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))
-
-    for bar, mean, std in zip(bars, means, stds):
-        if pd.notna(mean) and mean > 0:
-            label = f'{mean:.1f}±{std:.1f}%' if is_pct else f'{mean:.3g}±{std:.2g}'
-            ax.text(bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + std + ax.get_ylim()[1] * 0.01,
-                    label, ha='center', va='bottom', fontsize=8.5, fontweight='bold')
-
-    plt.tight_layout()
-    return fig
+def main() -> None:
+    runs = load_runs()
+    summary = aggregate(runs)
+    pairs = paired(runs)
+    runs.to_csv(os.path.join(OUTPUT, "runs.csv"), index=False)
+    summary.to_csv(os.path.join(OUTPUT, "summary.csv"), index=False)
+    pairs.to_csv(os.path.join(OUTPUT, "paired_comparison.csv"), index=False)
+    plot(runs)
+    print(summary.to_string(index=False))
+    print("\nPaired BA comparison:\n", pairs.to_string(index=False))
 
 
-def plot_metrics(agg_df):
-    figures = {}
-    for col, title, ylabel, is_pct in METRICS:
-        figures[col] = _plot_single(agg_df, col, title, ylabel, is_pct)
-    return figures
-
-
-# ── Tabela resumo ─────────────────────────────────────────────────────────────
-
-def print_summary(agg_df):
-    print("\n╔══ Métricas por configuração (média ± desvio entre seeds) ══════════╗")
-    for config in agg_df.index:
-        row = agg_df.loc[config]
-        n = int(row['n_runs'])
-        print(f"\n  [{config}]  n={n} seeds")
-        print(f"    PDR (%)                {row['m1_pdr_mean']:.3f} ± {row['m1_pdr_std']:.3f}")
-        print(f"    Delay (s)              {row['m2_e2e_mean']:.3f} ± {row['m2_e2e_std']:.3f}")
-        print(f"    Retries/confirmado     {row['m3_retries_mean']:.3f} ± {row['m3_retries_std']:.3f}")
-        print(f"    Overhead               {row['m4_overhead_mean']:.3f} ± {row['m4_overhead_std']:.3f}")
-        print(f"    AppACK (%)             {row['m5_appack_mean']:.3f} ± {row['m5_appack_std']:.3f}")
-        print(f"    Gerados (total)    {row['alertsGenerated_mean']:.1f} ± {row['alertsGenerated_std']:.1f}")
-        print(f"    Confirmados        {row['alertsAcked_mean']:.1f} ± {row['alertsAcked_std']:.1f}")
-        print(f"    Expirados          {row['alertsExpired_mean']:.1f} ± {row['alertsExpired_std']:.1f}")
-    print("\n╚═══════════════════════════════════════════════════════════════════╝\n")
-
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-def main():
-    print(f"Lendo resultados de: {os.path.abspath(RESULTS_DIR)}")
-    try:
-        df = load_all_scalars()
-    except FileNotFoundError as e:
-        print(f"Erro: {e}\nExecute as simulações antes de gerar os gráficos.")
-        sys.exit(1)
-
-    n_runs = df.groupby('config')['run'].nunique()
-    print(f"  {len(df)} escalares carregados de {df['config'].nunique()} config(s): "
-          f"{', '.join(df['config'].unique())}  |  seeds por config: {dict(n_runs)}")
-
-    run_df = compute_run_metrics(df)
-    agg_df = aggregate_metrics(run_df)
-    print_summary(agg_df)
-
-    plot_df  = agg_df[~agg_df.index.isin(PLOT_EXCLUDE)]
-    figures  = plot_metrics(plot_df)
-
-    for col, fig in figures.items():
-        slug = METRIC_SLUGS[col]
-        for ext in ('pdf', 'png'):
-            out = os.path.join(FIGURES_DIR, f'metric_{slug}.{ext}')
-            fig.savefig(out, bbox_inches='tight', dpi=150)
-            print(f"Figura salva: {out}")
-        plt.close(fig)
-
-    plt.close(fig)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
