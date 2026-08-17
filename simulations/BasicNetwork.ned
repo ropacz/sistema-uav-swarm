@@ -15,40 +15,40 @@ network BasicNetwork
         int numDrones = default(10);
         int numTeams  = default(3);
         int numVictims = default(0);
-        // bgb: canvas Qtenv 5 km × 5 km; bgg: grade 500 m; fundo neutro
-        @display("bgb=5000,5000;bgg=500,1,grey95;bgc=white");
+        // Os 1000 px superiores representam a área física de 1 km × 1 km.
+        // A faixa inferior de 150 px é reservada aos módulos de infraestrutura.
+        @display("bgb=1000,1150;bgg=100,1,grey95;bgc=white");
 
     submodules:
         // ── Módulos de infraestrutura ─────────────────────────────────────────
-        // Posicionados à esquerda do canvas (x<0): fora da área de mobilidade
-        // (constraintAreaMinX=0) — nunca sobrepostos com nós móveis.
-        // is=s (small) para ficarem visíveis sem poluir a área de simulação.
+        // Agrupados no canto inferior, fora da região inicial do demo visual.
+        // O espaçamento considera também os nomes exibidos automaticamente.
         visualizer: IntegratedCanvasVisualizer {
-            @display("p=-200,1000;i=block/app2;is=s");
+            @display("p=80,1080;i=block/app2;is=vs");
         }
         physicalEnvironment: PhysicalEnvironment {
-            @display("p=-200,1200;i=misc/town;is=s");
+            @display("p=290,1080;i=misc/town;is=vs");
         }
         configurator: Ipv4NetworkConfigurator {
-            @display("p=-200,1400;i=block/cogwheel_s;is=s");
+            @display("p=500,1080;i=block/cogwheel;is=vs");
         }
         radioMedium: Ieee80211ScalarRadioMedium {
-            @display("p=-200,1600;i=misc/sun;is=s");
+            @display("p=700,1080;i=misc/sun;is=vs");
         }
         scenarioManager: SarScenarioManager {
-            @display("p=-200,1800;i=block/control;is=s");
+            @display("p=880,1080;i=block/control;is=vs");
         }
         // ── Drones: AodvRouter (FANET ad-hoc com roteamento AODV multi-hop) ───
         drone[numDrones]: SarDrone {
             numApps = 1;
             app[0].typename = "echosar.app.DroneApp";
-            @display("i=misc/drone,#3399ff,50");
+            @display("i=misc/drone,#3399ff,30");
         }
         // ── Embarcações de resgate: AodvRouter (mesmo stack de rede) ──────────
         team[numTeams]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.TeamApp";
-            @display("i=block/user,#33aa33,60");
+            @display("i=block/user,#33aa33,35");
         }
         victim[numVictims]: StaticVictim;
 }

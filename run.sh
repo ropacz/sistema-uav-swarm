@@ -5,7 +5,7 @@
 #   ./run.sh                       → validação direta determinística
 #   ./run.sh -r 2                  → seed específico
 #   ./run.sh -c Cenario_ComObstaculos → config diferente
-#   ./run.sh --gui                 → Qtenv (janela gráfica)
+#   ./run.sh --gui                 → Qtenv no cenário móvel Visual_Demo
 #   ./run.sh --info                → log INFO global (MUITO verboso: PHY/MAC/AODV inclusos)
 #   ./run.sh --build               → compila antes de rodar
 #
@@ -23,6 +23,7 @@ fi
 : "${WORKSPACE:=$(cd "$PROJECT_DIR/.." && pwd)}"
 : "${INET_VERSION:=inet-4.5.4}"
 CONFIG=Validation_Direct
+CONFIG_EXPLICIT=false
 RUN=""        # vazio = todos os seeds definidos por repeat= no ini
 UI=Cmdenv
 LOG_LEVEL=WARN
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
         --gui)    UI=Qtenv ;;
         --info)   LOG_LEVEL=INFO; EXPRESS=false ;;
         --build)  BUILD=true ;;
-        -c)       CONFIG="$2"; shift ;;
+        -c)       CONFIG="$2"; CONFIG_EXPLICIT=true; shift ;;
         -r)       RUN="$2";   shift ;;
         -h|--help)
             echo "Uso: $0 [-c Config] [-r seed] [--gui] [--info] [--build]"
@@ -45,6 +46,10 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+if [[ "$UI" == "Qtenv" && "$CONFIG_EXPLICIT" == false ]]; then
+    CONFIG=Visual_Demo
+fi
 
 if $BUILD; then
     echo ">>> Compilando (MODE=debug)..."

@@ -78,6 +78,7 @@ Também é possível usar:
 ## Validações determinísticas
 
 ```bash
+./run.sh --gui                    # demonstração móvel no Qtenv
 ./run.sh -c Validation_Direct -r 0
 ./run.sh -c Validation_Multihop -r 0
 ./run.sh -c Validation_Clear_Rssi -r 0

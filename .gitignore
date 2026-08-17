@@ -29,6 +29,23 @@ firebase-debug.log
 # ── Ambiente local (segredos e caminhos de máquina) ──────────────────────────
 .env
 
+# ── Estado local do Qtenv ─────────────────────────────────────────────────────
+simulations/.qtenvrc
+
+# ── Graphify ──────────────────────────────────────────────────────────────────────
+# O grafo, relatório, HTML e manifesto são compartilháveis; estado de
+# máquina, intermediários, cache e custos permanecem locais.
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_detect.json
+graphify-out/.graphify_ast.json
+graphify-out/.graphify_semantic.json
+graphify-out/.graphify_analysis.json
+graphify-out/.graphify_labels.json
+graphify-out/.graphify_labels.json.sig
+graphify-out/cache/
+graphify-out/cost.json
+
 # ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc

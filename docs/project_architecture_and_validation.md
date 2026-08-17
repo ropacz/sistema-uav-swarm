@@ -254,6 +254,17 @@ opp_env run inet-4.5.4 -w /caminho/do/workspace --no-isolated \
 
 ## 9. Validação determinística
 
+Para observar drones e equipe em movimento, com trajetórias e enlaces no
+Qtenv, use o cenário não determinístico de demonstração:
+
+```bash
+./run.sh --gui
+```
+
+Os cenários `Validation_Direct`, `Validation_Obstacle_BaOff` e
+`Validation_Multihop` mantêm os nós parados intencionalmente para isolar os
+efeitos de comunicação e garantir reprodutibilidade.
+
 Execute os cenários abaixo com a mesma seed:
 
 ```bash

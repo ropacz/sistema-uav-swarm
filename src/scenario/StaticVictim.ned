@@ -9,5 +9,5 @@ simple StaticVictim
         double positionZ @unit(m) = default(0m);
         double detectionTime @unit(s);
         @class(echosar::StaticVictim);
-        @display("p=$positionX,$positionY;i=block/person_s,red");
+        @display("i=abstract/person,red;is=s");
 }
