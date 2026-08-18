@@ -13,4 +13,6 @@
 | Movimento gradual | `BaGaussMarkovMobility` | deslocamento gradual, interrupção por ACK e tentativa pós-chegada |
 | Experimento pareado | configs BA off/on | 30 repetições com `seed-set=${repetition}` |
 | Estatística | `analysis/process_results.py` | CSV, IC95%, diferenças pareadas e gráficos |
+| Proveniência | `experiment_manifest.json` | commit, estado do worktree e SHA-256 dos insumos |
 | Aceitação determinística | `analysis/validate_results.py` | assertions sobre ACK, retry, RSSI, obstáculo, alcance do sensor, BA, multi-hop e duas vítimas |
+| Qualidade do repositório | `make check` e `make validate` | sintaxe, referências obsoletas e oito cenários determinísticos |

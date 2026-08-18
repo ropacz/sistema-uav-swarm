@@ -43,7 +43,7 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
     std::vector<Bat> bats(p.populationSize);
     BatResult best;
     for (auto& bat : bats) {
-        for (int tries = 0; tries < 100; ++tries) {
+        for (int tries = 0; tries < p.initializationAttempts; ++tries) {
             bat.position = center + randomInSphere(rng, maxDistance);
             if (feasible(bat.position))
                 break;

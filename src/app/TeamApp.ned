@@ -7,6 +7,9 @@ simple TeamApp like IApp
     parameters:
         @class(echosar::TeamApp);
         string teamId = default("");
+        int appPort = default(5000);
+        int positionUpdatePayloadBytes = default(160);
+        int victimAckPayloadBytes = default(96);
         double positionUpdateInterval @unit(s) = default(1s);
         double initialJitter @unit(s) = default(this.positionUpdateInterval);
         int applicationIpTtl = default(32);

@@ -7,6 +7,8 @@ simple DroneApp like IApp
     parameters:
         @class(echosar::DroneApp);
         string droneId = default("");
+        int appPort = default(5000);
+        int victimAlertPayloadBytes = default(320);
         double retryInterval @unit(s) = default(30s);
         double ackTimeout @unit(s) = default(5s);
         int maxAttempts = default(5);
@@ -38,6 +40,14 @@ simple DroneApp like IApp
         double linkNormalizationDistance @unit(m) = default(1000m);
         int batPopulation = default(20);
         int batIterations = default(50);
+        int batInitializationAttempts = default(100);
+        double batFrequencyMin = default(0);
+        double batFrequencyMax = default(2);
+        double batInitialAmplitude = default(0.9);
+        double batInitialPulseRate = default(0.5);
+        double batAmplitudeDecay = default(0.9);
+        double batPulseGrowth = default(0.9);
+        double batLocalSearchScale = default(0.1);
         @signal[positionUpdateRssi](type=double; unit=dBm);
         @statistic[positionUpdateRssi](source=positionUpdateRssi; record=vector,mean,min,max);
         @signal[linkWindowPdr](type=double);

@@ -11,6 +11,7 @@ namespace echosar {
 struct BatParameters {
     int populationSize = 20;
     int iterations = 50;
+    int initializationAttempts = 100;
     double frequencyMin = 0;
     double frequencyMax = 2;
     double initialAmplitude = 0.9;

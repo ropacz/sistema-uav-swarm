@@ -9,7 +9,6 @@
 #include "messages/PositionUpdate_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAck_m.h"
-#include "ports.h"
 
 namespace echosar {
 
@@ -24,6 +23,9 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t initialJitter;
     bool ackEnabled = true;
     omnetpp::simtime_t ackStartTime;
+    int appPort = 5000;
+    int64_t positionUpdatePayloadBytes = 160;
+    int64_t victimAckPayloadBytes = 96;
     int64_t updateSequence = 0;
     std::set<std::string> attendedAlerts;
     std::set<std::string> receivedAttempts;

@@ -45,6 +45,7 @@ graphify-out/.graphify_labels.json
 graphify-out/.graphify_labels.json.sig
 graphify-out/cache/
 graphify-out/cost.json
+graphify-out/20??-??-??/
 
 # ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/

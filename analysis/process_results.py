@@ -7,10 +7,14 @@ Outputs CSV tables and four PNG/PDF figures under analysis/figures.
 from __future__ import annotations
 
 import glob
+import hashlib
+import json
 import math
 import os
 import re
+import subprocess
 import sys
+from datetime import datetime, timezone
 from statistics import NormalDist
 
 import pandas as pd
@@ -19,6 +23,7 @@ import pandas as pd
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "simulations", "results")
 OUTPUT = os.path.join(ROOT, "analysis", "figures")
+EXPECTED_PAIRED_RUNS = 30
 os.makedirs(OUTPUT, exist_ok=True)
 
 
@@ -139,6 +144,10 @@ def paired(runs: pd.DataFrame) -> pd.DataFrame:
     if (not left.empty or not right.empty) and set(left.index) != set(right.index):
         raise ValueError("Paired experiment is incomplete: BA on/off seed sets differ")
     common = left.index.intersection(right.index)
+    if len(common) not in {0, EXPECTED_PAIRED_RUNS}:
+        raise ValueError(
+            f"Paired experiment requires {EXPECTED_PAIRED_RUNS} seeds; found {len(common)}"
+        )
     rows = []
     for metric in metrics:
         difference = right.loc[common, metric] - left.loc[common, metric]
@@ -150,6 +159,40 @@ def paired(runs: pd.DataFrame) -> pd.DataFrame:
                      "std_difference": difference.std(ddof=1), "ci95": ci95(difference),
                      "paired_t_statistic": t_statistic})
     return pd.DataFrame(rows)
+
+
+def file_sha256(relative_path: str) -> str:
+    digest = hashlib.sha256()
+    with open(os.path.join(ROOT, relative_path), "rb") as source:
+        for chunk in iter(lambda: source.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def write_manifest(runs: pd.DataFrame) -> None:
+    """Record provenance needed to reproduce the processed dataset."""
+    try:
+        revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        dirty = bool(subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=ROOT, text=True
+        ).strip())
+    except (OSError, subprocess.CalledProcessError):
+        revision, dirty = "unavailable", None
+    inputs = ["simulations/omnetpp.ini", "simulations/dissertation-obstacles.xml"]
+    manifest = {
+        "generatedAtUtc": datetime.now(timezone.utc).isoformat(),
+        "gitRevision": revision,
+        "workingTreeDirty": dirty,
+        "resultDirectory": os.path.abspath(RESULTS),
+        "runFiles": sorted(runs["run_file"].tolist()),
+        "inputSha256": {path: file_sha256(path) for path in inputs},
+        "expectedPairedRuns": EXPECTED_PAIRED_RUNS,
+    }
+    with open(os.path.join(OUTPUT, "experiment_manifest.json"), "w", encoding="utf-8") as target:
+        json.dump(manifest, target, indent=2, ensure_ascii=False)
+        target.write("\n")
 
 
 def plot(runs: pd.DataFrame) -> None:
@@ -184,6 +227,7 @@ def main() -> None:
     runs.to_csv(os.path.join(OUTPUT, "runs.csv"), index=False)
     summary.to_csv(os.path.join(OUTPUT, "summary.csv"), index=False)
     pairs.to_csv(os.path.join(OUTPUT, "paired_comparison.csv"), index=False)
+    write_manifest(runs)
     plot(runs)
     print(summary.to_string(index=False))
     print("\nPaired BA comparison:\n", pairs.to_string(index=False))

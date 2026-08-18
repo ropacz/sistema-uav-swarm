@@ -22,6 +22,9 @@ void TeamApp::initialize(int stage)
     ApplicationBase::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
         teamId = par("teamId").stdstringValue();
+        appPort = par("appPort");
+        positionUpdatePayloadBytes = par("positionUpdatePayloadBytes");
+        victimAckPayloadBytes = par("victimAckPayloadBytes");
         updateInterval = par("positionUpdateInterval");
         initialJitter = par("initialJitter");
         ackEnabled = par("ackEnabled");
@@ -29,7 +32,9 @@ void TeamApp::initialize(int stage)
         int applicationIpTtl = par("applicationIpTtl");
         if (teamId.empty())
             teamId = getParentModule()->getFullName();
-        if (teamId.empty() || updateInterval <= 0 || initialJitter < 0 || ackStartTime < 0 ||
+        if (teamId.empty() || appPort <= 0 || appPort > 65535 ||
+            positionUpdatePayloadBytes <= 0 || victimAckPayloadBytes <= 0 ||
+            updateInterval <= 0 || initialJitter < 0 || ackStartTime < 0 ||
             applicationIpTtl <= 0 || applicationIpTtl > 255)
             throw cRuntimeError("Invalid team identity, timing, or IP TTL parameter");
         deliveryDelaySignal = registerSignal("deliveryDelay");
@@ -50,7 +55,7 @@ void TeamApp::initialize(int stage)
         socket.setOutputGate(gate("socketOut"));
         socket.setCallback(this);
         socket.setBroadcast(true);
-        socket.bind(SAR_APP_PORT);
+        socket.bind(appPort);
         socket.setTimeToLive(par("applicationIpTtl"));
         updateTimer = new cMessage("positionUpdateTimer");
         scheduleAt(simTime() + (initialJitter == 0 ? 0 : uniform(0, initialJitter.dbl())), updateTimer);
@@ -74,7 +79,7 @@ void TeamApp::sendPositionUpdate()
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord position = mobility->getCurrentPosition();
     auto update = makeShared<PositionUpdateChunk>();
-    update->setChunkLength(B(160));
+    update->setChunkLength(B(positionUpdatePayloadBytes));
     update->setMessageId((teamId + "-pos-" + std::to_string(++updateSequence)).c_str());
     update->setSenderId(teamId.c_str());
     update->setSenderType("team");
@@ -88,7 +93,7 @@ void TeamApp::sendPositionUpdate()
     update->setTimestamp(simTime());
     update->setOperationalState("mobile");
     socket.sendTo(new Packet("PositionUpdate", update),
-                  Ipv4Address::ALLONES_ADDRESS, SAR_APP_PORT);
+                  Ipv4Address::ALLONES_ADDRESS, appPort);
     positionUpdatesSent++;
 }
 
@@ -143,7 +148,7 @@ void TeamApp::handleVictimAlert(Packet *packet)
         return;
     }
     auto ack = makeShared<VictimAckChunk>();
-    ack->setChunkLength(B(96));
+    ack->setChunkLength(B(victimAckPayloadBytes));
     ack->setAlertId(alert->getAlertId());
     ack->setReceivedMessageId(alert->getMessageId());
     ack->setVictimId(alert->getVictimId());
@@ -152,7 +157,7 @@ void TeamApp::handleVictimAlert(Packet *packet)
     ack->setReceptionTimestamp(simTime());
     ack->setAckTimestamp(simTime());
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
-    socket.sendTo(new Packet("VictimAck", ack), sourceAddress, SAR_APP_PORT);
+    socket.sendTo(new Packet("VictimAck", ack), sourceAddress, appPort);
     applicationAcksSent++;
     delete packet;
 }

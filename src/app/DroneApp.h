@@ -14,7 +14,6 @@
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAssignment_m.h"
 #include "optimization/BatAlgorithm.h"
-#include "ports.h"
 
 namespace echosar {
 
@@ -25,7 +24,6 @@ struct LinkSample {
 };
 
 struct TeamLinkState {
-    std::string id;
     std::string ipAddress;
     inet::Coord position;
     omnetpp::simtime_t lastSeen = -1;
@@ -41,7 +39,6 @@ struct PendingVictimAlert {
     omnetpp::simtime_t nextAttempt = -1;
     int attempts = 0;
     int64_t sequence = 0;
-    std::string lastMessageId;
     std::string targetTeamId;
     std::map<std::string, omnetpp::simtime_t> attemptSentTimes;
     bool degradationEvaluated = false;
@@ -77,6 +74,8 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int maxAttempts = 5;
     int maxBaCycles = 2;
     int applicationIpTtl = 32;
+    int appPort = 5000;
+    int64_t victimAlertPayloadBytes = 320;
     double pdrThreshold = 0.8;
     double rssiThresholdDbm = -80;
     bool baEnabled = true;

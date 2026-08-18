@@ -4,7 +4,7 @@
 # Uso:
 #   ./run.sh                       → validação direta determinística
 #   ./run.sh -r 2                  → seed específico
-#   ./run.sh -c Cenario_ComObstaculos → config diferente
+#   ./run.sh -c Experiment_Proposed_BaOn → experimento com BA
 #   ./run.sh --gui                 → Qtenv no cenário móvel Visual_Demo
 #   ./run.sh --info                → log INFO global (MUITO verboso: PHY/MAC/AODV inclusos)
 #   ./run.sh --build               → compila antes de rodar
@@ -58,14 +58,21 @@ if $BUILD; then
 fi
 
 RUN_ARG=${RUN:+-r "$RUN"}
+SIMULATION_BINARY="$PROJECT_DIR/out/clang-debug/src/sistema_dbg"
+NED_PATH="$PROJECT_DIR/simulations:$PROJECT_DIR/src:$WORKSPACE/$INET_VERSION/src"
+if [[ ! -x "$SIMULATION_BINARY" ]]; then
+    echo "Binário ausente: $SIMULATION_BINARY" >&2
+    echo "Execute ./run.sh --build ou make antes de iniciar a simulação." >&2
+    exit 1
+fi
 echo ">>> Config=$CONFIG  seeds=${RUN:-todos}  UI=$UI  log=$LOG_LEVEL"
 
 if [[ "$UI" == "Qtenv" ]]; then
     opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated \
-        -c "cd '$PROJECT_DIR/simulations' && ./run -u Qtenv -c $CONFIG $RUN_ARG"
+        -c "cd '$PROJECT_DIR/simulations' && '$SIMULATION_BINARY' -n '$NED_PATH' -u Qtenv -c $CONFIG $RUN_ARG"
 else
     opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated \
-        -c "cd '$PROJECT_DIR/simulations' && ./run -u Cmdenv -c $CONFIG $RUN_ARG \
+        -c "cd '$PROJECT_DIR/simulations' && '$SIMULATION_BINARY' -n '$NED_PATH' -u Cmdenv -c $CONFIG $RUN_ARG \
             --cmdenv-express-mode=$EXPRESS \
             --**.cmdenv-log-level=$LOG_LEVEL \
             --**.app[0].cmdenv-log-level=INFO \

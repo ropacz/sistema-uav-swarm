@@ -1,4 +1,8 @@
-# Arquitetura e validação básica do ECHOSAR-Net
+# Guia de implementação e validação do ECHOSAR-Net
+
+Este documento descreve os componentes implementados e os testes executáveis.
+As decisões científicas, os parâmetros experimentais e as limitações ficam
+centralizados em `docs/dissertation_architecture.md`.
 
 ## 1. Finalidade
 
@@ -15,7 +19,7 @@ computacional, reconhecimento de vítimas, sensores físicos ou controle de voo.
 
 - OMNeT++ 6.2.0;
 - INET Framework 4.5.4;
-- IEEE 802.11b em modo ad hoc, 2,4 GHz e 1 Mbps;
+- IEEE 802.11b em modo ad hoc, 2,4 GHz, canal de 22 MHz e 1 Mbps;
 - UDP na camada de transporte;
 - AODV para roteamento com múltiplos saltos;
 - `FreeSpacePathLoss` para perda por propagação;
@@ -32,8 +36,7 @@ funcionalidades nativas de um DJI Phantom 4 Pro V2.0.
 src/
 ├── app/
 │   ├── DroneApp.{h,cc,ned}
-│   ├── TeamApp.{h,cc,ned}
-│   └── ports.h
+│   └── TeamApp.{h,cc,ned}
 ├── messages/
 │   ├── PositionUpdate.msg
 │   ├── VictimAlert.msg
@@ -54,8 +57,7 @@ src/
 simulations/
 ├── BasicNetwork.ned
 ├── omnetpp.ini
-├── dissertation-obstacles.xml
-└── run
+└── dissertation-obstacles.xml
 
 analysis/
 ├── process_results.py
@@ -105,13 +107,13 @@ pendentes e seguem o retry normal.
 
 É responsável por:
 
-- transmitir `PositionUpdate` em broadcast;
+- transmitir `PositionUpdate` em broadcast de um salto;
 - receber e deduplicar `VictimAlert`;
 - registrar apenas um atendimento por `alertId`;
 - responder novamente a tentativas ou pacotes duplicados;
 - enviar `VictimAck` ao endereço IP de origem informado pela pilha INET.
 
-Cada nó utiliza um único socket UDP na porta definida por `SAR_APP_PORT`.
+Cada nó utiliza um único socket UDP na porta configurável `appPort`.
 
 ### 4.4 AbstractObstacleSensor
 
@@ -284,6 +286,9 @@ Depois, execute as verificações automáticas:
 python3 analysis/validate_results.py
 ```
 
+Alternativamente, `make validate` executa sequencialmente todos os cenários
+determinísticos e, ao final, aplica as mesmas asserções.
+
 O resultado esperado é:
 
 ```text
@@ -312,6 +317,10 @@ seeds. A única diferença intencional é `baEnabled`:
 ./run.sh -c Experiment_Control_BaOff
 ./run.sh -c Experiment_Proposed_BaOn
 ```
+
+O processamento exige 30 seeds pareadas quando encontra resultados dos
+experimentos BA ligado/desligado e grava `experiment_manifest.json` com a
+revisão Git e os hashes dos principais insumos.
 
 Cada configuração possui 30 repetições. Depois das execuções:
 

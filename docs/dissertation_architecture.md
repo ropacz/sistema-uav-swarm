@@ -4,8 +4,10 @@
 
 1. `SarScenarioManager` agenda a detecção abstrata de cada vítima e associa o
    drone ativo mais próximo; empates usam o menor identificador lexicográfico.
-2. Equipes difundem `PositionUpdate` a cada segundo. O drone mede RSSI pelo
-   `SignalPowerInd`, PDR por lacunas de sequência e tempo desde a última amostra.
+2. Equipes difundem `PositionUpdate` a cada segundo. Esse broadcast representa
+   evidência de vizinhança de um salto; o drone não consulta diretamente a
+   mobilidade da equipe. Ao receber o pacote, mede RSSI pelo `SignalPowerInd`,
+   PDR por lacunas de sequência e tempo desde a última amostra.
 3. O originador envia uma tentativa `VictimAlert` por UDP/AODV. `alertId`
    identifica a vítima; `messageId` identifica a tentativa.
 4. A equipe deduplica atendimento por `alertId`, mas responde a toda tentativa
@@ -44,12 +46,13 @@ do OcuSync. IEEE 802.11 ad hoc, AODV e BA são abstrações de pesquisa.
 |---|---|
 | Área e duração | 1000×1000 m; 900 s |
 | População | 4 drones, 1 equipe, 1 vítima, 2 obstáculos |
-| Rádio | 2,4 GHz; 802.11b/DSSS; 1 Mbps; UDP; AODV |
+| Rádio | 2,4 GHz; 802.11b/DSSS; canal de 22 MHz; 1 Mbps; UDP; AODV |
+| Aplicação | porta UDP 5000; PositionUpdate 160 B; VictimAlert 320 B; VictimAck 96 B |
 | Alertas | retry 30 s; ACK timeout 5 s; 5 tentativas; TTL 180 s |
 | Enlace | janela 10 s; PDR 0,8; RSSI −80 dBm; silêncio 3 s |
 | Sensor | consulta geométrica abstrata; alcance 0,7–30 m |
-| Movimento | 13 m/s; subida 5 m/s; descida 3 m/s; altitude 6–20 m |
-| BA | 20 morcegos; 50 iterações; demais constantes conforme a implementação |
+| Movimento | 13 m/s; subida 5 m/s; descida 3 m/s; altitude 6–20 m; autonomia 1800 s |
+| BA | 20 morcegos; 50 iterações; 100 tentativas de inicialização; frequência 0–2; amplitude 0,9; pulso 0,5; decaimento/crescimento 0,9; busca local 0,1 |
 | Aptidão | link 0,60; obstáculo 0,25; movimento 0,15 |
 
 ## Limitações

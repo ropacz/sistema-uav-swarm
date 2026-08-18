@@ -2,6 +2,11 @@
 WORKSPACE ?= $(abspath ..)
 INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
+VALIDATION_CONFIGS := Validation_Direct Validation_Multihop Validation_Clear_Rssi \
+	Validation_Obstacle_Rssi Validation_Obstacle_BaOff Validation_BaOn \
+	Validation_Sensor_RejectRange Validation_TwoVictims
+
+.PHONY: all clean cleanall makefiles checkmakefiles check validate validate-results
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -30,3 +35,18 @@ checkmakefiles:
 	echo; \
 	exit 1; \
 	fi
+
+check:
+	bash -n run.sh
+	python3 -m py_compile analysis/process_results.py analysis/validate_results.py
+	@! rg -n "ports\\.h|simulations/run|Cenario_ComObstaculos|flightTimeLimit = 900s" \
+		README.md docs run.sh simulations src
+
+validate: check
+	@for config in $(VALIDATION_CONFIGS); do \
+		./run.sh -c $$config -r 0 || exit 1; \
+	done
+	$(MAKE) validate-results
+
+validate-results:
+	python3 analysis/validate_results.py

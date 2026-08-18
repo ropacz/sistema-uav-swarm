@@ -26,9 +26,12 @@ void DroneApp::initialize(int stage)
 {
     ApplicationBase::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
+        // Lê e valida toda a configuração antes de criar sockets e timers.
         droneId = par("droneId").stdstringValue();
         if (droneId.empty())
             droneId = getParentModule()->getFullName();
+        appPort = par("appPort");
+        victimAlertPayloadBytes = par("victimAlertPayloadBytes");
         retryInterval = par("retryInterval");
         ackTimeout = par("ackTimeout");
         alertTtl = par("alertTtl");
@@ -58,7 +61,16 @@ void DroneApp::initialize(int stage)
         linkNormalizationDistance = par("linkNormalizationDistance").doubleValueInUnit("m");
         batParameters.populationSize = par("batPopulation");
         batParameters.iterations = par("batIterations");
+        batParameters.initializationAttempts = par("batInitializationAttempts");
+        batParameters.frequencyMin = par("batFrequencyMin");
+        batParameters.frequencyMax = par("batFrequencyMax");
+        batParameters.initialAmplitude = par("batInitialAmplitude");
+        batParameters.initialPulseRate = par("batInitialPulseRate");
+        batParameters.amplitudeDecay = par("batAmplitudeDecay");
+        batParameters.pulseGrowth = par("batPulseGrowth");
+        batParameters.localSearchScale = par("batLocalSearchScale");
         if (droneId.empty() || retryInterval <= 0 || ackTimeout <= 0 || ackTimeout > retryInterval ||
+            appPort <= 0 || appPort > 65535 || victimAlertPayloadBytes <= 0 ||
             maxAttempts <= 0 || alertTtl < retryInterval || linkWindow <= 0 || teamSilenceTimeout <= 0 ||
             maintenanceInterval <= 0 || pdrThreshold < 0 || pdrThreshold > 1 || maxBaCycles < 0 ||
             maximumRepositionDistance <= 0 || minimumAltitude > maximumAltitude ||
@@ -66,6 +78,13 @@ void DroneApp::initialize(int stage)
             descentSpeed <= 0 || flightTimeLimit <= 0 || applicationIpTtl <= 0 || applicationIpTtl > 255 ||
             obstacleSigma <= 0 || obstacleSafetyMargin < 0 || linkNormalizationDistance <= 0 ||
             batParameters.populationSize <= 0 || batParameters.iterations <= 0 ||
+            batParameters.initializationAttempts <= 0 || batParameters.frequencyMin < 0 ||
+            batParameters.frequencyMax < batParameters.frequencyMin ||
+            batParameters.initialAmplitude <= 0 || batParameters.initialAmplitude > 1 ||
+            batParameters.initialPulseRate < 0 || batParameters.initialPulseRate > 1 ||
+            batParameters.amplitudeDecay <= 0 || batParameters.amplitudeDecay > 1 ||
+            batParameters.pulseGrowth <= 0 || batParameters.localSearchScale <= 0 ||
+            batParameters.localSearchScale > 1 ||
             wLink < 0 || wObstacle < 0 || wMove < 0 || std::abs(wLink + wObstacle + wMove - 1) > 1e-9)
             throw cRuntimeError("Invalid alert, link-quality, or fitness parameters");
         rssiSignal = registerSignal("positionUpdateRssi");
@@ -74,6 +93,7 @@ void DroneApp::initialize(int stage)
         recoveryTimeSignal = registerSignal("recoveryTime");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
+        // O endereço só está disponível após a configuração da camada de rede.
         auto ift = L3AddressResolver().findInterfaceTableOf(getParentModule());
         for (int i = 0; i < ift->getNumInterfaces(); ++i) {
             auto interface = ift->getInterface(i);
@@ -93,19 +113,14 @@ void DroneApp::initialize(int stage)
             std::string id = app->par("teamId").stdstringValue();
             if (id.empty()) id = team->getFullName();
             TeamLinkState state;
-            state.id = id;
             state.ipAddress = L3AddressResolver().resolve(team->getFullPath().c_str()).str();
-            // Scenario bootstrap supplies an initial last-known position. Later
-            // values and all link-quality samples still come from PositionUpdate.
-            auto teamMobility = check_and_cast<IMobility *>(team->getSubmodule("mobility"));
-            state.position = teamMobility->getCurrentPosition();
-            state.lastSeen = simTime();
+            // A posição só se torna conhecida apó um PositionUpdate recebido.
             teams[id] = state;
         }
         socket.setOutputGate(gate("socketOut"));
         socket.setCallback(this);
         socket.setBroadcast(true);
-        socket.bind(SAR_APP_PORT);
+        socket.bind(appPort);
         socket.setTimeToLive(applicationIpTtl);
         maintenanceTimer = new cMessage("alertMaintenance");
         movementCompleteTimer = new cMessage("movementComplete");
@@ -115,11 +130,13 @@ void DroneApp::initialize(int stage)
 
 void DroneApp::handleMessageWhenUp(cMessage *message)
 {
+    // Um único timer coordena expiração, degradação e novas tentativas.
     if (message == maintenanceTimer) {
         performMaintenance();
         scheduleAt(simTime() + maintenanceInterval, maintenanceTimer);
     }
     else if (message == movementCompleteTimer) {
+        // A próxima tentativa passa a validar a posição escolhida pelo BA.
         repositionState = RepositionState::AWAITING_VALIDATION;
     }
     else if (message->arrivedOn("assignmentIn"))
@@ -143,6 +160,7 @@ void DroneApp::socketDataArrived(UdpSocket *, Packet *packet)
 void DroneApp::handleAssignment(VictimAssignment *assignment)
 {
     std::string alertId = assignment->getAlertId();
+    // O alertId identifica o evento único, independentemente das tentativas.
     if (pendingAlerts.count(alertId)) {
         delete assignment;
         return;
@@ -174,7 +192,6 @@ void DroneApp::handlePositionUpdate(Packet *packet)
         return;
     }
     auto& team = teamIt->second;
-    team.id = update->getSenderId();
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     team.ipAddress = sourceAddress.str();
     team.position = Coord(update->getPositionX(), update->getPositionY(), update->getPositionZ());
@@ -186,6 +203,7 @@ void DroneApp::handlePositionUpdate(Packet *packet)
     }
     if (team.samples.empty() || update->getSequenceNumber() > team.samples.back().sequence)
         team.samples.push_back({update->getSequenceNumber(), simTime(), rssi});
+    // Mantém somente amostras pertencentes à janela deslizante configurada.
     while (!team.samples.empty() && simTime() - team.samples.front().receptionTime > linkWindow)
         team.samples.pop_front();
     delete packet;
@@ -200,6 +218,7 @@ std::string DroneApp::selectTargetTeam() const
     for (const auto& [id, team] : teams) {
         if (team.ipAddress.empty()) continue;
         double distance = team.lastSeen >= SIMTIME_ZERO ? current.distance(team.position) : INFINITY;
+        // O identificador resolve empates de forma reprodutível.
         if (selected.empty() || distance < best || (distance == best && id < selected)) {
             selected = id;
             best = distance;
@@ -222,15 +241,15 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     Coord position = mobility->getCurrentPosition();
     alert.attempts++;
     alert.sequence++;
-    alert.lastMessageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
+    std::string messageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
     if (activeRepositionAlertId == alert.alertId &&
         repositionState == RepositionState::AWAITING_VALIDATION)
-        alert.validationMessageId = alert.lastMessageId;
-    alert.attemptSentTimes[alert.lastMessageId] = simTime();
+        alert.validationMessageId = messageId;
+    alert.attemptSentTimes[messageId] = simTime();
     auto message = makeShared<VictimAlertChunk>();
-    message->setChunkLength(B(320));
+    message->setChunkLength(B(victimAlertPayloadBytes));
     message->setAlertId(alert.alertId.c_str());
-    message->setMessageId(alert.lastMessageId.c_str());
+    message->setMessageId(messageId.c_str());
     message->setVictimId(alert.victimId.c_str());
     message->setOriginDroneId(droneId.c_str());
     message->setOriginDroneAddress(ipAddress.c_str());
@@ -248,7 +267,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     message->setTransmissionTimestamp(simTime());
     message->setTimeToLive(alertTtl);
     socket.sendTo(new Packet("VictimAlert", message),
-                  Ipv4Address(team.ipAddress.c_str()), SAR_APP_PORT);
+                  Ipv4Address(team.ipAddress.c_str()), appPort);
     alert.ackDeadline = simTime() + ackTimeout;
     alert.nextAttempt = simTime() + retryInterval;
     alert.degradationEvaluated = false;
@@ -264,6 +283,7 @@ bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, d
         return true;
     const auto& team = teamIt->second;
     if (!team.samples.empty()) {
+        // Lacunas de sequência estimam perdas sem gerar tráfego de sondagem.
         int64_t expected = team.samples.back().sequence - team.samples.front().sequence + 1;
         pdr = expected > 0 ? std::clamp(static_cast<double>(team.samples.size()) / expected, 0.0, 1.0) : 0;
         double sum = 0;
@@ -284,6 +304,7 @@ void DroneApp::performMaintenance()
 
     for (auto it = pendingAlerts.begin(); it != pendingAlerts.end(); ) {
         auto& alert = it->second;
+        // TTL e limite de tentativas encerram alertas sem confirmação.
         if (simTime() - alert.generationTime >= alertTtl ||
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             alertsExpired++;
@@ -299,6 +320,7 @@ void DroneApp::performMaintenance()
             continue;
         }
         if (!alert.degradationEvaluated && alert.ackDeadline >= SIMTIME_ZERO && simTime() >= alert.ackDeadline) {
+            // Ausência de ACK apenas dispara a avaliação; não confirma obstáculo.
             double pdr, rssi;
             bool degraded = detectDegradation(alert, pdr, rssi);
             emit(pdrSignal, pdr);
@@ -325,6 +347,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
     auto observation = sensor->inspect(current, teamIt->second.position);
+    // O BA depende de confirmação geométrica independente da camada de rede.
     if (!observation.confirmed) {
         sensorRejections++;
         return;
@@ -355,6 +378,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     key << std::round(result.position.x * 10) / 10 << ':'
         << std::round(result.position.y * 10) / 10 << ':'
         << std::round(result.position.z * 10) / 10;
+    // A quantização evita repetir candidatos praticamente idênticos.
     if (!alert.testedPositions.insert(key.str()).second) {
         failedRepositions++;
         return;
@@ -373,6 +397,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     emit(repositionDistanceSignal, distance);
     double travelTime = std::max(std::hypot(result.position.x - current.x, result.position.y - current.y) / horizontalSpeed,
         std::abs(result.position.z - current.z) / (result.position.z >= current.z ? climbSpeed : descentSpeed));
+    // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
     controlled->moveTo(result.position, horizontalSpeed, climbSpeed, descentSpeed);
     activeRepositionAlertId = alert.alertId;
     repositionState = RepositionState::MOVING;
@@ -382,6 +407,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
 double DroneApp::computeFitness(const Coord& candidate, const Coord& current,
                                       const TeamLinkState& team, const Coord& obstaclePoint) const
 {
+    // Usa apenas qualidade estimada; RSSI futuro não é conhecido pelo BA.
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
     double linkCost = std::clamp(candidate.distance(team.position) / linkNormalizationDistance, 0.0, 1.0);
     double proximity = std::exp(-candidate.distance(obstaclePoint) / obstacleSigma);
@@ -415,6 +441,7 @@ void DroneApp::handleVictimAck(Packet *packet)
         bool valid = ack->getOriginDroneId() == droneId && ack->getVictimId() == alert.victimId &&
             teams.count(ack->getTeamId()) &&
             sentIt != alert.attemptSentTimes.end();
+        // Aceita somente ACK de equipe conhecida para uma tentativa realmente enviada.
         if (!valid) {
             delete packet;
             return;
@@ -425,6 +452,7 @@ void DroneApp::handleVictimAck(Packet *packet)
         bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
             alert.validationMessageId == ack->getReceivedMessageId();
         if (ownsReposition) {
+            // Separa a entrega do alerta da validação específica do reposicionamento.
             repositionValidationSamples++;
             double postPdr, postRssi;
             detectDegradation(alert, postPdr, postRssi);

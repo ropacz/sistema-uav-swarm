@@ -25,14 +25,15 @@ DroneApp ── VictimAlert/UDP/AODV ──▶ TeamApp
           └── BaGaussMarkovMobility
 ```
 
-- IEEE 802.11b ad hoc, 2,4 GHz e 1 Mbps;
+- IEEE 802.11b ad hoc, 2,4 GHz, canal de 22 MHz e 1 Mbps;
 - roteamento multi-hop AODV;
 - `PositionUpdate` periódico das equipes;
 - retransmissão de aplicação a cada 30 s até `VictimAck` ou expiração;
 - obstáculos conectados ao `DielectricObstacleLoss` do INET;
 - comparação pareada BA ligado/desligado com as mesmas seeds.
 
-Detalhes: [arquitetura e validação básica](docs/project_architecture_and_validation.md),
+Detalhes: [princípios de engenharia](docs/engineering_and_scientific_principles.md),
+[guia de implementação e validação](docs/project_architecture_and_validation.md),
 [arquitetura experimental](docs/dissertation_architecture.md) e
 [rastreabilidade](docs/requirements_traceability.md).
 
@@ -90,6 +91,8 @@ Também é possível usar:
 python3 analysis/validate_results.py
 ```
 
+O mesmo conjunto pode ser executado sequencialmente com `make validate`.
+
 ## Experimentos
 
 Cada configuração possui 30 repetições com `seed-set=${repetition}`:
@@ -114,3 +117,4 @@ O script lê `simulations/results/*.sca` e gera em `analysis/figures/`:
 - média, mediana, desvio-padrão e IC95%;
 - comparação pareada por seed;
 - gráficos de AppACK, atraso, tentativas e deslocamento.
+- manifesto JSON com revisão Git e hashes dos insumos experimentais.
