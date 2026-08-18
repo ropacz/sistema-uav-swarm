@@ -5,12 +5,12 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 464 nodes · 576 edges · 30 communities (23 shown, 7 thin omitted)
+- 466 nodes · 575 edges · 30 communities (23 shown, 7 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 16 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c9325ba6`
+- Built from commit: `cd3dc62d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -51,22 +51,24 @@
 2. `TeamApp` - 44 edges
 3. `PendingVictimAlert` - 27 edges
 4. `Guia visual: identificação e uso da posição do obstáculo` - 14 edges
-5. `BatParameters` - 13 edges
-6. `ObstacleObservation` - 13 edges
+5. `ObstacleObservation` - 13 edges
+6. `Guia de implementação e validação do ECHOSAR-Net` - 12 edges
 7. `TeamLinkState` - 12 edges
-8. `What You Must Do When Invoked` - 12 edges
-9. `Guia de implementação e validação do ECHOSAR-Net` - 12 edges
-10. `optimize` - 11 edges
+8. `BatParameters` - 12 edges
+9. `What You Must Do When Invoked` - 12 edges
+10. `AbstractObstacleSensor` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `DroneApp` --references--> `BatParameters`  [EXTRACTED]
+- `tryReposition` --references--> `BatAlgorithm`  [EXTRACTED]
   src/app/DroneApp.h → src/optimization/BatAlgorithm.h
-- `tryReposition` --calls--> `optimize`  [EXTRACTED]
-  src/app/DroneApp.h → src/optimization/BatAlgorithm.h
+- `SarScenarioManager` --defines--> `SarScenarioManager::numInitStages()`  [EXTRACTED]
+  src/scenario/SarScenarioManager.h → src/scenario/SarScenarioManager.cc
+- `SarScenarioManager` --defines--> `SarScenarioManager::initialize()`  [EXTRACTED]
+  src/scenario/SarScenarioManager.h → src/scenario/SarScenarioManager.cc
 - `optimize` --calls--> `fitness`  [EXTRACTED]
   src/optimization/BatAlgorithm.h → src/optimization/BatAlgorithm.cc
-- `optimize` --calls--> `randomInSphere()`  [EXTRACTED]
-  src/optimization/BatAlgorithm.h → src/optimization/BatAlgorithm.cc
+- `SarScenarioManager` --defines--> `SarScenarioManager::handleMessage()`  [EXTRACTED]
+  src/scenario/SarScenarioManager.h → src/scenario/SarScenarioManager.cc
 
 ## Import Cycles
 - None detected.
@@ -75,7 +77,7 @@
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
-Nodes (71): RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl, applicationIpTtl (+63 more)
+Nodes (72): BatParameters, RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl (+64 more)
 
 ### Community 1 - "TeamApp"
 Cohesion: 0.06
@@ -90,8 +92,8 @@ Cohesion: 0.07
 Nodes (33): cRNG, FeasibilityFunction, FitnessFunction, Coord, Bat, amplitude, fitness, frequency (+25 more)
 
 ### Community 4 - "PendingVictimAlert"
-Cohesion: 0.07
-Nodes (35): deque, ApplicationBase, Indication, map, set, simtime_t, string, UdpSocket (+27 more)
+Cohesion: 0.06
+Nodes (36): deque, map, ApplicationBase, Indication, map, set, simtime_t, string (+28 more)
 
 ### Community 5 - "DroneApp.cc"
 Cohesion: 0.17
@@ -155,7 +157,7 @@ Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphif
 
 ### Community 25 - "SarScenarioManager"
 Cohesion: 0.20
-Nodes (10): cModule, cMessage, cMessage, cSimpleModule, map, SarScenarioManager, detections, handleMessage (+2 more)
+Nodes (10): cModule, cMessage, cMessage, cSimpleModule, map, SarScenarioManager, detections, SarScenarioManager::handleMessage() (+2 more)
 
 ### Community 26 - "TeamApp.cc"
 Cohesion: 0.24
@@ -166,23 +168,23 @@ Cohesion: 0.20
 Nodes (9): Controle experimental, Engenharia científica, Engenharia de software, Fluxo de qualidade, Hipótese e falseabilidade, Princípios de engenharia do ECHOSAR-Net, Reprodutibilidade e proveniência, Responsabilidades (+1 more)
 
 ## Knowledge Gaps
-- **261 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+256 more)
+- **261 isolated node(s):** `Fluxo`, `Convenções experimentais`, `Parâmetros iniciais`, `Limitações`, `Engenharia de software` (+256 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `LifecycleOperation`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`?**
-  _High betweenness centrality (0.227) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `LifecycleOperation`, `PendingVictimAlert`, `DroneApp.cc`?**
+  _High betweenness centrality (0.203) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `TeamApp.cc`, `UdpSocket`, `PendingVictimAlert`, `LifecycleOperation`?**
   _High betweenness centrality (0.104) - this node is a cross-community bridge._
 - **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `BatParameters`, `DroneApp.cc`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
-- **What connects `run.sh script`, `sequence`, `receptionTime` to the rest of the system?**
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+- **What connects `Fluxo`, `Convenções experimentais`, `Parâmetros iniciais` to the rest of the system?**
   _261 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
-  _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0273972602739726 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
 - **Should `ObstacleObservation` be split into smaller, more focused modules?**
