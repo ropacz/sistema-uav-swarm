@@ -139,7 +139,8 @@ void TeamApp::handleVictimAlert(Packet *packet)
     if (newAlert)
         uniqueAlertsReceived++;
     if (!newAttempt)
-        duplicateAlerts++;
+        // Mesmo messageId indica duplicação do pacote/tentativa, não novo retry.
+        duplicatePackets++;
 
     int initialTtl = par("applicationIpTtl");
     if (auto hop = packet->findTag<HopLimitInd>())
@@ -175,7 +176,7 @@ void TeamApp::finish()
     recordScalar("positionUpdatesSent", positionUpdatesSent);
     recordScalar("uniqueAlertsReceived", uniqueAlertsReceived);
     recordScalar("attemptsReceived", attemptsReceived);
-    recordScalar("duplicateAlerts", duplicateAlerts);
+    recordScalar("duplicatePackets", duplicatePackets);
     recordScalar("applicationAcksSent", applicationAcksSent);
     recordScalar("totalDeliveryDelay", totalDeliveryDelay.dbl());
     recordScalar("totalAlertAgeAtReception", totalAlertAgeAtReception.dbl());

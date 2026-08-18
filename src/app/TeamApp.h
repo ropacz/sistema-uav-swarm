@@ -33,7 +33,7 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int positionUpdatesSent = 0;
     int uniqueAlertsReceived = 0;
     int attemptsReceived = 0;
-    int duplicateAlerts = 0;
+    int duplicatePackets = 0;
     int applicationAcksSent = 0;
     omnetpp::simtime_t totalDeliveryDelay = 0;
     omnetpp::simtime_t totalAlertAgeAtReception = 0;

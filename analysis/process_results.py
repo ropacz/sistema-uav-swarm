@@ -74,7 +74,8 @@ def load_runs() -> pd.DataFrame:
             "seed": int(float(attrs["seedset"])),
             "run_file": os.path.basename(path),
             "appack_pct": 100 * acked / generated if generated else math.nan,
-            "pdr_pct": 100 * received_attempts / attempts if attempts else math.nan,
+            # Esta razão mede tentativas da aplicação, não pacotes/MAC frames.
+            "alert_attempt_delivery_pct": 100 * received_attempts / attempts if attempts else math.nan,
             "one_way_delay_s": delay_total / received_attempts if received_attempts else math.nan,
             "alert_age_at_reception_s": alert_age_total / received_attempts if received_attempts else math.nan,
             "rtt_s": rtt_total / acked if acked else math.nan,
@@ -83,7 +84,7 @@ def load_runs() -> pd.DataFrame:
             "alerts_generated": generated,
             "alerts_acked": acked,
             "alerts_expired": scalar_sum(frame, "alertsExpired"),
-            "duplicates": scalar_sum(frame, "duplicateAlerts"),
+            "duplicate_packets": scalar_sum(frame, "duplicatePackets"),
             "ba_activations": scalar_sum(frame, "baActivations"),
             "successful_repositions": scalar_sum(frame, "successfulRepositions"),
             "failed_repositions": scalar_sum(frame, "failedRepositions"),

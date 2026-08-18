@@ -62,5 +62,7 @@ rádio. A aptidão candidata é uma aproximação por distância e obstrução, 
 previsão de antena, interferência ou SNIR. O proxy de energia é
 distância adicional, não descarga eletroquímica da bateria. O sensor é uma
 consulta geométrica abstrata, e não reconhecimento visual.
+`Validation_BaOn` injeta ausência temporária de ACK para validar a máquina de
+estados; evidência científica deve vir dos cenários pareados sem essa injeção.
 Resultados do BA devem ser inferidos da comparação; a implementação não
 pressupõe melhora.

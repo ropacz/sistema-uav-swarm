@@ -214,7 +214,9 @@ ACK dessa tentativa?
 - alertas únicos gerados e confirmados;
 - tentativas enviadas;
 - alertas expirados;
-- PDR fim a fim;
+- PDR da janela de `PositionUpdate`;
+- taxa de entrega das tentativas de `VictimAlert`;
+- pacotes duplicados; repetições são inferidas pelas tentativas do alerta;
 - atraso unidirecional por tentativa;
 - idade do alerta na recepção;
 - RTT entre `VictimAlert` e `VictimAck`;

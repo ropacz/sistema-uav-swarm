@@ -148,7 +148,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void performMaintenance();
     /// Monta e envia uma nova tentativa do VictimAlert para a equipe selecionada.
     void sendAttempt(PendingVictimAlert& alert);
-    /// Escolhe a equipe conhecida com atualização mais recente; ID resolve empates.
+    /// Escolhe a equipe posicionada mais próxima; menor ID é o fallback sem posição.
     std::string selectTargetTeam() const;
     /// Calcula PDR/RSSI da janela e indica degradação enquanto falta AppACK.
     bool detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const;

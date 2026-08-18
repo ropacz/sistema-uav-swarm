@@ -214,17 +214,23 @@ std::string DroneApp::selectTargetTeam() const
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
     std::string selected;
+    std::string fallback;
     double best = INFINITY;
     for (const auto& [id, team] : teams) {
         if (team.ipAddress.empty()) continue;
-        double distance = team.lastSeen >= SIMTIME_ZERO ? current.distance(team.position) : INFINITY;
+        // Broadcasts de posição não atravessam AODV. O menor ID fornece um
+        // destino determinístico quando nenhuma equipe foi ouvida diretamente.
+        if (fallback.empty() || id < fallback)
+            fallback = id;
+        if (team.lastSeen < SIMTIME_ZERO) continue;
+        double distance = current.distance(team.position);
         // O identificador resolve empates de forma reprodutível.
         if (selected.empty() || distance < best || (distance == best && id < selected)) {
             selected = id;
             best = distance;
         }
     }
-    return selected;
+    return selected.empty() ? fallback : selected;
 }
 
 void DroneApp::sendAttempt(PendingVictimAlert& alert)

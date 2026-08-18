@@ -4,6 +4,7 @@
 #include <set>
 
 #include "inet/common/InitStages.h"
+#include "inet/common/lifecycle/NodeStatus.h"
 #include "inet/mobility/contract/IMobility.h"
 #include "messages/VictimAssignment_m.h"
 
@@ -67,6 +68,9 @@ void SarScenarioManager::handleMessage(cMessage *message)
     int count = network->getSubmoduleVectorSize("drone");
     for (int i = 0; i < count; ++i) {
         auto drone = network->getSubmodule("drone", i);
+        auto status = dynamic_cast<NodeStatus *>(drone->getSubmodule("status"));
+        if (status && status->getState() != NodeStatus::UP)
+            continue;
         auto app = drone->getSubmodule("app", 0);
         std::string droneId = app->par("droneId").stdstringValue();
         if (droneId.empty()) droneId = drone->getFullName();

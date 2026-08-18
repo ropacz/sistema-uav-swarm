@@ -56,6 +56,15 @@ com menos de 30 pares.
 ### Validade das medições
 
 - AppACK é a métrica primária;
+- métricas secundárias só permanecem quando explicam entrega, atraso,
+  tentativas, qualidade do enlace ou custo de deslocamento;
+- valores deriváveis devem ser calculados na análise, sem novos contadores no
+  simulador; por exemplo, repetições podem ser inferidas de tentativas e
+  alertas únicos;
+- detalhes internos do algoritmo só viram métricas quando respondem a uma
+  hipótese explícita; não se mede apenas porque o valor está disponível;
+- aspectos subjetivos ou aproximados são declarados como premissas e
+  limitações, sem criar falsa precisão;
 - ACK MAC não equivale a `VictimAck`;
 - RSSI multi-hop descreve o último salto observado;
 - RSSI estimado de candidato não é apresentado como medição futura;
