@@ -8,8 +8,8 @@
 | AODV multi-hop | `BasicNetwork`/`AodvRouter` | sensibilidade calibrada e `hopCount >= 1` em `Validation_Multihop` |
 | Perda por obstáculo | XML + `DielectricObstacleLoss` | contador de interseções e comparação de RSSI |
 | Degradação | janela por equipe no drone | sinais RSSI/PDR e contadores de decisão |
-| Sensor abstrato | `AbstractObstacleSensor` | confirmação geométrica, rejeição por alcance e limite de 30 m |
-| BA e aptidão | `BatAlgorithm`/drone app | seed fixa, limites e métricas de execução |
+| Sensor abstrato | `AbstractObstacleSensor`; `docs/obstacle_detection_visual_guide.md` | confirmação geométrica, rejeição por alcance e limite de 30 m |
+| BA e aptidão | `BatAlgorithm`/drone app; `docs/bat_algorithm_and_fitness.md` | seed fixa, limites e métricas de execução |
 | Movimento gradual | `BaGaussMarkovMobility` | deslocamento gradual, interrupção por ACK e tentativa pós-chegada |
 | Experimento pareado | configs BA off/on | 30 repetições com `seed-set=${repetition}` |
 | Estatística | `analysis/process_results.py` | CSV, IC95%, diferenças pareadas e gráficos |

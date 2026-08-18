@@ -118,30 +118,49 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simsignal_t repositionDistanceSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t recoveryTimeSignal = SIMSIGNAL_NULL;
 
+    /// Libera timers e encerra o socket sem deixar mensagens pendentes.
     virtual ~DroneApp();
+    /// Informa ao OMNeT++ quantos estágios de inicialização do INET serão usados.
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
+    /// Lê parâmetros, registra métricas e configura endereço, socket e timers.
     virtual void initialize(int stage) override;
+    /// Despacha timers de manutenção, conclusão de movimento e eventos do socket.
     virtual void handleMessageWhenUp(omnetpp::cMessage *message) override;
+    /// Grava escalares acumulados ao final da simulação.
     virtual void finish() override;
+    /// Hooks de ciclo de vida mantidos vazios porque o cenário não reinicia aplicações.
     virtual void handleStartOperation(inet::LifecycleOperation *) override {}
     virtual void handleStopOperation(inet::LifecycleOperation *) override {}
     virtual void handleCrashOperation(inet::LifecycleOperation *) override {}
+    /// Classifica os pacotes UDP recebidos e encaminha ao tratador apropriado.
     virtual void socketDataArrived(inet::UdpSocket *, inet::Packet *packet) override;
+    /// Consome indicações de erro e fechamento exigidas pelo callback UDP.
     virtual void socketErrorArrived(inet::UdpSocket *, inet::Indication *indication) override { delete indication; }
     virtual void socketClosed(inet::UdpSocket *) override {}
 
+    /// Cria um alerta pendente para a vítima atribuída pelo gerenciador.
     void handleAssignment(VictimAssignment *assignment);
+    /// Atualiza posição, sequência, RSSI e janela de recepção de uma equipe.
     void handlePositionUpdate(inet::Packet *packet);
+    /// Valida o VictimAck, encerra o alerta e registra RTT ou recuperação pelo BA.
     void handleVictimAck(inet::Packet *packet);
+    /// Expira alertas, avalia degradação e agenda as tentativas regulares.
     void performMaintenance();
+    /// Monta e envia uma nova tentativa do VictimAlert para a equipe selecionada.
     void sendAttempt(PendingVictimAlert& alert);
+    /// Escolhe a equipe conhecida com atualização mais recente; ID resolve empates.
     std::string selectTargetTeam() const;
+    /// Calcula PDR/RSSI da janela e indica degradação enquanto falta AppACK.
     bool detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const;
+    /// Confirma o obstáculo, executa o BA e inicia o deslocamento quando permitido.
     void tryReposition(PendingVictimAlert& alert, double prePdr, double preRssi);
+    /// Calcula o custo normalizado de enlace, obstáculo e deslocamento do candidato.
     double computeFitness(const inet::Coord& candidate, const inet::Coord& current,
                           const TeamLinkState& team, const inet::Coord& obstaclePoint) const;
+    /// Verifica limites espaciais, obstáculos, distância e tempo de voo do candidato.
     bool isFeasible(const inet::Coord& candidate, const inet::Coord& current,
                     const inet::Coord& obstaclePoint) const;
+    /// Encerra o modo de reposicionamento e retoma a mobilidade Gauss-Markov.
     void resumeMobility();
 };
 

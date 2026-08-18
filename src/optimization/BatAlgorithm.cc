@@ -24,6 +24,7 @@ double sampleUniform(omnetpp::cRNG *rng, double a, double b)
 
 Coord randomInSphere(omnetpp::cRNG *rng, double radius)
 {
+    // cbrt corrige o raio para amostrar uniformemente o volume da esfera.
     Coord p;
     do {
         p = Coord(sampleUniform(rng, -1, 1), sampleUniform(rng, -1, 1), sampleUniform(rng, -1, 1));
@@ -42,6 +43,7 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
 
     std::vector<Bat> bats(p.populationSize);
     BatResult best;
+    // Cada morcego inicia em uma posição viável dentro da região de busca.
     for (auto& bat : bats) {
         for (int tries = 0; tries < p.initializationAttempts; ++tries) {
             bat.position = center + randomInSphere(rng, maxDistance);
@@ -57,6 +59,7 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
                 best = {bat.position, bat.fitness, best.evaluations, true};
         }
     }
+    // O centro preserva uma solução válida quando nenhum candidato aleatório serve.
     if (!best.valid && feasible(center)) {
         best = {center, fitness(center), best.evaluations + 1, true};
     }
@@ -80,6 +83,7 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
                 continue;
             double candidateFitness = fitness(candidate);
             best.evaluations++;
+            // Uma solução só é aceita se melhorar o morcego e passar pelo teste de amplitude.
             if (candidateFitness <= bat.fitness && rng->doubleRand() < bat.amplitude) {
                 bat.position = candidate;
                 bat.fitness = candidateFitness;

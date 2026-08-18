@@ -58,6 +58,7 @@ void TeamApp::initialize(int stage)
         socket.bind(appPort);
         socket.setTimeToLive(par("applicationIpTtl"));
         updateTimer = new cMessage("positionUpdateTimer");
+        // O jitter evita que todas as equipes iniciem broadcasts no mesmo instante.
         scheduleAt(simTime() + (initialJitter == 0 ? 0 : uniform(0, initialJitter.dbl())), updateTimer);
     }
 }
@@ -127,6 +128,7 @@ void TeamApp::handleVictimAlert(Packet *packet)
 
     bool newAttempt = receivedAttempts.insert(messageId).second;
     bool newAlert = attendedAlerts.insert(alertId).second;
+    // messageId deduplica pacotes; alertId impede contabilizar novo atendimento.
     if (newAttempt) {
         attemptsReceived++;
         simtime_t delay = simTime() - alert->getTransmissionTimestamp();
@@ -148,6 +150,7 @@ void TeamApp::handleVictimAlert(Packet *packet)
         return;
     }
     auto ack = makeShared<VictimAckChunk>();
+    // Mesmo uma tentativa duplicada recebe novo ACK para encerrar o retry no drone.
     ack->setChunkLength(B(victimAckPayloadBytes));
     ack->setAlertId(alert->getAlertId());
     ack->setReceivedMessageId(alert->getMessageId());

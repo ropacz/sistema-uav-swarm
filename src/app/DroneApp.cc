@@ -114,7 +114,7 @@ void DroneApp::initialize(int stage)
             if (id.empty()) id = team->getFullName();
             TeamLinkState state;
             state.ipAddress = L3AddressResolver().resolve(team->getFullPath().c_str()).str();
-            // A posição só se torna conhecida apó um PositionUpdate recebido.
+            // A posição só se torna conhecida após um PositionUpdate recebido.
             teams[id] = state;
         }
         socket.setOutputGate(gate("socketOut"));

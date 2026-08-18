@@ -38,6 +38,7 @@ class IntersectionVisitor : public IVisitor {
 
     void visit(const cObject *object) const override {
         auto physicalObject = check_and_cast<const IPhysicalObject *>(object);
+        // A interseção é calculada no sistema local do objeto e convertida ao mundo.
         RotationMatrix rotation(physicalObject->getOrientation().toEulerAngles());
         LineSegment local(rotation.rotateVectorInverse(origin - physicalObject->getPosition()),
                           rotation.rotateVectorInverse(destination - physicalObject->getPosition()));
@@ -48,6 +49,7 @@ class IntersectionVisitor : public IVisitor {
         Coord world2 = rotation.rotateVector(p2) + physicalObject->getPosition();
         Coord candidate = origin.distance(world1) <= origin.distance(world2) ? world1 : world2;
         double distance = origin.distance(candidate);
+        // Somente o primeiro obstáculo na linha de visada é relevante ao sensor.
         if (distance < closestDistance) {
             closest = physicalObject;
             closestPoint = candidate;
@@ -67,8 +69,7 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
         result.reason = "invalidTargetDirection";
         return result;
     }
-    // The abstract gimbal is explicitly oriented at the team, placing the LOS
-    // at the centre of both configured fields of view.
+    // O sensor abstrato é orientado para a equipe; a LOS fica no centro do FOV.
     IntersectionVisitor visitor(dronePosition, teamPosition);
     environment->visitObjects(&visitor, LineSegment(dronePosition, teamPosition));
     if (!visitor.closest) {
@@ -81,6 +82,7 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
     result.center = visitor.closest->getPosition();
     result.nearestSurfacePoint = visitor.closestPoint;
     result.distance = visitor.closestDistance;
+    // Interseção geométrica fora do alcance não equivale a confirmação sensorial.
     if (result.distance < minimumRange || result.distance > maximumRange) {
         result.reason = "outsideVisualRange";
         return result;

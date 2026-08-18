@@ -33,6 +33,8 @@ DroneApp ── VictimAlert/UDP/AODV ──▶ TeamApp
 - comparação pareada BA ligado/desligado com as mesmas seeds.
 
 Detalhes: [princípios de engenharia](docs/engineering_and_scientific_principles.md),
+[Bat Algorithm e função de aptidão](docs/bat_algorithm_and_fitness.md),
+[guia visual de obstáculos](docs/obstacle_detection_visual_guide.md),
 [guia de implementação e validação](docs/project_architecture_and_validation.md),
 [arquitetura experimental](docs/dissertation_architecture.md) e
 [rastreabilidade](docs/requirements_traceability.md).

@@ -34,6 +34,7 @@ class BatAlgorithm
     using FitnessFunction = std::function<double(const inet::Coord&)>;
     using FeasibilityFunction = std::function<bool(const inet::Coord&)>;
 
+    /// Busca a melhor posição viável dentro da esfera centrada no drone.
     static BatResult optimize(const inet::Coord& center, double maxDistance,
                               const BatParameters& parameters,
                               omnetpp::cRNG *rng,

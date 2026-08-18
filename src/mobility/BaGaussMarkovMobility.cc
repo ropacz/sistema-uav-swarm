@@ -11,6 +11,7 @@ Define_Module(BaGaussMarkovMobility);
 
 void BaGaussMarkovMobility::setTargetPosition()
 {
+    // Ao terminar a perna do BA, mantém a posição até a aplicação validar o enlace.
     if (baOverride) {
         baOverride = false;
         holding = true;
@@ -31,6 +32,7 @@ void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSp
     double horizontalTime = std::hypot(delta.x, delta.y) / horizontalSpeed;
     double verticalSpeed = delta.z >= 0 ? climbSpeed : descentSpeed;
     double verticalTime = std::abs(delta.z) / verticalSpeed;
+    // Os eixos evoluem simultaneamente; o eixo mais lento determina a chegada.
     double travelTime = std::max(horizontalTime, verticalTime);
     if (travelTime <= 0) {
         holding = true;
@@ -48,9 +50,8 @@ void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSp
 
 void BaGaussMarkovMobility::resumeNormal()
 {
-    // May be called while the BA leg is still in progress (for example when an
-    // ACK arrives before reaching the candidate). Rebase Gauss-Markov at the
-    // interpolated current position instead of leaving a pending BA override.
+    // Um ACK pode chegar durante o trajeto. Retoma o Gauss-Markov a partir da
+    // posição interpolada, sem deixar um comando do BA pendente.
     getCurrentPosition();
     baOverride = false;
     holding = false;

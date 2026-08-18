@@ -24,6 +24,7 @@ void SarScenarioManager::initialize(int stage)
     if (stage != INITSTAGE_APPLICATION_LAYER)
         return;
     auto network = getParentModule();
+    // IDs globais evitam ambiguidade nas mensagens e na agregação de resultados.
     std::set<std::string> ids;
     std::set<std::string> nodeIds;
     for (const char *vectorName : {"drone", "team"}) {
@@ -52,6 +53,7 @@ void SarScenarioManager::initialize(int stage)
 
 void SarScenarioManager::handleMessage(cMessage *message)
 {
+    // A detecção é um evento abstrato; aqui ocorre apenas a associação espacial.
     auto victim = detections.at(message);
     detections.erase(message);
     auto network = getParentModule();
@@ -70,6 +72,7 @@ void SarScenarioManager::handleMessage(cMessage *message)
         if (droneId.empty()) droneId = drone->getFullName();
         auto mobility = check_and_cast<IMobility *>(drone->getSubmodule("mobility"));
         double distance = mobility->getCurrentPosition().distance(victimPosition);
+        // O identificador lexicograficamente menor torna empates reproduzíveis.
         if (distance < bestDistance || (distance == bestDistance && (bestId.empty() || droneId < bestId))) {
             selectedApp = app;
             bestDistance = distance;
@@ -88,6 +91,7 @@ void SarScenarioManager::handleMessage(cMessage *message)
     assignment->setVictimPositionY(victimPosition.y);
     assignment->setVictimPositionZ(victimPosition.z);
     assignment->setDetectionTimestamp(simTime());
+    // sendDirect não modela rádio: representa a decisão interna do simulador.
     sendDirect(assignment, selectedApp, "assignmentIn");
     EV_INFO << "Victim " << victimId << " assigned to drone[" << bestIndex << "]\n";
     delete message;
