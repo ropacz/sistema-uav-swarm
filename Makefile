@@ -6,10 +6,10 @@ VALIDATION_CONFIGS := Validation_Direct Validation_Multihop Validation_Clear_Rss
 	Validation_Obstacle_Rssi Validation_Obstacle_BaOff Validation_BaOn \
 	Validation_Sensor_RejectRange Validation_TwoVictims
 ANALYSIS_SCRIPTS := analysis/process_results.py analysis/validate_results.py \
-	analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py
+	analysis/network_metrics.py analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests validate \
-	validate-results experiment analyze reproduce
+	validate-results experiment analyze network-metrics reproduce
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -67,6 +67,15 @@ experiment:
 
 analyze:
 	python3 analysis/process_results.py
+
+# Métricas de rede diagnósticas: escalares do INET agregados por seed, e
+# auditoria de nível de fio a partir das capturas PCAPNG.
+network-metrics:
+	./run.sh -c Network_Realistic_Evaluation
+	python3 analysis/network_metrics.py
+	python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+		--configuration Network_Realistic_Evaluation \
+		--output simulations/results/spreadsheets/metricas-rede.xlsx
 
 # Caminho único do código-fonte às tabelas do artigo.
 reproduce: all analysis-tests validate experiment

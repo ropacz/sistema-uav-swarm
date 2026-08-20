@@ -69,7 +69,33 @@ consulta sequer ocorre. `analysis/validate_results.py` verifica em todo cenário
 determinístico que a decomposição de `failedRepositions` soma exatamente o
 total.
 
-## 4. Métricas derivadas de capturas de rede
+## 4. Métricas de rede a partir dos escalares do INET
+
+Produzidas por `analysis/network_metrics.py`. Diagnósticas: descrevem o
+comportamento da rede, não decidem sobre a hipótese. Contadores são somados
+sobre os nós de uma execução; depois, cada seed pesa igual na agregação.
+
+Os contadores MAC são publicados com os mesmos nomes em `wlan[*].mac` e em
+`wlan[*].mac.dcf`. A extração filtra pelo módulo `mac` — somar por nome sem
+esse filtro contaria cada quadro duas vezes.
+
+| Métrica | Numerador ÷ denominador | Unidade | Coleta | Limite |
+|---|---|---|---|---|
+| `mac_frames_sent` | `packetSentToLower:count` | quadros | `wlan[*].mac` | Inclui broadcast de posição e tráfego do AODV |
+| `mac_retry_limit_pct` | `packetDropRetryLimitReached` ÷ quadros enviados | % | `wlan[*].mac` | Perda por esgotar retransmissões do 802.11 |
+| `mac_corrupt_pct` | `packetDropIncorrectlyReceived` ÷ (recebidos + corrompidos) | % | `wlan[*].mac` | Denominador é o que chegou ao receptor, não o que foi enviado |
+| `ip_drop_no_route` | contagem | pacotes | `ipv4.ip` | Ausência de rota AODV no instante do envio |
+| `ip_drop_hop_limit` | contagem | pacotes | `ipv4.ip` | TTL esgotado |
+| `hop_count_mean` | média de `hopCount:mean` | saltos | `TeamApp` | Inferido pelo TTL; 0 significa entrega direta |
+| `rssi_mean_dbm` | média de `positionUpdateRssi:mean` | dBm | `DroneApp` | Média entre drones; em multi-hop descreve o último salto |
+| `rssi_min_dbm` | mínimo de `positionUpdateRssi:min` | dBm | `DroneApp` | Pior amostra observada na execução |
+| `udp_packets_received` | `packetReceived:count` | pacotes | `udp` | Todos os pacotes da aplicação, de qualquer tipo |
+| `attempt_delivery_pct` | `attemptsReceived` ÷ `alertAttemptsSent` | % | aplicações | Tentativas, não alertas únicos |
+
+Uma métrica cujo denominador é vazio é registrada como indefinida, nunca como
+zero — por exemplo, `hop_count_mean` numa execução sem nenhuma entrega.
+
+## 5. Métricas derivadas de capturas de rede
 
 Diagnósticas e auditáveis, produzidas por `analysis/pcap_batch_to_spreadsheet.py`.
 
@@ -103,7 +129,7 @@ endian; timestamps são doubles em segundos. Após os campos, o payload recebe
 zeros até o tamanho experimental configurado. A identificação por tamanho
 existe apenas para ler capturas anteriores à versão 1 do formato.
 
-## 5. Fontes de evidência
+## 6. Fontes de evidência
 
 | Arquivo | Papel |
 |---|---|
@@ -116,7 +142,7 @@ Valores deriváveis são calculados em `analysis/`, evitando contadores
 redundantes no simulador. Detalhes internos do algoritmo só viram métrica
 quando respondem a uma pergunta explícita.
 
-## 6. Saídas da análise
+## 7. Saídas da análise
 
 | Arquivo | Conteúdo |
 |---|---|
@@ -127,7 +153,7 @@ quando respondem a uma pergunta explícita.
 | `diagnostic_runs.csv`, `diagnostic_summary.csv` | Configurações fora do experimento |
 | `experiment_manifest.json` | Proveniência do lote |
 
-## 7. Proveniência
+## 8. Proveniência
 
 Todo resultado publicável registra configuração, repetição, seed, duração,
 revisão Git, estado do worktree, SHA-256 dos insumos e limitações da execução.
