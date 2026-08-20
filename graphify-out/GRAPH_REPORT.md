@@ -1,16 +1,16 @@
-# Graph Report - sistema  (2026-08-19)
+# Graph Report - sistema  (2026-08-20)
 
 ## Corpus Check
-- 42 files · ~28,968 words
+- 39 files · ~28,182 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 579 nodes · 797 edges · 36 communities (28 shown, 8 thin omitted)
+- 563 nodes · 802 edges · 32 communities (26 shown, 6 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5d1fabfa`
+- Built from commit: `8a980df0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -21,14 +21,13 @@
 - BatParameters
 - PendingVictimAlert
 - DroneApp.cc
-- Guia de implementação e validação do ECHOSAR-Net
-- Guia visual: identificação e uso da posição do obstáculo
+- TeamLinkState
+- Modelo e premissas
 - BaGaussMarkovMobility
 - process_results.py
 - validate_results.py
-- StaticVictim
+- Protocolo científico do ECHOSAR-Net
 - run.sh
-- Bat Algorithm e função de aptidão
 - What You Must Do When Invoked
 - graphify reference: extra exports and benchmark
 - Repository Guidelines
@@ -44,25 +43,22 @@
 - TeamApp.cc
 - UdpSocket
 - LifecycleOperation
-- TeamLinkState
 - SarMessageSerializers.cc
-- Documentação do ECHOSAR-Net
 - DroneApp.h
-- Formato binário ECHOSAR para auditoria PCAP
-- analysis/README.md
-- handlePositionUpdate
+- Ferramentas de análise
+- StaticVictim
 
 ## God Nodes (most connected - your core abstractions)
-1. `DroneApp` - 100 edges
+1. `DroneApp` - 105 edges
 2. `TeamApp` - 44 edges
 3. `PendingVictimAlert` - 27 edges
-4. `Guia visual: identificação e uso da posição do obstáculo` - 14 edges
-5. `BatParameters` - 13 edges
-6. `ObstacleObservation` - 13 edges
-7. `TeamLinkState` - 12 edges
-8. `What You Must Do When Invoked` - 12 edges
-9. `Guia de implementação e validação do ECHOSAR-Net` - 12 edges
-10. `optimize` - 11 edges
+4. `BatParameters` - 13 edges
+5. `ObstacleObservation` - 13 edges
+6. `TeamLinkState` - 12 edges
+7. `What You Must Do When Invoked` - 12 edges
+8. `optimize` - 11 edges
+9. `AbstractObstacleSensor` - 11 edges
+10. `Protocolo científico do ECHOSAR-Net` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `MultiseedStatisticsTests` --uses--> `Capture`  [INFERRED]
@@ -79,11 +75,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 8 thin omitted)
+## Communities (32 total, 6 thin omitted)
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
-Nodes (71): RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl, applicationIpTtl (+63 more)
+Nodes (76): RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl, applicationIpTtl (+68 more)
 
 ### Community 1 - "TeamApp"
 Cohesion: 0.06
@@ -94,44 +90,40 @@ Cohesion: 0.07
 Nodes (31): cObject, IPhysicalEnvironment, IPhysicalObject, IVisitor, ModuleRefByPar, AbstractObstacleSensor, environment, initialize (+23 more)
 
 ### Community 3 - "BatParameters"
-Cohesion: 0.07
-Nodes (33): cRNG, FeasibilityFunction, FitnessFunction, Coord, Bat, amplitude, fitness, frequency (+25 more)
+Cohesion: 0.08
+Nodes (32): cRNG, FeasibilityFunction, FitnessFunction, Bat, amplitude, fitness, frequency, position (+24 more)
 
 ### Community 4 - "PendingVictimAlert"
 Cohesion: 0.11
 Nodes (18): PendingVictimAlert, ackDeadline, alertId, attempts, attemptSentTimes, baCycles, degradationEvaluated, generationTime (+10 more)
 
 ### Community 5 - "DroneApp.cc"
-Cohesion: 0.21
-Nodes (15): cMessage, Coord, computeFitness, detectDegradation, finish, handleAssignment, handleMessageWhenUp, initialize (+7 more)
+Cohesion: 0.17
+Nodes (21): cMessage, Coord, Packet, string, UdpSocket, computeFitness, detectDegradation, finish (+13 more)
 
-### Community 6 - "Guia de implementação e validação do ECHOSAR-Net"
-Cohesion: 0.11
-Nodes (19): 10. Experimentos principais, 11. Limitações, 1. Finalidade, 2. Tecnologias e modelos, 3. Organização do projeto, 4.1 SarScenarioManager, 4.2 DroneApp, 4.3 TeamApp (+11 more)
+### Community 6 - "TeamLinkState"
+Cohesion: 0.18
+Nodes (12): deque, Coord, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, TeamLinkState (+4 more)
 
-### Community 7 - "Guia visual: identificação e uso da posição do obstáculo"
-Cohesion: 0.04
-Nodes (39): Convenções experimentais, ECHOSAR-Net — arquitetura experimental, Fluxo, Limitações, Parâmetros iniciais, 1. Finalidade e autoridade, 2.1 Responsabilidades e direção das dependências, 2. Regras de projeto de software (+31 more)
+### Community 7 - "Modelo e premissas"
+Cohesion: 0.05
+Nodes (35): 1. Métrica primária, 2. Métricas secundárias, 3. Métricas diagnósticas, 4. Métricas derivadas de capturas de rede, 5. Fontes de evidência, 6. Saídas da análise, 7. Proveniência, AppACK (+27 more)
 
 ### Community 8 - "BaGaussMarkovMobility"
 Cohesion: 0.21
 Nodes (9): GaussMarkovMobility, BaGaussMarkovMobility, baOverride, holding, moveTo, resumeNormal, setTargetPosition, waypointId (+1 more)
 
 ### Community 9 - "process_results.py"
-Cohesion: 0.29
-Nodes (14): aggregate(), ci95(), file_sha256(), load_runs(), main(), paired(), parse_sca(), plot() (+6 more)
+Cohesion: 0.13
+Nodes (29): aggregate(), ci95(), data_quality(), file_sha256(), IntegrityError, load_runs(), main(), paired() (+21 more)
 
 ### Community 10 - "validate_results.py"
-Cohesion: 0.53
-Nodes (5): main(), Fail-fast checks for the deterministic dissertation validation scenarios., require(), scalars(), total()
+Cohesion: 0.57
+Nodes (6): main(), Fail-fast checks for the deterministic dissertation validation scenarios., require(), require_failure_decomposition(), scalars(), total()
 
-### Community 11 - "StaticVictim"
-Cohesion: 0.33
-Nodes (3): cMessage, cSimpleModule, StaticVictim
-
-### Community 13 - "Bat Algorithm e função de aptidão"
-Cohesion: 0.11
-Nodes (19): 10. Limitações e análise recomendada, 1. Finalidade no ECHOSAR-Net, 2. Representação de um morcego, 3. Inicialização da população, 4.1 Frequência, 4.2 Velocidade, 4.3 Posição, 4.4 Busca local (+11 more)
+### Community 11 - "Protocolo científico do ECHOSAR-Net"
+Cohesion: 0.17
+Nodes (12): 10. Limites de validade, 1. Pergunta, 2. Hipóteses, 3. Unidade experimental, 4. Variável independente, 5. Fatores controlados, 6. Desenho, 7. Separação entre verificação e evidência (+4 more)
 
 ### Community 14 - "What You Must Do When Invoked"
 Cohesion: 0.08
@@ -173,44 +165,40 @@ Nodes (11): cModule, map, cMessage, cMessage, cSimpleModule, map, SarScenarioMan
 Cohesion: 0.24
 Nodes (9): cMessage, Packet, UdpSocket, finish, handleMessageWhenUp, handleVictimAlert, initialize, sendPositionUpdate (+1 more)
 
-### Community 29 - "TeamLinkState"
-Cohesion: 0.20
-Nodes (11): deque, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, TeamLinkState, ipAddress (+3 more)
-
 ### Community 30 - "SarMessageSerializers.cc"
 Cohesion: 0.13
 Nodes (26): b, Chunk, ChunkSerializer, MemoryInputStream, MemoryOutputStream, PositionUpdateChunk, Ptr, simtime_t (+18 more)
-
-### Community 31 - "Documentação do ECHOSAR-Net"
-Cohesion: 0.40
-Nodes (4): Arquitetura e implementação, Documentação do ECHOSAR-Net, Método e rastreabilidade, Referências externas
 
 ### Community 32 - "DroneApp.h"
 Cohesion: 0.21
 Nodes (6): ApplicationBase, Indication, LifecycleOperation, set, string, UdpSocket
 
-### Community 35 - "handlePositionUpdate"
-Cohesion: 0.47
-Nodes (6): Packet, string, UdpSocket, handlePositionUpdate, handleVictimAck, socketDataArrived
+### Community 34 - "Ferramentas de análise"
+Cohesion: 0.50
+Nodes (3): Ferramentas de análise, Localização dos artefatos, Portões de integridade
+
+### Community 37 - "StaticVictim"
+Cohesion: 0.33
+Nodes (3): cMessage, cSimpleModule, StaticVictim
 
 ## Knowledge Gaps
-- **272 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+267 more)
+- **245 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+240 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `handlePositionUpdate`, `PendingVictimAlert`, `DroneApp.cc`, `BatParameters`, `SarScenarioManager`, `TeamLinkState`?**
-  _High betweenness centrality (0.171) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`?**
+  _High betweenness centrality (0.191) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `DroneApp.h`, `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
-- **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `DroneApp.h`, `BatParameters`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+- **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `DroneApp.h`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **What connects `run.sh script`, `sequence`, `receptionTime` to the rest of the system?**
-  _272 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _245 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
-  _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.025974025974025976 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
 - **Should `ObstacleObservation` be split into smaller, more focused modules?**
