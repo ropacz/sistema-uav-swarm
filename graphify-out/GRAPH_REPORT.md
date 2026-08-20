@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-19)
 
 ## Corpus Check
-- 39 files · ~27,668 words
+- 42 files · ~28,968 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 568 nodes · 780 edges · 36 communities (27 shown, 9 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 17 edges (avg confidence: 0.8)
+- 579 nodes · 797 edges · 36 communities (28 shown, 8 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `050378b1`
+- Built from commit: `5d1fabfa`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -36,7 +36,7 @@
 - graphify reference: add a URL and watch a folder
 - graphify reference: commit hook and native CLAUDE.md integration
 - graphify reference: incremental update and cluster-only
-- pcap_to_spreadsheet.py
+- pcap_batch_to_spreadsheet.py
 - graphify reference: GitHub clone and cross-repo merge
 - graphify reference: transcribe video and audio
 - extraction-spec.md
@@ -46,40 +46,40 @@
 - LifecycleOperation
 - TeamLinkState
 - SarMessageSerializers.cc
-- handlePositionUpdate
+- Documentação do ECHOSAR-Net
 - DroneApp.h
 - Formato binário ECHOSAR para auditoria PCAP
-- simtime_t
-- string
+- analysis/README.md
+- handlePositionUpdate
 
 ## God Nodes (most connected - your core abstractions)
 1. `DroneApp` - 100 edges
 2. `TeamApp` - 44 edges
 3. `PendingVictimAlert` - 27 edges
 4. `Guia visual: identificação e uso da posição do obstáculo` - 14 edges
-5. `ObstacleObservation` - 13 edges
-6. `BatParameters` - 13 edges
+5. `BatParameters` - 13 edges
+6. `ObstacleObservation` - 13 edges
 7. `TeamLinkState` - 12 edges
 8. `What You Must Do When Invoked` - 12 edges
 9. `Guia de implementação e validação do ECHOSAR-Net` - 12 edges
-10. `AbstractObstacleSensor` - 11 edges
+10. `optimize` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `MultiseedStatisticsTests` --uses--> `Capture`  [INFERRED]
+  analysis/tests/test_pcap_multiseed.py → analysis/pcap_batch_to_spreadsheet.py
 - `decode_echosar_payload()` --calls--> `text()`  [INFERRED]
-  analysis/pcap_to_spreadsheet.py → analysis/tests/test_pcap_analysis.py
+  analysis/pcap_core.py → analysis/tests/test_pcap_analysis.py
 - `DroneApp` --references--> `BatParameters`  [EXTRACTED]
+  src/app/DroneApp.h → src/optimization/BatAlgorithm.h
+- `tryReposition` --calls--> `optimize`  [EXTRACTED]
   src/app/DroneApp.h → src/optimization/BatAlgorithm.h
 - `optimize` --calls--> `fitness`  [EXTRACTED]
   src/optimization/BatAlgorithm.h → src/optimization/BatAlgorithm.cc
-- `tryReposition` --calls--> `optimize`  [EXTRACTED]
-  src/app/DroneApp.h → src/optimization/BatAlgorithm.h
-- `discover_captures()` --calls--> `load_capture()`  [EXTRACTED]
-  analysis/pcap_batch_to_spreadsheet.py → analysis/pcap_to_spreadsheet.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 9 thin omitted)
+## Communities (36 total, 8 thin omitted)
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
@@ -110,8 +110,8 @@ Cohesion: 0.11
 Nodes (19): 10. Experimentos principais, 11. Limitações, 1. Finalidade, 2. Tecnologias e modelos, 3. Organização do projeto, 4.1 SarScenarioManager, 4.2 DroneApp, 4.3 TeamApp (+11 more)
 
 ### Community 7 - "Guia visual: identificação e uso da posição do obstáculo"
-Cohesion: 0.05
-Nodes (37): Convenções experimentais, ECHOSAR-Net — arquitetura experimental, Fluxo, Limitações, Parâmetros iniciais, Controle experimental, Engenharia científica, Engenharia de software (+29 more)
+Cohesion: 0.04
+Nodes (39): Convenções experimentais, ECHOSAR-Net — arquitetura experimental, Fluxo, Limitações, Parâmetros iniciais, 1. Finalidade e autoridade, 2.1 Responsabilidades e direção das dependências, 2. Regras de projeto de software (+31 more)
 
 ### Community 8 - "BaGaussMarkovMobility"
 Cohesion: 0.21
@@ -161,7 +161,7 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
-### Community 21 - "pcap_to_spreadsheet.py"
+### Community 21 - "pcap_batch_to_spreadsheet.py"
 Cohesion: 0.06
 Nodes (55): Capture, compare_group(), discover_captures(), main(), parse_capture_name(), DataFrame, Path, Compara todas as transmissões de uma configuração/execução. (+47 more)
 
@@ -181,30 +181,34 @@ Nodes (11): deque, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, Team
 Cohesion: 0.13
 Nodes (26): b, Chunk, ChunkSerializer, MemoryInputStream, MemoryOutputStream, PositionUpdateChunk, Ptr, simtime_t (+18 more)
 
-### Community 31 - "handlePositionUpdate"
-Cohesion: 0.47
-Nodes (6): Packet, string, UdpSocket, handlePositionUpdate, handleVictimAck, socketDataArrived
+### Community 31 - "Documentação do ECHOSAR-Net"
+Cohesion: 0.40
+Nodes (4): Arquitetura e implementação, Documentação do ECHOSAR-Net, Método e rastreabilidade, Referências externas
 
 ### Community 32 - "DroneApp.h"
 Cohesion: 0.21
 Nodes (6): ApplicationBase, Indication, LifecycleOperation, set, string, UdpSocket
 
+### Community 35 - "handlePositionUpdate"
+Cohesion: 0.47
+Nodes (6): Packet, string, UdpSocket, handlePositionUpdate, handleVictimAck, socketDataArrived
+
 ## Knowledge Gaps
-- **266 isolated node(s):** `Arquitetura`, `Estrutura`, `Compilação`, `Validações determinísticas`, `Experimentos` (+261 more)
+- **272 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+267 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`, `handlePositionUpdate`?**
-  _High betweenness centrality (0.152) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `handlePositionUpdate`, `PendingVictimAlert`, `DroneApp.cc`, `BatParameters`, `SarScenarioManager`, `TeamLinkState`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `DroneApp.h`, `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `DroneApp.h`, `BatParameters`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **What connects `Arquitetura`, `Estrutura`, `Compilação` to the rest of the system?**
-  _266 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **What connects `run.sh script`, `sequence`, `receptionTime` to the rest of the system?**
+  _272 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
   _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**

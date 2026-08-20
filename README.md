@@ -50,8 +50,11 @@ src/scenario/      vítimas e associação vítima–drone
 src/sensing/       sensor geométrico abstrato
 src/node/          nó UAV composto
 simulations/       rede, obstáculos e configurações INI
-analysis/          agregação estatística e exportação de resultados
-docs/              arquitetura, parâmetros e rastreabilidade
+simulations/results/{omnetpp,pcap,eventlogs,spreadsheets}/
+                   artefatos experimentais separados por finalidade
+analysis/          processamento de escalares e capturas, testes e gráficos
+docs/              documentação autoral e referências externas separadas
+graphify-out/       grafo navegável da arquitetura; não contém resultados
 ```
 
 Fontes `*_m.cc` e `*_m.h`, binários, resultados e figuras são
@@ -94,6 +97,7 @@ python3 analysis/validate_results.py
 ```
 
 O mesmo conjunto pode ser executado sequencialmente com `make validate`.
+Os testes dos analisadores podem ser executados com `make analysis-tests`.
 
 ## Experimentos
 
@@ -113,7 +117,7 @@ O controle mantém obstáculos e sensoriamento ativos, alterando apenas
 python3 analysis/process_results.py
 ```
 
-O script lê `simulations/results/*.sca` e gera em `analysis/figures/`:
+O script lê `simulations/results/omnetpp/*.sca` e gera em `analysis/figures/`:
 
 - métricas por execução;
 - média, mediana, desvio-padrão e IC95%;
@@ -124,12 +128,12 @@ O script lê `simulations/results/*.sca` e gera em `analysis/figures/`:
 ### Perdas a partir das capturas de rede
 
 A configuração `Network_Log_Demo` grava um PCAPNG por nó. Para consolidar
-automaticamente todas as capturas existentes em `simulations/results/`:
+automaticamente todas as capturas existentes em `simulations/results/pcap/`:
 
 ```bash
 python3 analysis/pcap_batch_to_spreadsheet.py \
-  simulations/results \
-  --output simulations/results/metricas-rede.xlsx
+  simulations/results/pcap \
+  --output simulations/results/spreadsheets/metricas-rede.xlsx
 ```
 
 Para uma análise reprodutível de uma execução específica, filtre explicitamente
@@ -137,9 +141,9 @@ a configuração e o número da execução. Os demais arquivos continuam listado
 na aba `Inventário`, mas não entram nos denominadores:
 
 ```bash
-python3 analysis/pcap_batch_to_spreadsheet.py simulations/results \
+python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
   --configuration Network_Log_Demo --run 0 \
-  --output simulations/results/Network_Log_Demo-0-metricas.xlsx
+  --output simulations/results/spreadsheets/Network_Log_Demo-0-metricas.xlsx
 ```
 
 A planilha contém resumo por configuração, métricas por execução e enlace, comparação
@@ -147,5 +151,24 @@ pacote a pacote, eventos decodificados e inventário dos arquivos processados.
 O script identifica automaticamente os nós e IPs registrados pelo INET. Os
 payloads atuais usam um cabeçalho binário versionado `ECHO`; assim, tipo,
 `messageId`, `alertId`, sequência e tentativa são lidos diretamente do PCAP.
+Na aba `Estatística multiseed`, cada execução tem o mesmo peso e são calculados
+média, mediana, desvio-padrão amostral, mínimo, máximo e IC95% com distribuição
+t de Student. A configuração de demonstração produz 10 seeds por padrão.
 
-Para comparar apenas dois arquivos, use `analysis/pcap_to_spreadsheet.py`.
+Para avaliar a rede com mobilidade, quatro drones, obstáculos, AODV e BA:
+
+```bash
+./run.sh -c Network_Realistic_Evaluation
+python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+  --configuration Network_Realistic_Evaluation \
+  --output simulations/results/spreadsheets/Network_Realistic_Evaluation.xlsx
+```
+
+Para observar uma ativação determinística do BA com PCAP e eventlog:
+
+```bash
+./run.sh -c Network_BA_Activation_Demo
+python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+  --configuration Network_BA_Activation_Demo \
+  --output simulations/results/spreadsheets/Network_BA_Activation_Demo.xlsx
+```

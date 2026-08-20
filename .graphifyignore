@@ -1,0 +1,3 @@
+# Resultados podem ser grandes e conter payloads/logs experimentais. Eles não
+# fazem parte do conhecimento estrutural do código e nunca devem ser ingeridos.
+/simulations/results/

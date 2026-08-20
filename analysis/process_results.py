@@ -21,7 +21,9 @@ import pandas as pd
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RESULTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "simulations", "results")
+RESULTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    ROOT, "simulations", "results", "omnetpp"
+)
 OUTPUT = os.path.join(ROOT, "analysis", "figures")
 EXPECTED_PAIRED_RUNS = 30
 os.makedirs(OUTPUT, exist_ok=True)

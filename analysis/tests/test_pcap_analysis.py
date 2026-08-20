@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pcap_to_spreadsheet import (  # noqa: E402
+from pcap_core import (  # noqa: E402
     compare_direction,
     decode_echosar_payload,
     packet_identity_method,

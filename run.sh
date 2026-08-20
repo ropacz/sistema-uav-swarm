@@ -15,6 +15,11 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+mkdir -p \
+    "$PROJECT_DIR/simulations/results/omnetpp" \
+    "$PROJECT_DIR/simulations/results/pcap" \
+    "$PROJECT_DIR/simulations/results/eventlogs" \
+    "$PROJECT_DIR/simulations/results/spreadsheets"
 if [[ -f "$PROJECT_DIR/.env" ]]; then
     set -a
     source "$PROJECT_DIR/.env"

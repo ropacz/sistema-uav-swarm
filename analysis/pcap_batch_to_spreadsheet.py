@@ -14,8 +14,8 @@ receptor.
 
 Exemplo::
 
-    python3 analysis/pcap_batch_to_spreadsheet.py simulations/results \
-      -o simulations/results/metricas-rede.xlsx
+    python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+      -o simulations/results/spreadsheets/metricas-rede.xlsx
 
 As mensagens atuais são identificadas pela assinatura ``ECHO`` e pelo código
 explícito do tipo. Para capturas antigas, permanece o fallback pelos tamanhos:
@@ -25,6 +25,7 @@ explícito do tipo. Para capturas antigas, permanece o fallback pelos tamanhos:
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import struct
 from collections import Counter
@@ -33,7 +34,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pcap_to_spreadsheet import (
+from pcap_core import (
     format_workbook,
     is_group_destination,
     load_capture,
@@ -45,6 +46,17 @@ from pcap_to_spreadsheet import (
 CAPTURE_NAME = re.compile(
     r"^(?P<prefix>.+)-BasicNetwork\.(?P<node>(?:drone|team)\[\d+\])$"
 )
+
+# Quantis bilaterais de 95% da distribuição t de Student para 1..30 graus de
+# liberdade. Para amostras maiores, 1,96 é uma aproximação conservadora usual.
+T_975 = {
+    1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571,
+    6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
+    11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145, 15: 2.131,
+    16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086,
+    21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060,
+    26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042,
+}
 
 
 @dataclass
@@ -146,7 +158,15 @@ def compare_group(captures: list[Capture]) -> list[dict]:
 
     for source in captures:
         outgoing = [
-            event for event in source.events if event["direction"] == "outbound"
+            event for event in source.events
+            if event["direction"] == "outbound"
+            # Em multissalto, um relay também registra a saída do datagrama
+            # original. Para mensagens da aplicação, conte somente a captura
+            # do IP originador; AODV continua sendo avaliado salto a salto.
+            and (
+                event["message_type"] == "AODV"
+                or event["source_ip"] == source.interface_ip
+            )
         ]
         for event in outgoing:
             if is_group_destination(event["destination_ip"]):
@@ -267,6 +287,60 @@ def summarize_configurations(comparisons: pd.DataFrame) -> pd.DataFrame:
     return summary[columns]
 
 
+def summarize_multiseed(runs: pd.DataFrame) -> pd.DataFrame:
+    """Estatísticas entre seeds, dando o mesmo peso a cada execução.
+
+    O IC95% usa ``média ± t * erro padrão`` e é limitado a [0, 1], pois PDR e
+    taxa de perda são proporções. Com apenas uma seed, desvio e IC são deixados
+    vazios para não sugerir uma variabilidade que não foi medida.
+    """
+
+    identity = ["configuration", "message_type", "metric_scope"]
+    output_columns = identity + [
+        "n_seeds", "sent_total", "received_total", "lost_total",
+        "pdr_mean", "pdr_std", "pdr_median", "pdr_min", "pdr_max",
+        "pdr_ci95_lower", "pdr_ci95_upper", "loss_mean", "loss_std",
+        "loss_median", "loss_min", "loss_max", "loss_ci95_lower",
+        "loss_ci95_upper",
+    ]
+    if runs.empty:
+        return pd.DataFrame(columns=output_columns)
+
+    rows = []
+    for keys, group in runs.groupby(identity, sort=True):
+        n = len(group)
+        row = dict(zip(identity, keys))
+        row.update(
+            n_seeds=n,
+            sent_total=int(group["sent"].sum()),
+            received_total=int(group["received"].sum()),
+            lost_total=int(group["lost"].sum()),
+        )
+        for source, prefix in (("pdr", "pdr"), ("loss_rate", "loss")):
+            values = group[source].astype(float)
+            mean = float(values.mean())
+            std = float(values.std(ddof=1)) if n > 1 else math.nan
+            if n > 1:
+                critical = T_975.get(n - 1, 1.96)
+                margin = critical * std / math.sqrt(n)
+                lower, upper = max(0.0, mean - margin), min(1.0, mean + margin)
+            else:
+                lower = upper = math.nan
+            row.update(
+                {
+                    f"{prefix}_mean": mean,
+                    f"{prefix}_std": std,
+                    f"{prefix}_median": float(values.median()),
+                    f"{prefix}_min": float(values.min()),
+                    f"{prefix}_max": float(values.max()),
+                    f"{prefix}_ci95_lower": lower,
+                    f"{prefix}_ci95_upper": upper,
+                }
+            )
+        rows.append(row)
+    return pd.DataFrame(rows, columns=output_columns)
+
+
 def main() -> None:
     """Descobre as capturas e grava todas as visões na planilha consolidada."""
 
@@ -274,12 +348,12 @@ def main() -> None:
         description="Consolida automaticamente os PCAPNG do ECHOSAR-Net."
     )
     parser.add_argument(
-        "directory", type=Path, nargs="?", default=Path("simulations/results"),
-        help="diretório pesquisado recursivamente (padrão: simulations/results)",
+        "directory", type=Path, nargs="?", default=Path("simulations/results/pcap"),
+        help="diretório de capturas (padrão: simulations/results/pcap)",
     )
     parser.add_argument(
         "-o", "--output", type=Path,
-        default=Path("simulations/results/metricas-rede.xlsx"),
+        default=Path("simulations/results/spreadsheets/metricas-rede.xlsx"),
         help="planilha XLSX de saída",
     )
     parser.add_argument(
@@ -323,6 +397,7 @@ def main() -> None:
     inventory_df = pd.DataFrame(inventory)
     links_df = summarize_by_link(comparisons_df)
     runs_df = summarize_runs(comparisons_df)
+    multiseed_df = summarize_multiseed(runs_df)
     general_df = summarize_configurations(comparisons_df)
     methodology_df = pd.DataFrame(
         [
@@ -362,12 +437,20 @@ def main() -> None:
                 "item": "PDR e perda",
                 "definition": "PDR=recebidos/enviados; perda=perdidos/enviados",
             },
+            {
+                "item": "Estatística multiseed",
+                "definition": (
+                    "cada seed tem o mesmo peso; desvio-padrão amostral e "
+                    "IC95% da média com distribuição t de Student"
+                ),
+            },
         ]
     )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(args.output, engine="openpyxl") as writer:
         general_df.to_excel(writer, sheet_name="Resumo geral", index=False)
+        multiseed_df.to_excel(writer, sheet_name="Estatística multiseed", index=False)
         runs_df.to_excel(writer, sheet_name="Por execução", index=False)
         links_df.to_excel(writer, sheet_name="Por enlace", index=False)
         comparisons_df.to_excel(writer, sheet_name="Comparação", index=False)

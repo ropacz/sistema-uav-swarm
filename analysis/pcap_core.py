@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-"""Gera uma planilha de perdas comparando duas capturas PCAPNG do INET.
+"""Decodificação e correspondência de pacotes PCAPNG do ECHOSAR-Net.
 
-O script foi feito para as capturas produzidas pela configuração
-``Network_Log_Demo``. Cada arquivo representa o tráfego observado em um nó.
+Este módulo é compartilhado pelo relatório batch e pelos testes. A interface
+pública para gerar planilhas é ``pcap_batch_to_spreadsheet.py``.
 
 Exemplo de mensagem original produzida pelo ECHOSAR-Net::
 
@@ -32,25 +31,15 @@ Outros exemplos reconhecidos::
 O payload começa com ``ECHO``, versão e código do tipo. Os campos internos,
 como ``messageId``, ``alertId`` e sequência, são decodificados diretamente do
 PCAP. O tamanho só é usado como compatibilidade para capturas antigas.
-
-Exemplo de uso::
-
-    python3 analysis/pcap_to_spreadsheet.py \
-      "simulations/results/Network_Log_Demo-BasicNetwork.team[0].pcap" \
-      "simulations/results/Network_Log_Demo-BasicNetwork.drone[0].pcap" \
-      --ip-a 10.0.0.2 --ip-b 10.0.0.1 \
-      -o simulations/results/Network_Log_Demo-metricas.xlsx
 """
 
 from __future__ import annotations
 
-import argparse
 import ipaddress
 import struct
 from collections import Counter
 from pathlib import Path
 
-import pandas as pd
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
@@ -444,29 +433,6 @@ def compare_direction(
     return comparisons
 
 
-def build_summary(comparisons: pd.DataFrame) -> pd.DataFrame:
-    """Calcula enviados, recebidos, perdidos, PDR e perda por tipo."""
-
-    if comparisons.empty:
-        return pd.DataFrame(columns=[
-            "message_type", "metric_scope", "sent", "received", "lost",
-            "pdr", "loss_rate",
-        ])
-    group_columns = ["message_type"]
-    if "metric_scope" in comparisons.columns:
-        group_columns.append("metric_scope")
-    summary = comparisons.groupby(group_columns, as_index=False).agg(
-        sent=("lost", "size"), lost=("lost", "sum")
-    )
-    summary["received"] = summary["sent"] - summary["lost"]
-    # PDR = recebidos / enviados; taxa de perda = perdidos / enviados.
-    summary["pdr"] = summary["received"] / summary["sent"]
-    summary["loss_rate"] = summary["lost"] / summary["sent"]
-    return summary[group_columns + [
-        "sent", "received", "lost", "pdr", "loss_rate",
-    ]]
-
-
 def format_workbook(path: Path) -> None:
     """Aplica filtros, cabeçalhos, larguras e percentuais à planilha."""
 
@@ -483,83 +449,16 @@ def format_workbook(path: Path) -> None:
         for column in sheet.columns:
             width = min(max(len(str(cell.value or "")) for cell in column) + 2, 32)
             sheet.column_dimensions[get_column_letter(column[0].column)].width = width
-    # Qualquer aba que tenha PDR/perda recebe apresentação percentual. Isso
-    # atende tanto ao relatório de dois nós quanto à versão consolidada.
+    # Qualquer aba que tenha PDR/perda recebe apresentação percentual.
     for sheet in workbook.worksheets:
         headers = {cell.value: cell.column for cell in sheet[1]}
-        for name in ("pdr", "loss_rate"):
-            if name in headers:
-                for row in range(2, sheet.max_row + 1):
-                    sheet.cell(row, headers[name]).number_format = "0.00%"
+        percentage_names = {
+            name for name in headers
+            if isinstance(name, str)
+            and (name == "pdr" or name == "loss_rate"
+                 or name.startswith("pdr_") or name.startswith("loss_"))
+        }
+        for name in percentage_names:
+            for row in range(2, sheet.max_row + 1):
+                sheet.cell(row, headers[name]).number_format = "0.00%"
     workbook.save(path)
-
-
-def main() -> None:
-    """Processa os argumentos, compara os dois sentidos e grava o relatório."""
-
-    parser = argparse.ArgumentParser(
-        description="Gera uma planilha de perdas a partir de dois PCAPNG do INET.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""Exemplo:
-  python3 analysis/pcap_to_spreadsheet.py CAPTURA_EQUIPE CAPTURA_DRONE \\
-    --ip-a 10.0.0.2 --ip-b 10.0.0.1 -o metricas.xlsx""",
-    )
-    parser.add_argument("capture_a", type=Path, help="PCAPNG capturado no nó A")
-    parser.add_argument("capture_b", type=Path, help="PCAPNG capturado no nó B")
-    parser.add_argument("--ip-a", required=True, help="endereço IPv4 do nó A")
-    parser.add_argument("--ip-b", required=True, help="endereço IPv4 do nó B")
-    parser.add_argument(
-        "-o", "--output", type=Path, required=True, help="planilha XLSX de saída"
-    )
-    args = parser.parse_args()
-
-    events_a = load_capture(args.capture_a, "A")
-    events_b = load_capture(args.capture_b, "B")
-    # Avalia primeiro A -> B e depois B -> A. Assim, o mesmo relatório inclui
-    # PositionUpdate, VictimAlert, VictimAck e pacotes AODV nos dois sentidos.
-    comparisons = compare_direction(events_a, events_b, args.ip_a)
-    comparisons += compare_direction(events_b, events_a, args.ip_b)
-
-    events_df = pd.DataFrame(events_a + events_b)
-    comparisons_df = pd.DataFrame(comparisons)
-    summary_df = build_summary(comparisons_df)
-    methodology_df = pd.DataFrame(
-        [
-            {
-                "item": "Identidade ECHOSAR",
-                "definition": (
-                    "ECHO v1 + tipo + IPs + messageId/receivedMessageId + "
-                    "sequência/tentativa quando aplicável"
-                ),
-            },
-            {
-                "item": "Fallback legado",
-                "definition": (
-                    "IPs + IPv4 ID + portas UDP + tamanho do payload; usado "
-                    "somente quando o cabeçalho ECHO não está disponível"
-                ),
-            },
-            {
-                "item": "Perda",
-                "definition": "pacote transmitido na origem e ausente na captura receptora",
-            },
-        ]
-    )
-
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    with pd.ExcelWriter(args.output, engine="openpyxl") as writer:
-        summary_df.to_excel(writer, sheet_name="Resumo", index=False)
-        comparisons_df.to_excel(writer, sheet_name="Comparacao", index=False)
-        events_df.to_excel(writer, sheet_name="Eventos", index=False)
-        methodology_df.to_excel(writer, sheet_name="Metodologia", index=False)
-    format_workbook(args.output)
-
-    print(f"Planilha criada: {args.output}")
-    if summary_df.empty:
-        print("Nenhum pacote IPv4/UDP foi encontrado para os IPs informados.")
-    else:
-        print(summary_df.to_string(index=False))
-
-
-if __name__ == "__main__":
-    main()
