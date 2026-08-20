@@ -314,8 +314,10 @@ void DroneApp::performMaintenance()
         if (simTime() - alert.generationTime >= alertTtl ||
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             alertsExpired++;
-            if (activeRepositionAlertId == alert.alertId && repositionState != RepositionState::IDLE)
+            if (activeRepositionAlertId == alert.alertId && repositionState != RepositionState::IDLE) {
                 failedRepositions++;
+                repositionExpiredBeforeAck++;
+            }
             if (activeRepositionAlertId == alert.alertId) {
                 activeRepositionAlertId.clear();
                 repositionState = RepositionState::IDLE;
@@ -346,7 +348,9 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
 {
     auto teamIt = teams.find(alert.targetTeamId);
     if (teamIt == teams.end() || teamIt->second.lastSeen < SIMTIME_ZERO) {
-        sensorRejections++;
+        // Sem posição conhecida da equipe não há linha de visada a consultar.
+        // Isto não é uma rejeição do sensor: a consulta nem chegou a ocorrer.
+        teamUnknownForReposition++;
         return;
     }
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
@@ -378,6 +382,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         });
     if (!result.valid) {
         failedRepositions++;
+        baNoFeasibleSolution++;
         return;
     }
     std::ostringstream key;
@@ -387,16 +392,19 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     // A quantização evita repetir candidatos praticamente idênticos.
     if (!alert.testedPositions.insert(key.str()).second) {
         failedRepositions++;
+        baRedundantCandidate++;
         return;
     }
     auto controlled = dynamic_cast<BaGaussMarkovMobility *>(mobility);
     if (!controlled) {
         failedRepositions++;
+        baNoFeasibleSolution++;
         return;
     }
     double distance = current.distance(result.position);
     if (distance <= 1e-6) {
         failedRepositions++;
+        baRedundantCandidate++;
         return;
     }
     baDistance += distance;
@@ -479,8 +487,12 @@ void DroneApp::handleVictimAck(Packet *packet)
                 recoverySamples++;
                 emit(recoveryTimeSignal, recovery);
             }
-            else
+            else {
+                // O alerta foi entregue, mas por uma tentativa anterior à
+                // chegada: a posição escolhida pelo BA não chegou a ser testada.
                 failedRepositions++;
+                repositionAckedBeforeValidation++;
+            }
         }
         if (ownsReposition) {
             activeRepositionAlertId.clear();
@@ -515,9 +527,14 @@ void DroneApp::finish()
     recordScalar("degradationIndications", degradationIndications);
     recordScalar("sensorConfirmations", sensorConfirmations);
     recordScalar("sensorRejections", sensorRejections);
+    recordScalar("teamUnknownForReposition", teamUnknownForReposition);
     recordScalar("baActivations", baActivations);
     recordScalar("successfulRepositions", successfulRepositions);
     recordScalar("failedRepositions", failedRepositions);
+    recordScalar("baNoFeasibleSolution", baNoFeasibleSolution);
+    recordScalar("baRedundantCandidate", baRedundantCandidate);
+    recordScalar("repositionExpiredBeforeAck", repositionExpiredBeforeAck);
+    recordScalar("repositionAckedBeforeValidation", repositionAckedBeforeValidation);
     recordScalar("baDistance", baDistance);
     recordScalar("totalRTT", totalRtt.dbl());
     recordScalar("totalRecoveryTime", totalRecoveryTime.dbl());

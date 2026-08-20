@@ -97,10 +97,27 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int alertsExpired = 0;
     int degradationIndications = 0;
     int sensorConfirmations = 0;
+    // Rejeição sensorial propriamente dita: houve consulta e o sensor não
+    // confirmou obstáculo dentro do alcance. Não inclui os casos em que a
+    // consulta sequer foi possível — ver teamUnknownForReposition.
     int sensorRejections = 0;
+    // Degradação indicada sem posição conhecida da equipe: o sensor não pode
+    // ser consultado porque não há linha de visada a traçar.
+    int teamUnknownForReposition = 0;
     int baActivations = 0;
     int successfulRepositions = 0;
+    // Total de reposicionamentos malsucedidos; decomposto pelas quatro causas
+    // abaixo, cuja soma é igual a este contador.
     int failedRepositions = 0;
+    // O BA não devolveu posição utilizável, ou a mobilidade não é comandável.
+    int baNoFeasibleSolution = 0;
+    // Candidato já testado neste alerta, ou deslocamento numericamente nulo.
+    int baRedundantCandidate = 0;
+    // TTL ou tentativas esgotaram enquanto o reposicionamento estava ativo.
+    int repositionExpiredBeforeAck = 0;
+    // O alerta foi confirmado por uma tentativa anterior à chegada: entrega
+    // bem-sucedida, mas sem validar a posição escolhida pelo BA.
+    int repositionAckedBeforeValidation = 0;
     double baDistance = 0;
     omnetpp::simtime_t totalRtt = 0;
     omnetpp::simtime_t totalRecoveryTime = 0;

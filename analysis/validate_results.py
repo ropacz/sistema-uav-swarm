@@ -40,6 +40,24 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+# Causas mutuamente exclusivas de reposicionamento malsucedido. Sua soma deve
+# reproduzir exatamente o total, em qualquer cenário.
+FAILURE_CAUSES = (
+    "baNoFeasibleSolution",
+    "baRedundantCandidate",
+    "repositionExpiredBeforeAck",
+    "repositionAckedBeforeValidation",
+)
+
+
+def require_failure_decomposition(config: str, rows: list[tuple[str, str, float]]) -> None:
+    total_failures = total(rows, "failedRepositions")
+    parts = sum(total(rows, cause) for cause in FAILURE_CAUSES)
+    require(total_failures == parts,
+            f"{config}: failedRepositions={total_failures} does not match the sum of "
+            f"its causes ({parts})")
+
+
 def main() -> None:
     direct = scalars("Validation_Direct")
     multihop = scalars("Validation_Multihop")
@@ -68,9 +86,19 @@ def main() -> None:
 
     require(total(range_reject, "baActivations") == 0 and total(range_reject, "sensorRejections") >= 1,
             "sensor did not reject obstacle outside visual range")
+    # A rejeição deve vir do alcance do sensor, não da ausência de posição da
+    # equipe: as duas causas foram separadas justamente para não se confundirem.
+    require(total(range_reject, "teamUnknownForReposition") == 0,
+            "range rejection was caused by an unknown team position, not by the sensor")
     require(total(two_victims, "uniqueAlertsGenerated") == 2 and
             total(two_victims, "uniqueAlertsAcked") == 2,
             "two-victim scenario did not generate and acknowledge two unique alerts")
+
+    for config, rows in (("Validation_Direct", direct), ("Validation_Multihop", multihop),
+                         ("Validation_Obstacle_BaOff", retry), ("Validation_BaOn", ba),
+                         ("Validation_Sensor_RejectRange", range_reject),
+                         ("Validation_TwoVictims", two_victims)):
+        require_failure_decomposition(config, rows)
 
     print("All deterministic ECHOSAR-Net validation checks passed.")
 
