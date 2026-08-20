@@ -13,9 +13,6 @@ src/messages/*_m.h
 # ── Figuras geradas pelo script de análise ────────────────────────────────────
 analysis/figures/
 
-# ── Logs de exemplo regeneráveis (só o .md explicativo é versionado) ─────────
-analysis/examples/*.log
-
 # ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────
 .cproject
 .project
@@ -24,7 +21,6 @@ analysis/examples/*.log
 
 # ── Documentação de terceiros (copyrighted, pesada) ──────────────────────────
 UserGuide.txt
-firebase-debug.log
 
 # ── Ambiente local (segredos e caminhos de máquina) ──────────────────────────
 .env

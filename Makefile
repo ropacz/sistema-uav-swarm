@@ -9,7 +9,7 @@ ANALYSIS_SCRIPTS := analysis/process_results.py analysis/validate_results.py \
 	analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests validate \
-	validate-results
+	validate-results experiment analyze reproduce
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -42,7 +42,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	@! rg -n "ports\\.h|simulations/run|Cenario_ComObstaculos|flightTimeLimit = 900s" \
+	@! grep -rEn "ports\.h|simulations/run|Cenario_ComObstaculos|flightTimeLimit = 900s" \
 		README.md docs run.sh simulations src
 
 analysis-tests: check
@@ -56,3 +56,17 @@ validate: check
 
 validate-results:
 	python3 analysis/validate_results.py
+
+# Experimento científico: os dois braços pareados, com as mesmas seeds.
+# A análise falha se algum braço estiver incompleto ou se os dois diferirem
+# por qualquer parâmetro além de baEnabled.
+experiment:
+	./run.sh -c Experiment_Control_BaOff
+	./run.sh -c Experiment_Proposed_BaOn
+	$(MAKE) analyze
+
+analyze:
+	python3 analysis/process_results.py
+
+# Caminho único do código-fonte às tabelas do artigo.
+reproduce: all analysis-tests validate experiment
