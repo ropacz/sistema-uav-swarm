@@ -8,8 +8,13 @@ This repository implements the ECHOSAR-Net UAV search-and-rescue simulation usin
 - `src/messages/`: OMNeT++ message schemas (`.msg`); generated message sources are build artifacts.
 - `simulations/`: network topology, `omnetpp.ini`, obstacle data, launcher, and generated results.
 - `analysis/`: Python post-processing and plots derived from `.sca` result files.
-- `docs/`: scenario and parameter references, including literature traceability.
+- `docs/`: four authored documents — `scientific_protocol.md` (normative:
+  question, H0/H1, paired design), `model_and_assumptions.md`, `metrics.md` and
+  `traceability.md`. External material stays in `docs/references/`.
 - `run.sh`: standard entry point for command-line and GUI simulation runs.
+
+Parameter values live only in `simulations/omnetpp.ini`. Documentation cites the
+keys; it must not repeat the values.
 
 Keep protocol behavior in `src/`, experiment configuration in `simulations/`, and interpretation or plotting logic in `analysis/`.
 
@@ -21,11 +26,18 @@ Copy `.env.example` to `.env` and adjust the workspace path before running tools
 make makefiles                    # regenerate src/Makefile with opp_makemake
 make                              # debug build
 make clean                        # remove debug build products
+make validate                     # deterministic scenarios + assertions
+make analysis-tests               # analyser unit tests
+make experiment                   # both paired arms, then the analysis
+make reproduce                    # build → tests → validation → experiment
 ./run.sh --build                  # build, then run Validation_Direct in Cmdenv
 ./run.sh --gui                    # run interactively in Qtenv
 ./run.sh -c Validation_BaOn -r 0  # run a specific configuration and seed
-python3 analysis/process_results.py
 ```
+
+`DissertationBase` is declared `abstract = true` and cannot be run directly: use
+`Experiment_Control_BaOff` or `Experiment_Proposed_BaOn`. The analysis fails
+when the two arms differ by anything other than `baEnabled`.
 
 Run commands through the configured `opp_env` environment when OMNeT++ tools are not already on `PATH`.
 

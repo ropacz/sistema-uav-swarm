@@ -1,23 +1,23 @@
 # Documentação do ECHOSAR-Net
 
-Este diretório separa documentação autoral do projeto de materiais externos.
+Quatro documentos autorais, com papéis distintos e sem sobreposição:
 
-## Arquitetura e implementação
+- [`scientific_protocol.md`](scientific_protocol.md) — pergunta, H0 e H1,
+  unidade experimental, desenho pareado, separação entre verificação e
+  evidência, e as decisões de desenho ainda em aberto. **Documento normativo.**
+- [`model_and_assumptions.md`](model_and_assumptions.md) — o que é modelado,
+  como funcionam sensor, Bat Algorithm e mobilidade, quais modelos do INET são
+  usados, e os limites do modelo.
+- [`metrics.md`](metrics.md) — contrato de cada métrica: definição, unidade,
+  população, numerador, denominador, coleta, agregação e limite.
+- [`traceability.md`](traceability.md) — requisito → implementação →
+  verificação, e o que cada cenário determinístico cobre.
 
-- `project_architecture_and_validation.md`: visão completa do sistema e validações.
-- `dissertation_architecture.md`: resumo da arquitetura usada na dissertação.
-- `echosar_wire_format.md`: formato binário auditável das mensagens no PCAP.
-
-## Método e rastreabilidade
-
-- `engineering_and_scientific_principles.md`: critérios de engenharia e ciência.
-- `requirements_traceability.md`: ligação entre requisitos, código e validação.
-- `bat_algorithm_and_fitness.md`: algoritmo BA e função de aptidão.
-- `obstacle_detection_visual_guide.md`: funcionamento do sensor de obstáculos.
+Valores de parâmetros vivem em `simulations/omnetpp.ini`, fonte única. A
+documentação cita as chaves, não repete os valores.
 
 ## Referências externas
 
 Arquivos recebidos, especificações de fabricante e material de reunião ficam em
-`references/`. Eles servem como insumo e não representam necessariamente o
-comportamento implementado; a rastreabilidade deve apontar para a documentação
-autoral acima.
+`references/`. São insumos e não representam necessariamente o comportamento
+implementado; a rastreabilidade aponta para a documentação autoral acima.
