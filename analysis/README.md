@@ -3,6 +3,8 @@
 - `process_results.py`: processa escalares OMNeT++, aplica os portões de
   integridade do experimento pareado e gera as tabelas e figuras científicas.
 - `validate_results.py`: asserções sobre os cenários determinísticos.
+- `network_metrics.py`: métricas de rede diagnósticas (MAC, IP, rádio,
+  transporte) extraídas dos escalares do INET e agregadas por seed com IC95%.
 - `pcap_batch_to_spreadsheet.py`: consolida capturas em planilha auditável.
 - `pcap_core.py`: leitura e correspondência dos PCAPs.
 - `tests/`: testes determinísticos dos decodificadores e das métricas de PCAP.
