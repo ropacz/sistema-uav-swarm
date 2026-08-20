@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-19)
 
 ## Corpus Check
-- 40 files · ~27,789 words
+- 39 files · ~27,668 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 571 nodes · 784 edges · 34 communities (27 shown, 7 thin omitted)
+- 568 nodes · 780 edges · 36 communities (27 shown, 9 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 17 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `730a1bb9`
+- Built from commit: `050378b1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -46,38 +46,40 @@
 - LifecycleOperation
 - TeamLinkState
 - SarMessageSerializers.cc
-- Q: consegue me explicar esse projeto de forma clara e didatica
+- handlePositionUpdate
 - DroneApp.h
 - Formato binário ECHOSAR para auditoria PCAP
+- simtime_t
+- string
 
 ## God Nodes (most connected - your core abstractions)
 1. `DroneApp` - 100 edges
 2. `TeamApp` - 44 edges
 3. `PendingVictimAlert` - 27 edges
 4. `Guia visual: identificação e uso da posição do obstáculo` - 14 edges
-5. `BatParameters` - 13 edges
-6. `ObstacleObservation` - 13 edges
+5. `ObstacleObservation` - 13 edges
+6. `BatParameters` - 13 edges
 7. `TeamLinkState` - 12 edges
 8. `What You Must Do When Invoked` - 12 edges
 9. `Guia de implementação e validação do ECHOSAR-Net` - 12 edges
-10. `optimize` - 11 edges
+10. `AbstractObstacleSensor` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `decode_echosar_payload()` --calls--> `text()`  [INFERRED]
   analysis/pcap_to_spreadsheet.py → analysis/tests/test_pcap_analysis.py
 - `DroneApp` --references--> `BatParameters`  [EXTRACTED]
   src/app/DroneApp.h → src/optimization/BatAlgorithm.h
-- `tryReposition` --calls--> `optimize`  [EXTRACTED]
-  src/app/DroneApp.h → src/optimization/BatAlgorithm.h
 - `optimize` --calls--> `fitness`  [EXTRACTED]
   src/optimization/BatAlgorithm.h → src/optimization/BatAlgorithm.cc
+- `tryReposition` --calls--> `optimize`  [EXTRACTED]
+  src/app/DroneApp.h → src/optimization/BatAlgorithm.h
 - `discover_captures()` --calls--> `load_capture()`  [EXTRACTED]
   analysis/pcap_batch_to_spreadsheet.py → analysis/pcap_to_spreadsheet.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (34 total, 7 thin omitted)
+## Communities (36 total, 9 thin omitted)
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
@@ -100,8 +102,8 @@ Cohesion: 0.11
 Nodes (18): PendingVictimAlert, ackDeadline, alertId, attempts, attemptSentTimes, baCycles, degradationEvaluated, generationTime (+10 more)
 
 ### Community 5 - "DroneApp.cc"
-Cohesion: 0.17
-Nodes (21): cMessage, Coord, Packet, string, UdpSocket, computeFitness, detectDegradation, finish (+13 more)
+Cohesion: 0.21
+Nodes (15): cMessage, Coord, computeFitness, detectDegradation, finish, handleAssignment, handleMessageWhenUp, initialize (+7 more)
 
 ### Community 6 - "Guia de implementação e validação do ECHOSAR-Net"
 Cohesion: 0.11
@@ -179,30 +181,30 @@ Nodes (11): deque, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, Team
 Cohesion: 0.13
 Nodes (26): b, Chunk, ChunkSerializer, MemoryInputStream, MemoryOutputStream, PositionUpdateChunk, Ptr, simtime_t (+18 more)
 
-### Community 31 - "Q: consegue me explicar esse projeto de forma clara e didatica"
-Cohesion: 0.40
-Nodes (4): Answer, Outcome, Q: consegue me explicar esse projeto de forma clara e didatica, Source Nodes
+### Community 31 - "handlePositionUpdate"
+Cohesion: 0.47
+Nodes (6): Packet, string, UdpSocket, handlePositionUpdate, handleVictimAck, socketDataArrived
 
 ### Community 32 - "DroneApp.h"
 Cohesion: 0.21
 Nodes (6): ApplicationBase, Indication, LifecycleOperation, set, string, UdpSocket
 
 ## Knowledge Gaps
-- **269 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+264 more)
+- **266 isolated node(s):** `Arquitetura`, `Estrutura`, `Compilação`, `Validações determinísticas`, `Experimentos` (+261 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`?**
-  _High betweenness centrality (0.176) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`, `handlePositionUpdate`?**
+  _High betweenness centrality (0.152) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `DroneApp.h`, `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`?**
-  _High betweenness centrality (0.078) - this node is a cross-community bridge._
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
 - **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `DroneApp.h`, `BatParameters`, `DroneApp.cc`, `SarScenarioManager`, `TeamLinkState`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
-- **What connects `run.sh script`, `sequence`, `receptionTime` to the rest of the system?**
-  _269 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **What connects `Arquitetura`, `Estrutura`, `Compilação` to the rest of the system?**
+  _266 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
   _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
