@@ -34,6 +34,7 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/app/DroneApp.o \
     $O/app/TeamApp.o \
+    $O/messages/SarMessageSerializers.o \
     $O/mobility/BaGaussMarkovMobility.o \
     $O/optimization/BatAlgorithm.o \
     $O/scenario/SarScenarioManager.o \

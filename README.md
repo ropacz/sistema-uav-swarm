@@ -120,3 +120,32 @@ O script lê `simulations/results/*.sca` e gera em `analysis/figures/`:
 - comparação pareada por seed;
 - gráficos de AppACK, atraso, tentativas e deslocamento.
 - manifesto JSON com revisão Git e hashes dos insumos experimentais.
+
+### Perdas a partir das capturas de rede
+
+A configuração `Network_Log_Demo` grava um PCAPNG por nó. Para consolidar
+automaticamente todas as capturas existentes em `simulations/results/`:
+
+```bash
+python3 analysis/pcap_batch_to_spreadsheet.py \
+  simulations/results \
+  --output simulations/results/metricas-rede.xlsx
+```
+
+Para uma análise reprodutível de uma execução específica, filtre explicitamente
+a configuração e o número da execução. Os demais arquivos continuam listados
+na aba `Inventário`, mas não entram nos denominadores:
+
+```bash
+python3 analysis/pcap_batch_to_spreadsheet.py simulations/results \
+  --configuration Network_Log_Demo --run 0 \
+  --output simulations/results/Network_Log_Demo-0-metricas.xlsx
+```
+
+A planilha contém resumo por configuração, métricas por execução e enlace, comparação
+pacote a pacote, eventos decodificados e inventário dos arquivos processados.
+O script identifica automaticamente os nós e IPs registrados pelo INET. Os
+payloads atuais usam um cabeçalho binário versionado `ECHO`; assim, tipo,
+`messageId`, `alertId`, sequência e tentativa são lidos diretamente do PCAP.
+
+Para comparar apenas dois arquivos, use `analysis/pcap_to_spreadsheet.py`.
