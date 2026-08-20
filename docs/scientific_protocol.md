@@ -112,32 +112,70 @@ Uma conclusão sobre H0 só pode ser publicada quando:
 6. o efeito é relatado com sua incerteza, não apenas como decisão binária;
 7. ausência de diferença significativa **não** é relatada como equivalência.
 
-## 9. Decisões de desenho ainda em aberto
+## 9. Decisões de desenho
 
-Estas decisões alteram o que o experimento é capaz de medir e devem ser
-registradas aqui antes da execução do lote definitivo.
+### D1 e D2 — cenário e alertas por execução — decididas em 20/08/2026
 
-**D1 — Alcance do mecanismo.** Na configuração atual, o cenário científico
-gera um alerta em `t = 2 s`, confirmado na primeira tentativa; a avaliação de
-degradação só ocorre para alertas pendentes, de modo que o caminho
-degradação → sensor → BA não é exercitado. Sem uma alteração justificada de
-cenário, os dois braços produzem resultados idênticos por construção e a
-hipótese não é falseável.
+**Problema medido.** O cenário original gerava um único alerta em `t = 2 s`,
+confirmado na primeira tentativa. Como a avaliação de degradação só ocorre para
+alertas pendentes, o caminho degradação → sensor → reposicionamento nunca era
+exercitado. As 30 repetições pareadas registraram `baActivations = 0`,
+`degradationIndications = 0` e AppACK de 100 % nos dois braços, com diferença
+pareada exatamente nula. A hipótese não era falseável.
 
-**D2 — Alertas por execução.** Com uma vítima, AppACK por execução é uma
-variável de Bernoulli e a diferença pareada só assume −1, 0 ou +1. Múltiplos
-alertas por execução tornam a métrica primária uma proporção com variância
-interna, sem alterar a unidade experimental.
+**Decisão.** O experimento passa a usar a configuração `UrbanMission`, com três
+alterações, todas justificadas fisicamente e aplicadas **igualmente aos dois
+braços**:
 
-**D3 — Instrumento estatístico.** Depende de D2. Para pares binários, o
-instrumento adequado é McNemar sobre os pares discordantes; para proporções,
-a diferença pareada com IC95%. `paired_comparison.csv` já publica as contagens
-de pares discordantes necessárias em ambos os casos. Nenhum teste é aplicado
-automaticamente.
+| Alteração | De | Para | Justificativa |
+|---|---|---|---|
+| Setor de busca | 1 km × 1 km | 200 m × 200 m | Uma sortie cobre um setor delimitado pelo comando do incidente, não a área inteira |
+| Obstáculos | 2 blocos de 3×2×5 m | 4 edificações de 30×30×10 m | A proposta trata de degradação ar-solo em terreno construído; um bloco de 3×2×5 m é um anteparo pontual |
+| Vítimas | 1 em `t = 2 s` | 10 ao longo de 660 s | Uma sortie acumula detecções; AppACK passa a ser proporção com variância interna (resolve D2) |
 
-**D4 — Instrumentação de PCAP.** Definir se permanece como diagnóstico
-rotulado, é consolidada, ou é promovida a verificação formal com contrato de
-métrica próprio.
+Consequências deliberadas: o piso de voo sobe para 12 m, acima do topo das
+edificações, para que um drone nunca ocupe o volume de um prédio — inclusive os
+candidatos propostos pelo BA. A geometria antiga permanece em
+`dissertation-obstacles.xml`, usada pelos cenários determinísticos, cujos testes
+de RSSI e de alcance do sensor dependem daquelas dimensões exatas.
+
+**Nenhum parâmetro do Bat Algorithm, da função de aptidão ou do sensor foi
+alterado.** A variável independente continua sendo apenas `baEnabled`.
+
+### Critério de aceitação do cenário
+
+Fixado **antes** da execução e deliberadamente silencioso quanto ao resultado.
+Um piloto de 5 seeds por braço aceita o cenário quando:
+
+1. `baActivations > 0` no braço da proposta, em pelo menos 4 das 5 seeds;
+2. `degradationIndications > 0` nos **dois** braços — o caminho de degradação é
+   exercitado independentemente do tratamento;
+3. AppACK fica estritamente entre 0 % e 100 % em pelo menos um braço, isto é,
+   fora do teto e do piso, de modo que a métrica tenha variância.
+
+O critério **não menciona o sinal nem a magnitude da diferença pareada**. Ajustar
+o cenário até que a diferença fique favorável à proposta seria desenho enviesado;
+por isso a condição de parada é a ativação do mecanismo e a variância da métrica,
+não o seu resultado.
+
+Se o piloto reprovar, o cenário pode ser ajustado novamente, e cada ajuste é
+registrado aqui. O cenário é congelado antes do lote definitivo de 30 pares.
+
+### D3 — Instrumento estatístico — em aberto
+
+Com AppACK agora sobre 10 alertas por execução, a métrica primária é uma
+proporção, e a diferença pareada por seed com IC95% é o instrumento natural.
+Resta decidir se um teste de hipótese é reportado e, em caso afirmativo, com
+qual justificativa e verificação de premissas. `paired_comparison.csv` publica o
+efeito, o intervalo e as contagens de pares discordantes; nenhum teste é
+aplicado automaticamente.
+
+### D4 — Instrumentação de PCAP — em aberto
+
+Definir se permanece como diagnóstico rotulado, é consolidada, ou é promovida a
+verificação formal com contrato de métrica próprio. A auditoria de nível de fio
+que ela fornece é hoje a única evidência independente de que os pacotes
+observados correspondem ao que o modelo afirma enviar.
 
 ## 10. Limites de validade
 
