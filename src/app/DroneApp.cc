@@ -44,21 +44,27 @@ void DroneApp::initialize(int stage)
         baEnabled = par("baEnabled");
         maxBaCycles = par("maxBaCycles");
         maximumRepositionDistance = par("maximumRepositionDistance").doubleValueInUnit("m");
+        fitnessParameters.maximumRepositionDistance = maximumRepositionDistance;
         minimumAltitude = par("minimumAltitude").doubleValueInUnit("m");
         maximumAltitude = par("maximumAltitude").doubleValueInUnit("m");
-        areaMinX = par("areaMinX").doubleValueInUnit("m");
-        areaMaxX = par("areaMaxX").doubleValueInUnit("m");
-        areaMinY = par("areaMinY").doubleValueInUnit("m");
-        areaMaxY = par("areaMaxY").doubleValueInUnit("m");
-        horizontalSpeed = par("horizontalSpeed").doubleValueInUnit("mps");
-        climbSpeed = par("climbSpeed").doubleValueInUnit("mps");
-        descentSpeed = par("descentSpeed").doubleValueInUnit("mps");
-        flightTimeLimit = par("flightTimeLimit");
+        fitnessParameters.minimumAltitude = minimumAltitude;
+        fitnessParameters.maximumAltitude = maximumAltitude;
+        fitnessParameters.areaMinX = par("areaMinX").doubleValueInUnit("m");
+        fitnessParameters.areaMaxX = par("areaMaxX").doubleValueInUnit("m");
+        fitnessParameters.areaMinY = par("areaMinY").doubleValueInUnit("m");
+        fitnessParameters.areaMaxY = par("areaMaxY").doubleValueInUnit("m");
+        fitnessParameters.horizontalSpeed = par("horizontalSpeed").doubleValueInUnit("mps");
+        fitnessParameters.climbSpeed = par("climbSpeed").doubleValueInUnit("mps");
+        fitnessParameters.descentSpeed = par("descentSpeed").doubleValueInUnit("mps");
+        fitnessParameters.flightTimeLimit = par("flightTimeLimit");
         applicationIpTtl = par("applicationIpTtl");
-        wLink = par("wLink"); wObstacle = par("wObstacle"); wMove = par("wMove");
-        obstacleSigma = par("obstacleSigma").doubleValueInUnit("m");
-        obstacleSafetyMargin = par("obstacleSafetyMargin").doubleValueInUnit("m");
-        linkNormalizationDistance = par("linkNormalizationDistance").doubleValueInUnit("m");
+        fitnessParameters.wLink = par("wLink");
+        fitnessParameters.wObstacle = par("wObstacle");
+        fitnessParameters.wMove = par("wMove");
+        fitnessParameters.obstacleSigma = par("obstacleSigma").doubleValueInUnit("m");
+        fitnessParameters.obstacleSafetyMargin = par("obstacleSafetyMargin").doubleValueInUnit("m");
+        fitnessParameters.linkNormalizationDistance =
+            par("linkNormalizationDistance").doubleValueInUnit("m");
         batParameters.populationSize = par("batPopulation");
         batParameters.iterations = par("batIterations");
         batParameters.initializationAttempts = par("batInitializationAttempts");
@@ -74,9 +80,13 @@ void DroneApp::initialize(int stage)
             maxAttempts <= 0 || alertTtl < retryInterval || linkWindow <= 0 || teamSilenceTimeout <= 0 ||
             maintenanceInterval <= 0 || pdrThreshold < 0 || pdrThreshold > 1 || maxBaCycles < 0 ||
             maximumRepositionDistance <= 0 || minimumAltitude > maximumAltitude ||
-            areaMinX >= areaMaxX || areaMinY >= areaMaxY || horizontalSpeed <= 0 || climbSpeed <= 0 ||
-            descentSpeed <= 0 || flightTimeLimit <= 0 || applicationIpTtl <= 0 || applicationIpTtl > 255 ||
-            obstacleSigma <= 0 || obstacleSafetyMargin < 0 || linkNormalizationDistance <= 0 ||
+            fitnessParameters.areaMinX >= fitnessParameters.areaMaxX ||
+            fitnessParameters.areaMinY >= fitnessParameters.areaMaxY ||
+            fitnessParameters.horizontalSpeed <= 0 || fitnessParameters.climbSpeed <= 0 ||
+            fitnessParameters.descentSpeed <= 0 || fitnessParameters.flightTimeLimit <= 0 ||
+            applicationIpTtl <= 0 || applicationIpTtl > 255 ||
+            fitnessParameters.obstacleSigma <= 0 || fitnessParameters.obstacleSafetyMargin < 0 ||
+            fitnessParameters.linkNormalizationDistance <= 0 ||
             batParameters.populationSize <= 0 || batParameters.iterations <= 0 ||
             batParameters.initializationAttempts <= 0 || batParameters.frequencyMin < 0 ||
             batParameters.frequencyMax < batParameters.frequencyMin ||
@@ -85,7 +95,10 @@ void DroneApp::initialize(int stage)
             batParameters.amplitudeDecay <= 0 || batParameters.amplitudeDecay > 1 ||
             batParameters.pulseGrowth <= 0 || batParameters.localSearchScale <= 0 ||
             batParameters.localSearchScale > 1 ||
-            wLink < 0 || wObstacle < 0 || wMove < 0 || std::abs(wLink + wObstacle + wMove - 1) > 1e-9)
+            fitnessParameters.wLink < 0 || fitnessParameters.wObstacle < 0 ||
+            fitnessParameters.wMove < 0 ||
+            std::abs(fitnessParameters.wLink + fitnessParameters.wObstacle +
+                     fitnessParameters.wMove - 1) > 1e-9)
             throw cRuntimeError("Invalid alert, link-quality, or fitness parameters");
         rssiSignal = registerSignal("positionUpdateRssi");
         pdrSignal = registerSignal("linkWindowPdr");
@@ -378,14 +391,12 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     alert.repositionStart = simTime();
     alert.preRepositionPdr = prePdr;
     alert.preRepositionRssi = preRssi;
+    RepositionFitness fitness(fitnessParameters, sensor, current,
+                              teamIt->second.position, observation.nearestSurfacePoint, simTime());
     BatResult result = BatAlgorithm::optimize(current, maximumRepositionDistance,
         batParameters, getRNG(0),
-        [&](const Coord& candidate) {
-            return computeFitness(candidate, current, teamIt->second, observation.nearestSurfacePoint);
-        },
-        [&](const Coord& candidate) {
-            return isFeasible(candidate, current, observation.nearestSurfacePoint);
-        });
+        [&](const Coord& candidate) { return fitness.cost(candidate); },
+        [&](const Coord& candidate) { return fitness.feasible(candidate); });
     if (!result.valid) {
         failedRepositions++;
         baNoFeasibleSolution++;
@@ -415,40 +426,13 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     }
     baDistance += distance;
     emit(repositionDistanceSignal, distance);
-    double travelTime = std::max(std::hypot(result.position.x - current.x, result.position.y - current.y) / horizontalSpeed,
-        std::abs(result.position.z - current.z) / (result.position.z >= current.z ? climbSpeed : descentSpeed));
+    double travelTime = fitness.travelTime(current, result.position);
     // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
-    controlled->moveTo(result.position, horizontalSpeed, climbSpeed, descentSpeed);
+    controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
+                       fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
     activeRepositionAlertId = alert.alertId;
     repositionState = RepositionState::MOVING;
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
-}
-
-double DroneApp::computeFitness(const Coord& candidate, const Coord& current,
-                                      const TeamLinkState& team, const Coord& obstaclePoint) const
-{
-    // Usa apenas qualidade estimada; RSSI futuro não é conhecido pelo BA.
-    auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
-    double linkCost = std::clamp(candidate.distance(team.position) / linkNormalizationDistance, 0.0, 1.0);
-    double proximity = std::exp(-candidate.distance(obstaclePoint) / obstacleSigma);
-    double obstacleCost = std::max(proximity, sensor->intersectsAnyObstacle(candidate, team.position) ? 1.0 : 0.0);
-    double movementCost = std::clamp(candidate.distance(current) / maximumRepositionDistance, 0.0, 1.0);
-    return wLink * linkCost + wObstacle * obstacleCost + wMove * movementCost;
-}
-
-bool DroneApp::isFeasible(const Coord& candidate, const Coord& current, const Coord& obstaclePoint) const
-{
-    if (candidate.x < areaMinX || candidate.x > areaMaxX || candidate.y < areaMinY || candidate.y > areaMaxY ||
-        candidate.z < minimumAltitude || candidate.z > maximumAltitude ||
-        candidate.distance(current) > maximumRepositionDistance ||
-        candidate.distance(obstaclePoint) < obstacleSafetyMargin)
-        return false;
-    double travelTime = std::max(std::hypot(candidate.x - current.x, candidate.y - current.y) / horizontalSpeed,
-        std::abs(candidate.z - current.z) / (candidate.z >= current.z ? climbSpeed : descentSpeed));
-    if (simTime() + travelTime > flightTimeLimit)
-        return false;
-    auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
-    return !sensor->intersectsAnyObstacle(current, candidate);
 }
 
 void DroneApp::handleVictimAck(Packet *packet)

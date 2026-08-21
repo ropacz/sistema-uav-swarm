@@ -1,3 +1,9 @@
 # Resultados podem ser grandes e conter payloads/logs experimentais. Eles não
 # fazem parte do conhecimento estrutural do código e nunca devem ser ingeridos.
 /simulations/results/
+
+# Documentação da própria ferramenta graphify, vendorizada no repositório.
+# São 60 nós (10 % do grafo) e colocam "What You Must Do When Invoked" entre
+# os hubs mais conectados de um projeto de simulação de rede. Não é
+# conhecimento do ECHOSAR-Net.
+/.codex/

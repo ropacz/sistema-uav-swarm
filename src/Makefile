@@ -37,6 +37,7 @@ OBJS = \
     $O/messages/SarMessageSerializers.o \
     $O/mobility/BaGaussMarkovMobility.o \
     $O/optimization/BatAlgorithm.o \
+    $O/optimization/RepositionFitness.o \
     $O/scenario/SarScenarioManager.o \
     $O/scenario/StaticVictim.o \
     $O/sensing/AbstractObstacleSensor.o \

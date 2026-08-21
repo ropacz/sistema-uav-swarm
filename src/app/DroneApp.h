@@ -14,6 +14,7 @@
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAssignment_m.h"
 #include "optimization/BatAlgorithm.h"
+#include "optimization/RepositionFitness.h"
 
 namespace echosar {
 
@@ -82,13 +83,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     double maximumRepositionDistance = 25;
     double minimumAltitude = 6;
     double maximumAltitude = 20;
-    double areaMinX = 0, areaMaxX = 1000, areaMinY = 0, areaMaxY = 1000;
-    double horizontalSpeed = 13, climbSpeed = 5, descentSpeed = 3;
-    omnetpp::simtime_t flightTimeLimit;
-    double wLink = 0.6, wObstacle = 0.25, wMove = 0.15;
-    double obstacleSigma = 10;
-    double obstacleSafetyMargin = 1;
-    double linkNormalizationDistance = 1000;
+    FitnessParameters fitnessParameters;
     BatParameters batParameters;
 
     int uniqueAlertsGenerated = 0;
@@ -176,12 +171,6 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     bool detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const;
     /// Confirma o obstáculo, executa o BA e inicia o deslocamento quando permitido.
     void tryReposition(PendingVictimAlert& alert, double prePdr, double preRssi);
-    /// Calcula o custo normalizado de enlace, obstáculo e deslocamento do candidato.
-    double computeFitness(const inet::Coord& candidate, const inet::Coord& current,
-                          const TeamLinkState& team, const inet::Coord& obstaclePoint) const;
-    /// Verifica limites espaciais, obstáculos, distância e tempo de voo do candidato.
-    bool isFeasible(const inet::Coord& candidate, const inet::Coord& current,
-                    const inet::Coord& obstaclePoint) const;
     /// Encerra o modo de reposicionamento e retoma a mobilidade Gauss-Markov.
     void resumeMobility();
 };
