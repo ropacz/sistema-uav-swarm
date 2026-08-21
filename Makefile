@@ -2,14 +2,12 @@
 WORKSPACE ?= $(abspath ..)
 INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
-VALIDATION_CONFIGS := Validation_Direct Validation_Multihop Validation_Clear_Rssi \
-	Validation_Obstacle_Rssi Validation_Obstacle_BaOff Validation_BaOn \
-	Validation_Sensor_RejectRange Validation_TwoVictims
-ANALYSIS_SCRIPTS := analysis/process_results.py analysis/validate_results.py \
-	analysis/network_metrics.py analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py
+ANALYSIS_SCRIPTS := analysis/process_results.py \
+	analysis/network_metrics.py analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py \
+	analysis/report_hypothesis_pilot.py
 
-.PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests validate \
-	validate-results experiment analyze network-metrics reproduce
+.PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests \
+	experiment analyze network-metrics reproduce hypothesis-pilot
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -42,40 +40,31 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	@! grep -rEn "ports\.h|simulations/run|Cenario_ComObstaculos|flightTimeLimit = 900s" \
-		README.md docs run.sh simulations src
+	PYTHONPATH=analysis python3 -c "import network_metrics, pcap_batch_to_spreadsheet, process_results, report_hypothesis_pilot"
+	@! grep -rEn "Professor_|Validation_|DissertationBase|professor-scenarios" \
+		README.md docs run.sh simulations/omnetpp.ini simulations/*.xml src
 
 analysis-tests: check
 	python3 -m unittest discover -s analysis/tests -v
 
-validate: check
-	@for config in $(VALIDATION_CONFIGS); do \
-		./run.sh -c $$config -r 0 || exit 1; \
-	done
-	$(MAKE) validate-results
+# Experimento causal pareado do artigo.
+hypothesis-pilot:
+	./run.sh -c HypothesisPilot_BaOff
+	./run.sh -c HypothesisPilot_BaOn
+	python3 analysis/report_hypothesis_pilot.py
 
-validate-results:
-	python3 analysis/validate_results.py
-
-# Experimento científico: os dois braços pareados, com as mesmas seeds.
-# A análise falha se algum braço estiver incompleto ou se os dois diferirem
-# por qualquer parâmetro além de baEnabled.
-experiment:
-	./run.sh -c Experiment_Control_BaOff
-	./run.sh -c Experiment_Proposed_BaOn
-	$(MAKE) analyze
+experiment: hypothesis-pilot
 
 analyze:
 	python3 analysis/process_results.py
 
-# Métricas de rede diagnósticas: escalares do INET agregados por seed, e
-# auditoria de nível de fio a partir das capturas PCAPNG.
 network-metrics:
-	./run.sh -c Network_Realistic_Evaluation
-	python3 analysis/network_metrics.py
-	python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
-		--configuration Network_Realistic_Evaluation \
-		--output simulations/results/spreadsheets/metricas-rede.xlsx
+	python3 analysis/network_metrics.py simulations/results/omnetpp \
+		--configs HypothesisPilot_BaOff HypothesisPilot_BaOn
 
-# Caminho único do código-fonte às tabelas do artigo.
-reproduce: all analysis-tests validate experiment
+# Caminho único do código-fonte ao resultado do piloto.
+reproduce:
+	./run.sh --build -c HypothesisPilot_BaOff -r 0
+	$(MAKE) analysis-tests
+	$(MAKE) hypothesis-pilot
+	$(MAKE) network-metrics

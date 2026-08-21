@@ -28,7 +28,11 @@ struct LinkSample {
 struct TeamLinkState {
     std::string ipAddress;
     inet::Coord position;
+    inet::Coord velocity;
+    omnetpp::simtime_t positionTime = -1;
     omnetpp::simtime_t lastSeen = -1;
+    int64_t lastSequence = -1;
+    bool velocityValid = false;
     std::deque<LinkSample> samples;
 };
 
@@ -48,6 +52,8 @@ struct PendingVictimAlert {
     std::set<std::string> testedPositions;
     std::string validationMessageId;
     omnetpp::simtime_t repositionStart = -1;
+    inet::Coord repositionOrigin;
+    bool repositionDistanceRecorded = false;
     double preRepositionPdr = NAN;
     double preRepositionRssi = NAN;
 };
@@ -69,6 +75,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t alertTtl;
     omnetpp::simtime_t linkWindow;
     omnetpp::simtime_t teamSilenceTimeout;
+    omnetpp::simtime_t teamPredictionHorizon;
     omnetpp::simtime_t maintenanceInterval;
     int maxAttempts = 5;
     int maxBaCycles = 2;
@@ -77,6 +84,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int64_t victimAlertPayloadBytes = 320;
     double pdrThreshold = 0.8;
     double rssiThresholdDbm = -80;
+    double maximumTeamPredictionSpeed = 5;
     bool baEnabled = true;
     double maximumRepositionDistance = 25;
     double minimumAltitude = 6;
@@ -104,7 +112,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int sensorOutsideRange = 0;
     int baActivations = 0;
     int successfulRepositions = 0;
-    // Total de reposicionamentos malsucedidos; decomposto pelas quatro causas
+    // Total de reposicionamentos malsucedidos; decomposto pelas três causas
     // abaixo, cuja soma é igual a este contador.
     int failedRepositions = 0;
     // O BA não devolveu posição utilizável, ou a mobilidade não é comandável.
@@ -113,10 +121,15 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int baRedundantCandidate = 0;
     // TTL ou tentativas esgotaram enquanto o reposicionamento estava ativo.
     int repositionExpiredBeforeAck = 0;
-    // O alerta foi confirmado por uma tentativa anterior à chegada: entrega
-    // bem-sucedida, mas sem validar a posição escolhida pelo BA.
+    // O alerta foi confirmado durante o movimento por tentativa anterior à
+    // chegada: recuperação observada, mas posição final não validada. Não é
+    // somado a failedRepositions.
     int repositionAckedBeforeValidation = 0;
     double baDistance = 0;
+    double commandedBaDistance = 0;
+    int predictedTeamPositions = 0;
+    double teamPredictionAgeSum = 0;
+    double teamPredictionAgeMax = 0;
     omnetpp::simtime_t totalRtt = 0;
     omnetpp::simtime_t totalRecoveryTime = 0;
     int recoverySamples = 0;
@@ -169,8 +182,12 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     std::string selectTargetTeam() const;
     /// Calcula PDR/RSSI da janela e indica degradação enquanto falta AppACK.
     bool detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const;
+    /// Extrapola a equipe pela última velocidade observada, com limites de tempo e velocidade.
+    inet::Coord estimateTeamPosition(const TeamLinkState& team, double& predictionAge) const;
     /// Confirma o obstáculo, executa o BA e inicia o deslocamento quando permitido.
     void tryReposition(PendingVictimAlert& alert, double prePdr, double preRssi);
+    /// Acumula uma vez a distância efetivamente percorrida no comando corrente.
+    void recordActualRepositionDistance(PendingVictimAlert& alert);
     /// Encerra o modo de reposicionamento e retoma a mobilidade Gauss-Markov.
     void resumeMobility();
 };

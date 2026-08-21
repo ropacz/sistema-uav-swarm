@@ -43,14 +43,14 @@ network BasicNetwork
             numApps = 1;
             app[0].typename = "echosar.app.DroneApp";
             // Evita sobrescrever capturas ao repetir a mesma configuração.
-            pcapRecorder[*].pcapFile = default("results/pcap/" + expand("${configname}-${runnumber}-") + fullPath() + ".pcap");
+            pcapRecorder[*].pcapFile = default("results/pcap/" + expand("${configname}-${runnumber}-") + fullPath() + ".pcapng");
             @display("i=misc/drone,#3399ff,30");
         }
         // ── Embarcações de resgate: AodvRouter (mesmo stack de rede) ──────────
         team[numTeams]: AodvRouter {
             numApps = 1;
             app[0].typename = "echosar.app.TeamApp";
-            pcapRecorder[*].pcapFile = default("results/pcap/" + expand("${configname}-${runnumber}-") + fullPath() + ".pcap");
+            pcapRecorder[*].pcapFile = default("results/pcap/" + expand("${configname}-${runnumber}-") + fullPath() + ".pcapng");
             @display("i=block/user,#33aa33,35");
         }
         victim[numVictims]: StaticVictim;

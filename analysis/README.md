@@ -1,36 +1,19 @@
 # Ferramentas de análise
 
-- `process_results.py`: processa escalares OMNeT++, aplica os portões de
-  integridade do experimento pareado e gera as tabelas e figuras científicas.
-- `validate_results.py`: asserções sobre os cenários determinísticos.
-- `network_metrics.py`: métricas de rede diagnósticas (MAC, IP, rádio,
-  transporte) extraídas dos escalares do INET e agregadas por seed com IC95%.
-- `pcap_batch_to_spreadsheet.py`: consolida capturas em planilha auditável.
-- `pcap_core.py`: leitura e correspondência dos PCAPs.
-- `tests/`: testes determinísticos dos decodificadores e das métricas de PCAP.
-
-## Portões de integridade
-
-`process_results.py` termina com erro, em vez de emitir uma tabela vazia,
-quando o experimento está ausente ou incompleto, quando há seeds duplicadas ou
-desemparelhadas, ou quando os dois braços divergem em qualquer parâmetro além
-de `baEnabled` — verificado contra os parâmetros gravados nos próprios `.sca`.
-
-Configurações fora do experimento (validação, demonstração, capturas de rede)
-são tabuladas à parte e nunca entram nas tabelas científicas.
-
-Nenhum teste de hipótese é aplicado automaticamente: a saída traz o tamanho do
-efeito, seu intervalo e as contagens de pares discordantes.
+- `report_hypothesis_pilot.py`: relatório e portões de integridade do piloto;
+- `process_results.py`: entrada compatível e funções compartilhadas para SCA;
+- `network_metrics.py`: diagnóstico MAC, IP, rádio e transporte;
+- `pcap_batch_to_spreadsheet.py` e `pcap_core.py`: auditoria PCAPNG;
+- `tests/`: testes dos decodificadores e da agregação PCAP.
 
 ```bash
-python3 analysis/process_results.py
-python3 analysis/process_results.py --expected-pairs 3   # piloto, marcado no manifesto
+python3 analysis/report_hypothesis_pilot.py
+python3 analysis/network_metrics.py simulations/results/omnetpp \
+  --configs HypothesisPilot_BaOff HypothesisPilot_BaOn
 python3 -m unittest discover -s analysis/tests -v
 ```
 
-## Localização dos artefatos
-
-Escalares em `simulations/results/omnetpp/`, capturas em
-`simulations/results/pcap/`, eventlogs em `simulations/results/eventlogs/` e
-planilhas em `simulations/results/spreadsheets/`. As tabelas e figuras de
-`process_results.py` ficam em `analysis/figures/`. Nada disso é versionado.
+O relatório exige cinco seeds em cada braço, um alerta por execução, escalares
+obrigatórios, pareamento de seed, igualdade de configuração exceto
+`baEnabled` e salto direto nas entregas. Ele grava o manifesto de proveniência
+em `simulations/results/pilot_manifest.json`.

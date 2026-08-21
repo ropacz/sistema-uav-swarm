@@ -84,7 +84,7 @@ void TeamApp::sendPositionUpdate()
     update->setSenderId(teamId.c_str());
     update->setSenderType("team");
     update->setIpAddress(ipAddress.c_str());
-    // MassMobility has no waypoint concept; -1 explicitly means unavailable.
+    // A trajetória da equipe não expõe o waypoint interno; -1 significa indisponível.
     update->setWaypointId(-1);
     update->setPositionX(position.x);
     update->setPositionY(position.y);

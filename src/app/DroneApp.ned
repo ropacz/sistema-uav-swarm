@@ -30,6 +30,10 @@ simple DroneApp like IApp
         double linkWindow @unit(s) = default(10s);
         // Tempo sem PositionUpdate que caracteriza silêncio da equipe.
         double teamSilenceTimeout @unit(s) = default(3s);
+        // Horizonte máximo da extrapolação linear após a última posição recebida.
+        double teamPredictionHorizon @unit(s) = default(15s);
+        // Limite de velocidade aplicado à estimativa para rejeitar saltos espúrios.
+        double maximumTeamPredictionSpeed @unit(mps) = default(5mps);
         // Período do timer que verifica alertas, ACKs, TTL e reposicionamento.
         double maintenanceInterval @unit(s) = default(0.1s);
         // PDR mínimo aceitável na janela, entre 0 e 1.

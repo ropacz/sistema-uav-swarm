@@ -1,0 +1,6 @@
+<movement>
+    <!-- A equipe parte com LOS, cruza a edificação a 1,5 m/s e para atrás dela. -->
+    <set x="520" y="500" z="0" speed="1.5"/>
+    <moveto x="545" y="500" z="0" t="16.6667"/>
+    <wait t="200"/>
+</movement>

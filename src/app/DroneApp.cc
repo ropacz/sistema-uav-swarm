@@ -51,6 +51,8 @@ void DroneApp::validateParameters() const
 
     require(linkWindow > 0, "linkWindow must be positive");
     require(teamSilenceTimeout > 0, "teamSilenceTimeout must be positive");
+    require(teamPredictionHorizon >= 0, "teamPredictionHorizon must not be negative");
+    require(maximumTeamPredictionSpeed > 0, "maximumTeamPredictionSpeed must be positive");
     require(maintenanceInterval > 0, "maintenanceInterval must be positive");
     require(pdrThreshold >= 0 && pdrThreshold <= 1, "pdrThreshold must be 0..1");
 
@@ -100,6 +102,8 @@ void DroneApp::initialize(int stage)
         maxAttempts = par("maxAttempts");
         linkWindow = par("linkWindow");
         teamSilenceTimeout = par("teamSilenceTimeout");
+        teamPredictionHorizon = par("teamPredictionHorizon");
+        maximumTeamPredictionSpeed = par("maximumTeamPredictionSpeed").doubleValueInUnit("mps");
         maintenanceInterval = par("maintenanceInterval");
         pdrThreshold = par("pdrThreshold");
         rssiThresholdDbm = par("rssiThreshold").doubleValueInUnit("dBm");
@@ -187,6 +191,11 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         scheduleAt(simTime() + maintenanceInterval, maintenanceTimer);
     }
     else if (message == movementCompleteTimer) {
+        for (auto& [id, alert] : pendingAlerts)
+            if (reposition.owns(id)) {
+                recordActualRepositionDistance(alert);
+                break;
+            }
         // A próxima tentativa passa a validar a posição escolhida pelo BA.
         reposition.arrived();
     }
@@ -245,8 +254,29 @@ void DroneApp::handlePositionUpdate(Packet *packet)
     auto& team = teamIt->second;
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     team.ipAddress = sourceAddress.str();
-    team.position = Coord(update->getPositionX(), update->getPositionY(), update->getPositionZ());
-    team.lastSeen = simTime();
+    Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
+    simtime_t sourceTime = update->getTimestamp();
+    if (sourceTime < SIMTIME_ZERO || sourceTime > simTime())
+        sourceTime = simTime();
+    if (update->getSequenceNumber() > team.lastSequence) {
+        if (team.positionTime >= SIMTIME_ZERO && sourceTime > team.positionTime) {
+            double elapsed = (sourceTime - team.positionTime).dbl();
+            Coord measuredVelocity((receivedPosition.x - team.position.x) / elapsed,
+                                   (receivedPosition.y - team.position.y) / elapsed,
+                                   (receivedPosition.z - team.position.z) / elapsed);
+            double speed = measuredVelocity.length();
+            if (speed > maximumTeamPredictionSpeed)
+                measuredVelocity *= maximumTeamPredictionSpeed / speed;
+            team.velocity = measuredVelocity;
+            team.velocityValid = true;
+        }
+        team.position = receivedPosition;
+        team.positionTime = sourceTime;
+        team.lastSequence = update->getSequenceNumber();
+        // Somente informação nova comprova que a equipe ainda está visível.
+        // Duplicatas ou pacotes reordenados não podem renovar o silêncio.
+        team.lastSeen = simTime();
+    }
     double rssi = NAN;
     if (auto power = packet->findTag<SignalPowerInd>()) {
         rssi = 10 * std::log10(power->getPower().get() / 0.001);
@@ -352,6 +382,19 @@ bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, d
     return silence || pdr < pdrThreshold || (!std::isnan(rssi) && rssi < rssiThresholdDbm);
 }
 
+Coord DroneApp::estimateTeamPosition(const TeamLinkState& team, double& predictionAge) const
+{
+    predictionAge = 0;
+    if (!team.velocityValid || team.positionTime < SIMTIME_ZERO)
+        return team.position;
+    predictionAge = std::clamp((simTime() - team.positionTime).dbl(), 0.0,
+                               teamPredictionHorizon.dbl());
+    Coord estimate = team.position + team.velocity * predictionAge;
+    estimate.x = std::clamp(estimate.x, fitnessParameters.areaMinX, fitnessParameters.areaMaxX);
+    estimate.y = std::clamp(estimate.y, fitnessParameters.areaMinY, fitnessParameters.areaMaxY);
+    return estimate;
+}
+
 void DroneApp::performMaintenance()
 {
     for (auto& [id, team] : teams)
@@ -365,6 +408,7 @@ void DroneApp::performMaintenance()
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             alertsExpired++;
             if (reposition.owns(alert.alertId) && !reposition.idle()) {
+                recordActualRepositionDistance(alert);
                 failedRepositions++;
                 repositionExpiredBeforeAck++;
             }
@@ -405,7 +449,17 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
-    auto observation = sensor->inspect(current, teamIt->second.position);
+    double predictionAge = 0;
+    Coord teamPosition = estimateTeamPosition(teamIt->second, predictionAge);
+    if (predictionAge > 0) {
+        predictedTeamPositions++;
+        teamPredictionAgeSum += predictionAge;
+        teamPredictionAgeMax = std::max(teamPredictionAgeMax, predictionAge);
+    }
+    auto observation = sensor->inspect(current, teamPosition);
+    EV_INFO << "Team position for repositioning: observed=" << teamIt->second.position
+            << " estimated=" << teamPosition << " velocity=" << teamIt->second.velocity
+            << " predictionAge=" << predictionAge << "s\n";
     // O BA depende de confirmação geométrica independente da camada de rede.
     if (!observation.confirmed) {
         sensorRejections++;
@@ -425,14 +479,19 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     baActivations++;
     alert.baCycles++;
     alert.repositionStart = simTime();
+    alert.repositionOrigin = current;
+    alert.repositionDistanceRecorded = false;
     alert.preRepositionPdr = prePdr;
     alert.preRepositionRssi = preRssi;
     RepositionFitness fitness(fitnessParameters, sensor, current,
-                              teamIt->second.position, observation.nearestSurfacePoint, simTime());
+                              teamPosition, observation.nearestSurfacePoint, simTime());
     BatResult result = BatAlgorithm::optimize(current, maximumRepositionDistance,
         batParameters, getRNG(0),
         [&](const Coord& candidate) { return fitness.cost(candidate); },
         [&](const Coord& candidate) { return fitness.feasible(candidate); });
+    EV_INFO << "BA result: current=" << current << " target=" << teamPosition
+            << " candidate=" << result.position << " fitness=" << result.fitness
+            << " valid=" << result.valid << "\n";
     if (!result.valid) {
         failedRepositions++;
         baNoFeasibleSolution++;
@@ -460,14 +519,24 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         baRedundantCandidate++;
         return;
     }
-    baDistance += distance;
-    emit(repositionDistanceSignal, distance);
+    commandedBaDistance += distance;
     double travelTime = fitness.travelTime(current, result.position);
     // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
     controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
                        fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
     reposition.begin(alert.alertId);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
+}
+
+void DroneApp::recordActualRepositionDistance(PendingVictimAlert& alert)
+{
+    if (alert.repositionDistanceRecorded)
+        return;
+    auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
+    double distance = alert.repositionOrigin.distance(mobility->getCurrentPosition());
+    baDistance += distance;
+    emit(repositionDistanceSignal, distance);
+    alert.repositionDistanceRecorded = true;
 }
 
 void DroneApp::handleVictimAck(Packet *packet)
@@ -491,6 +560,7 @@ void DroneApp::handleVictimAck(Packet *packet)
         bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
             alert.validationMessageId == ack->getReceivedMessageId();
         if (ownsReposition) {
+            recordActualRepositionDistance(alert);
             // Separa a entrega do alerta da validação específica do reposicionamento.
             repositionValidationSamples++;
             double postPdr, postRssi;
@@ -514,8 +584,8 @@ void DroneApp::handleVictimAck(Packet *packet)
             }
             else {
                 // O alerta foi entregue, mas por uma tentativa anterior à
-                // chegada: a posição escolhida pelo BA não chegou a ser testada.
-                failedRepositions++;
+                // chegada: houve recuperação durante o movimento, porém a
+                // posição final escolhida pelo BA não chegou a ser testada.
                 repositionAckedBeforeValidation++;
             }
         }
@@ -562,6 +632,10 @@ void DroneApp::finish()
     recordScalar("repositionExpiredBeforeAck", repositionExpiredBeforeAck);
     recordScalar("repositionAckedBeforeValidation", repositionAckedBeforeValidation);
     recordScalar("baDistance", baDistance);
+    recordScalar("commandedBaDistance", commandedBaDistance);
+    recordScalar("predictedTeamPositions", predictedTeamPositions);
+    recordScalar("teamPredictionAgeSum", teamPredictionAgeSum);
+    recordScalar("teamPredictionAgeMax", teamPredictionAgeMax);
     recordScalar("totalRTT", totalRtt.dbl());
     recordScalar("totalRecoveryTime", totalRecoveryTime.dbl());
     recordScalar("recoverySamples", recoverySamples);

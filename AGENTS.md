@@ -26,17 +26,17 @@ Copy `.env.example` to `.env` and adjust the workspace path before running tools
 make makefiles                    # regenerate src/Makefile with opp_makemake
 make                              # debug build
 make clean                        # remove debug build products
-make validate                     # deterministic scenarios + assertions
+make hypothesis-pilot            # run both paired arms and report results
 make analysis-tests               # analyser unit tests
 make experiment                   # both paired arms, then the analysis
-make reproduce                    # build → tests → validation → experiment
-./run.sh --build                  # build, then run Validation_Direct in Cmdenv
+make reproduce                    # build → tests → paired experiment
+./run.sh --build                  # build, then run HypothesisPilot_BaOn
 ./run.sh --gui                    # run interactively in Qtenv
-./run.sh -c Validation_BaOn -r 0  # run a specific configuration and seed
+./run.sh -c HypothesisPilot_BaOff -r 0  # run control seed zero
 ```
 
-`DissertationBase` is declared `abstract = true` and cannot be run directly: use
-`Experiment_Control_BaOff` or `Experiment_Proposed_BaOn`. The analysis fails
+`HypothesisPilotBase` is declared `abstract = true` and cannot be run directly: use
+`HypothesisPilot_BaOff` or `HypothesisPilot_BaOn`. The analysis fails
 when the two arms differ by anything other than `baEnabled`.
 
 Run commands through the configured `opp_env` environment when OMNeT++ tools are not already on `PATH`.

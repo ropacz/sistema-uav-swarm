@@ -3,8 +3,8 @@
 
 O script descobre automaticamente arquivos com nomes como::
 
-    Validation_Direct-BasicNetwork.team[0].pcap
-    Validation_Direct-BasicNetwork.drone[0].pcap
+    HypothesisPilot_BaOn-BasicNetwork.team[0].pcapng
+    HypothesisPilot_BaOn-BasicNetwork.drone[0].pcapng
 
 Para cada cenário, ele lê o IP gravado no Interface Description Block do
 PCAPNG e usa a direção registrada pelo INET (inbound/outbound). Cada transmissão

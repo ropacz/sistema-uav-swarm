@@ -55,7 +55,11 @@ bool RepositionFitness::feasible(const Coord& candidate) const
         return false;
     if (now + travelTime(current, candidate) > parameters.flightTimeLimit)
         return false;
-    return !sensor->intersectsAnyObstacle(current, candidate);
+    // O trajeto do drone deve ser livre e a posição final precisa de linha de
+    // visada até a equipe estimada. Uma posição ainda obstruída não cumpre a
+    // finalidade do reposicionamento e não deve competir apenas por penalidade.
+    return !sensor->intersectsAnyObstacle(current, candidate) &&
+           !sensor->intersectsAnyObstacle(candidate, teamPosition);
 }
 
 } // namespace echosar
