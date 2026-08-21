@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-20)
 
 ## Corpus Check
-- 39 files · ~28,182 words
+- 40 files · ~30,128 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 563 nodes · 802 edges · 32 communities (26 shown, 6 thin omitted)
+- 583 nodes · 837 edges · 32 communities (26 shown, 6 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8a980df0`
+- Built from commit: `6b81aed5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,12 +22,13 @@
 - PendingVictimAlert
 - DroneApp.cc
 - TeamLinkState
-- Modelo e premissas
+- Contrato das métricas
 - BaGaussMarkovMobility
 - process_results.py
 - validate_results.py
 - Protocolo científico do ECHOSAR-Net
 - run.sh
+- StaticVictim
 - What You Must Do When Invoked
 - graphify reference: extra exports and benchmark
 - Repository Guidelines
@@ -43,13 +44,12 @@
 - TeamApp.cc
 - UdpSocket
 - LifecycleOperation
-- SarMessageSerializers.cc
 - DroneApp.h
+- SarMessageSerializers.cc
 - Ferramentas de análise
-- StaticVictim
 
 ## God Nodes (most connected - your core abstractions)
-1. `DroneApp` - 105 edges
+1. `DroneApp` - 107 edges
 2. `TeamApp` - 44 edges
 3. `PendingVictimAlert` - 27 edges
 4. `BatParameters` - 13 edges
@@ -79,7 +79,7 @@
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
-Nodes (76): RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl, applicationIpTtl (+68 more)
+Nodes (78): RepositionState, DroneApp, ackTimeout, activeRepositionAlertId, alertAttemptsSent, alertsExpired, alertTtl, applicationIpTtl (+70 more)
 
 ### Community 1 - "TeamApp"
 Cohesion: 0.06
@@ -90,8 +90,8 @@ Cohesion: 0.07
 Nodes (31): cObject, IPhysicalEnvironment, IPhysicalObject, IVisitor, ModuleRefByPar, AbstractObstacleSensor, environment, initialize (+23 more)
 
 ### Community 3 - "BatParameters"
-Cohesion: 0.08
-Nodes (32): cRNG, FeasibilityFunction, FitnessFunction, Bat, amplitude, fitness, frequency, position (+24 more)
+Cohesion: 0.07
+Nodes (33): cRNG, FeasibilityFunction, FitnessFunction, Coord, Bat, amplitude, fitness, frequency (+25 more)
 
 ### Community 4 - "PendingVictimAlert"
 Cohesion: 0.11
@@ -102,28 +102,32 @@ Cohesion: 0.17
 Nodes (21): cMessage, Coord, Packet, string, UdpSocket, computeFitness, detectDegradation, finish (+13 more)
 
 ### Community 6 - "TeamLinkState"
-Cohesion: 0.18
-Nodes (12): deque, Coord, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, TeamLinkState (+4 more)
+Cohesion: 0.20
+Nodes (11): deque, simtime_t, LinkSample, receptionTime, rssiDbm, sequence, TeamLinkState, ipAddress (+3 more)
 
-### Community 7 - "Modelo e premissas"
+### Community 7 - "Contrato das métricas"
 Cohesion: 0.05
-Nodes (35): 1. Métrica primária, 2. Métricas secundárias, 3. Métricas diagnósticas, 4. Métricas derivadas de capturas de rede, 5. Fontes de evidência, 6. Saídas da análise, 7. Proveniência, AppACK (+27 more)
+Nodes (36): 1. Métrica primária, 2. Métricas secundárias, 3. Métricas diagnósticas, 4. Métricas de rede a partir dos escalares do INET, 5. Métricas derivadas de capturas de rede, 6. Fontes de evidência, 7. Saídas da análise, 8. Proveniência (+28 more)
 
 ### Community 8 - "BaGaussMarkovMobility"
 Cohesion: 0.21
 Nodes (9): GaussMarkovMobility, BaGaussMarkovMobility, baOverride, holding, moveTo, resumeNormal, setTargetPosition, waypointId (+1 more)
 
 ### Community 9 - "process_results.py"
-Cohesion: 0.13
-Nodes (29): aggregate(), ci95(), data_quality(), file_sha256(), IntegrityError, load_runs(), main(), paired() (+21 more)
+Cohesion: 0.10
+Nodes (39): aggregate(), collect(), extreme_where(), main(), mean_where(), DataFrame, ratio(), Extract INET network-layer metrics per run and aggregate them across seeds.… (+31 more)
 
 ### Community 10 - "validate_results.py"
 Cohesion: 0.57
 Nodes (6): main(), Fail-fast checks for the deterministic dissertation validation scenarios., require(), require_failure_decomposition(), scalars(), total()
 
 ### Community 11 - "Protocolo científico do ECHOSAR-Net"
-Cohesion: 0.17
-Nodes (12): 10. Limites de validade, 1. Pergunta, 2. Hipóteses, 3. Unidade experimental, 4. Variável independente, 5. Fatores controlados, 6. Desenho, 7. Separação entre verificação e evidência (+4 more)
+Cohesion: 0.11
+Nodes (18): 10. Limites de validade, 1. Pergunta, 2. Hipóteses, 3. Unidade experimental, 4. Variável independente, 5. Fatores controlados, 6. Desenho, 7. Separação entre verificação e evidência (+10 more)
+
+### Community 13 - "StaticVictim"
+Cohesion: 0.33
+Nodes (3): cMessage, cSimpleModule, StaticVictim
 
 ### Community 14 - "What You Must Do When Invoked"
 Cohesion: 0.08
@@ -165,40 +169,36 @@ Nodes (11): cModule, map, cMessage, cMessage, cSimpleModule, map, SarScenarioMan
 Cohesion: 0.24
 Nodes (9): cMessage, Packet, UdpSocket, finish, handleMessageWhenUp, handleVictimAlert, initialize, sendPositionUpdate (+1 more)
 
+### Community 29 - "DroneApp.h"
+Cohesion: 0.21
+Nodes (6): ApplicationBase, Indication, LifecycleOperation, set, string, UdpSocket
+
 ### Community 30 - "SarMessageSerializers.cc"
 Cohesion: 0.13
 Nodes (26): b, Chunk, ChunkSerializer, MemoryInputStream, MemoryOutputStream, PositionUpdateChunk, Ptr, simtime_t (+18 more)
-
-### Community 32 - "DroneApp.h"
-Cohesion: 0.21
-Nodes (6): ApplicationBase, Indication, LifecycleOperation, set, string, UdpSocket
 
 ### Community 34 - "Ferramentas de análise"
 Cohesion: 0.50
 Nodes (3): Ferramentas de análise, Localização dos artefatos, Portões de integridade
 
-### Community 37 - "StaticVictim"
-Cohesion: 0.33
-Nodes (3): cMessage, cSimpleModule, StaticVictim
-
 ## Knowledge Gaps
-- **245 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+240 more)
+- **253 isolated node(s):** `run.sh script`, `sequence`, `receptionTime`, `rssiDbm`, `ipAddress` (+248 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `DroneApp.h`, `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`?**
-  _High betweenness centrality (0.191) - this node is a cross-community bridge._
-- **Why does `TeamApp` connect `TeamApp` to `DroneApp.h`, `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
-- **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `DroneApp.h`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `BatParameters`, `PendingVictimAlert`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`, `DroneApp.h`?**
+  _High betweenness centrality (0.182) - this node is a cross-community bridge._
+- **Why does `TeamApp` connect `TeamApp` to `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`, `DroneApp.h`?**
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `BatParameters`, `DroneApp.cc`, `TeamLinkState`, `SarScenarioManager`, `DroneApp.h`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
 - **What connects `run.sh script`, `sequence`, `receptionTime` to the rest of the system?**
-  _245 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _253 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
-  _Cohesion score 0.025974025974025976 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02531645569620253 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
 - **Should `ObstacleObservation` be split into smaller, more focused modules?**
