@@ -360,6 +360,12 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     // O BA depende de confirmação geométrica independente da camada de rede.
     if (!observation.confirmed) {
         sensorRejections++;
+        // Separa "não havia obstáculo" de "havia, porém fora do alcance": as
+        // duas rejeições apontam para causas opostas da degradação.
+        if (observation.reason == "clearLineOfSight")
+            sensorClearLineOfSight++;
+        else if (observation.reason == "outsideVisualRange")
+            sensorOutsideRange++;
         return;
     }
     sensorConfirmations++;
@@ -528,6 +534,8 @@ void DroneApp::finish()
     recordScalar("sensorConfirmations", sensorConfirmations);
     recordScalar("sensorRejections", sensorRejections);
     recordScalar("teamUnknownForReposition", teamUnknownForReposition);
+    recordScalar("sensorClearLineOfSight", sensorClearLineOfSight);
+    recordScalar("sensorOutsideRange", sensorOutsideRange);
     recordScalar("baActivations", baActivations);
     recordScalar("successfulRepositions", successfulRepositions);
     recordScalar("failedRepositions", failedRepositions);

@@ -53,6 +53,8 @@ conclusão.
 | `sensorConfirmations` | Sensor confirmou obstáculo dentro do alcance |
 | `sensorRejections` | Sensor consultado e **não** confirmou obstáculo no alcance |
 | `teamUnknownForReposition` | Degradação sem posição conhecida da equipe: o sensor não pôde ser consultado |
+| `sensorClearLineOfSight` | Rejeição por não haver obstáculo na visada: a degradação teve outra causa |
+| `sensorOutsideRange` | Rejeição por obstáculo presente, porém além do alcance do sensor |
 | `baActivations` | Execuções do Bat Algorithm |
 | `successfulRepositions` | ACK de uma tentativa **posterior** à chegada |
 | `failedRepositions` | Total; igual à soma exata das quatro causas abaixo |

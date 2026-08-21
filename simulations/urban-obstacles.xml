@@ -1,9 +1,11 @@
 <config>
     <!-- Setor urbano de 200 m x 200 m centrado em (500, 500).
 
-         Quatro edificações de 30 x 30 x 10 m em quadra, separadas por ruas de
-         70 m. A altura de 10 m fica abaixo da faixa de voo dos drones
-         (12-20 m), de modo que um drone nunca ocupa o volume de um prédio,
+         Quatro quadras de 50 x 50 x 10 m, separadas por uma via central de
+         40 m. Ocupação de solo de 39 %, compatível com um centro urbano.
+
+         A altura de 10 m fica abaixo da faixa de voo dos drones (12-15 m),
+         de modo que um drone nunca ocupa o volume de uma edificação,
          mas a linha de visada ar-solo até uma equipe no nível do chão
          (1,5 m) é interrompida sempre que a equipe está do lado oposto de
          uma edificação.
@@ -13,20 +15,20 @@
          pontual e permanecem em dissertation-obstacles.xml, onde os testes de
          RSSI e de alcance do sensor dependem das suas dimensões exatas. -->
 
-    <object id="201" name="URB-B1" position="center 450 450 5"
-            orientation="0 0 0" shape="cuboid 30 30 10" material="concrete"
+    <object id="201" name="URB-B1" position="center 455 455 5"
+            orientation="0 0 0" shape="cuboid 50 50 10" material="concrete"
             line-width="2" line-color="120 120 120"
             fill-color="205 205 200" opacity="1"/>
-    <object id="202" name="URB-B2" position="center 450 550 5"
-            orientation="0 0 0" shape="cuboid 30 30 10" material="concrete"
+    <object id="202" name="URB-B2" position="center 455 545 5"
+            orientation="0 0 0" shape="cuboid 50 50 10" material="concrete"
             line-width="2" line-color="120 120 120"
             fill-color="205 205 200" opacity="1"/>
-    <object id="203" name="URB-B3" position="center 550 450 5"
-            orientation="0 0 0" shape="cuboid 30 30 10" material="concrete"
+    <object id="203" name="URB-B3" position="center 545 455 5"
+            orientation="0 0 0" shape="cuboid 50 50 10" material="concrete"
             line-width="2" line-color="120 120 120"
             fill-color="205 205 200" opacity="1"/>
-    <object id="204" name="URB-B4" position="center 550 550 5"
-            orientation="0 0 0" shape="cuboid 30 30 10" material="concrete"
+    <object id="204" name="URB-B4" position="center 545 545 5"
+            orientation="0 0 0" shape="cuboid 50 50 10" material="concrete"
             line-width="2" line-color="120 120 120"
             fill-color="205 205 200" opacity="1"/>
 </config>

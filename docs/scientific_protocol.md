@@ -161,6 +161,42 @@ não o seu resultado.
 Se o piloto reprovar, o cenário pode ser ajustado novamente, e cada ajuste é
 registrado aqui. O cenário é congelado antes do lote definitivo de 30 pares.
 
+### Histórico dos pilotos — 20/08/2026
+
+Três iterações foram necessárias. Cada uma corrigiu um bloqueio identificado por
+medição, não por tentativa e erro.
+
+| # | Cenário | Resultado | Bloqueio identificado |
+|---|---|---|---|
+| 1 | Setor 200 m, 4 quadras de 30×30×10 m, voo 12–20 m, 4 UAVs | Reprovou 1 e 3 | Sensor consultado, mas **100 % das rejeições foram `outsideVisualRange`**: a fachada que interrompia a visada estava além dos 30 m do sensor |
+| 2 | Setor 160 m, voo 12–15 m | Reprovou 1 e 3 | Ativou em 1/5 seeds. AppACK permaneceu em 100 % e **nenhum alerta expirou**: com 4 UAVs o AODV contornava toda obstrução ar-solo |
+| 3 | Quadras de 50×50×10 m, 2 UAVs | **Aprovou os três** | — |
+
+Para diagnosticar a primeira iteração foi preciso desagregar `sensorRejections`
+em `sensorClearLineOfSight` e `sensorOutsideRange`. Sem essa separação, "o sensor
+rejeitou" não distinguia *não havia obstáculo* de *havia, fora de alcance* — que
+apontam para correções opostas.
+
+A segunda iteração revelou um resultado com valor próprio: **numa malha de quatro
+UAVs num setor de 160 m, a obstrução ar-solo não custa entrega de alerta**, porque
+o roteamento encontra um vizinho. Isso restringe o alcance da proposta: o
+reposicionamento só pode importar onde a redundância de relay é limitada. A
+redução para dois UAVs preserva o AODV no escopo sem garantir o resgate por
+vizinho.
+
+A terceira iteração também expôs um defeito real de implementação, latente
+enquanto o mecanismo nunca executava: `BaGaussMarkovMobility::moveTo()` e
+`resumeNormal()` agendavam eventos de mobilidade a partir do contexto do
+`DroneApp`, sem `Enter_Method_Silent()`. A execução abortava na primeira
+ativação do BA em voo. Corrigido.
+
+### Os dados do piloto não são evidência
+
+O piloto foi usado para **selecionar** o cenário. Usá-lo também como resultado
+seria reaproveitar a mesma amostra para escolher a hipótese e testá-la. Os
+resultados do piloto são descartados como evidência, e o lote definitivo de 30
+pares é executado do zero sobre o cenário congelado.
+
 ### D3 — Instrumento estatístico — em aberto
 
 Com AppACK agora sobre 10 alertas por execução, a métrica primária é uma

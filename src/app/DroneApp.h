@@ -104,6 +104,11 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     // Degradação indicada sem posição conhecida da equipe: o sensor não pode
     // ser consultado porque não há linha de visada a traçar.
     int teamUnknownForReposition = 0;
+    // Decomposição de sensorRejections pelo motivo devolvido pelo sensor.
+    // Distinguem duas situações opostas: a linha de visada estava livre, ou
+    // havia obstáculo mas fora do alcance configurado.
+    int sensorClearLineOfSight = 0;
+    int sensorOutsideRange = 0;
     int baActivations = 0;
     int successfulRepositions = 0;
     // Total de reposicionamentos malsucedidos; decomposto pelas quatro causas

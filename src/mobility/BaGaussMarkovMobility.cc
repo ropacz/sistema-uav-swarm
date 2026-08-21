@@ -27,6 +27,10 @@ void BaGaussMarkovMobility::setTargetPosition()
 void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSpeed,
                                    double climbSpeed, double descentSpeed)
 {
+    // Chamado pela aplicação, que roda no contexto de outro módulo. Sem trocar
+    // o contexto, o evento de mobilidade seria agendado e possuído pelo
+    // DroneApp, e o OMNeT++ aborta a execução.
+    Enter_Method_Silent();
     getCurrentPosition();
     Coord delta = destination - lastPosition;
     double horizontalTime = std::hypot(delta.x, delta.y) / horizontalSpeed;
@@ -50,6 +54,8 @@ void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSp
 
 void BaGaussMarkovMobility::resumeNormal()
 {
+    // Também chamado a partir da aplicação — ver moveTo().
+    Enter_Method_Silent();
     // Um ACK pode chegar durante o trajeto. Retoma o Gauss-Markov a partir da
     // posição interpolada, sem deixar um comando do BA pendente.
     getCurrentPosition();
