@@ -13,6 +13,7 @@
 #include "messages/VictimAck_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAssignment_m.h"
+#include "RepositionController.h"
 #include "optimization/BatAlgorithm.h"
 #include "optimization/RepositionFitness.h"
 
@@ -54,8 +55,6 @@ struct PendingVictimAlert {
 class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
 {
   protected:
-    enum class RepositionState { IDLE, MOVING, AWAITING_VALIDATION };
-
     inet::UdpSocket socket;
     omnetpp::cMessage *maintenanceTimer = nullptr;
     omnetpp::cMessage *movementCompleteTimer = nullptr;
@@ -63,8 +62,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     std::string ipAddress;
     std::map<std::string, TeamLinkState> teams;
     std::map<std::string, PendingVictimAlert> pendingAlerts;
-    std::string activeRepositionAlertId;
-    RepositionState repositionState = RepositionState::IDLE;
+    RepositionController reposition;
 
     omnetpp::simtime_t retryInterval;
     omnetpp::simtime_t ackTimeout;
@@ -141,6 +139,8 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     /// Lê parâmetros, registra métricas e configura endereço, socket e timers.
     virtual void initialize(int stage) override;
+    /// Verifica cada parâmetro isoladamente, nomeando o que estiver inválido.
+    void validateParameters() const;
     /// Despacha timers de manutenção, conclusão de movimento e eventos do socket.
     virtual void handleMessageWhenUp(omnetpp::cMessage *message) override;
     /// Grava escalares acumulados ao final da simulação.

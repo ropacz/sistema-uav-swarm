@@ -114,6 +114,15 @@ def collect(path: str) -> dict:
         "udp_bytes_received": sum_where(frame, "packetReceived:sum(packetBytes)", UDP),
         "udp_drop_wrong_port": sum_where(frame, "droppedPkWrongPort:count", UDP),
 
+        # ── Decisão do reposicionamento ───────────────────────────────────
+        # Separam causas opostas de rejeição: não havia obstáculo na visada,
+        # ou havia e estava fora do alcance do sensor.
+        "sensor_clear_line_of_sight": sum_where(frame, "sensorClearLineOfSight", APP),
+        "sensor_outside_range": sum_where(frame, "sensorOutsideRange", APP),
+        # Contrapartida na equipe: alertas únicos vistos e ACKs emitidos.
+        "unique_alerts_received": sum_where(frame, "uniqueAlertsReceived", APP),
+        "application_acks_sent": sum_where(frame, "applicationAcksSent", APP),
+
         # ── Rádio ─────────────────────────────────────────────────────────
         "rssi_mean_dbm": mean_where(frame, "positionUpdateRssi:mean"),
         "rssi_min_dbm": extreme_where(frame, "positionUpdateRssi:min", lowest=True),
@@ -153,6 +162,8 @@ HIGHLIGHT = [
     ("rssi_mean_dbm", "RSSI médio (dBm)", "{:.1f}"),
     ("rssi_min_dbm", "RSSI mínimo (dBm)", "{:.1f}"),
     ("delivery_delay_mean_s", "Atraso unidirecional médio (s)", "{:.4f}"),
+    ("sensor_outside_range", "Rejeições por obstáculo fora de alcance", "{:.1f}"),
+    ("sensor_clear_line_of_sight", "Rejeições por visada livre", "{:.1f}"),
     ("attempt_delivery_pct", "Entrega por tentativa (%)", "{:.1f}"),
     ("appack_pct", "AppACK (%)", "{:.1f}"),
 ]

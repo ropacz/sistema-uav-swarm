@@ -22,6 +22,68 @@ namespace echosar {
 
 Define_Module(DroneApp);
 
+namespace {
+/// Valida uma condição nomeando o parâmetro que a violou. A verificação
+/// anterior era uma única expressão com quase cinquenta condições encadeadas,
+/// e a mensagem de erro não dizia qual delas falhou.
+void require(bool satisfied, const char *requirement)
+{
+    if (!satisfied)
+        throw cRuntimeError("Invalid parameter: %s", requirement);
+}
+}
+
+void DroneApp::validateParameters() const
+{
+    const auto& f = fitnessParameters;
+    const auto& b = batParameters;
+
+    require(!droneId.empty(), "droneId must not be empty");
+    require(appPort > 0 && appPort <= 65535, "appPort must be a valid UDP port");
+    require(victimAlertPayloadBytes > 0, "victimAlertPayloadBytes must be positive");
+    require(applicationIpTtl > 0 && applicationIpTtl <= 255, "applicationIpTtl must be 1..255");
+
+    require(retryInterval > 0, "retryInterval must be positive");
+    require(ackTimeout > 0, "ackTimeout must be positive");
+    require(ackTimeout <= retryInterval, "ackTimeout must not exceed retryInterval");
+    require(maxAttempts > 0, "maxAttempts must be positive");
+    require(alertTtl >= retryInterval, "alertTtl must be at least one retryInterval");
+
+    require(linkWindow > 0, "linkWindow must be positive");
+    require(teamSilenceTimeout > 0, "teamSilenceTimeout must be positive");
+    require(maintenanceInterval > 0, "maintenanceInterval must be positive");
+    require(pdrThreshold >= 0 && pdrThreshold <= 1, "pdrThreshold must be 0..1");
+
+    require(maxBaCycles >= 0, "maxBaCycles must not be negative");
+    require(maximumRepositionDistance > 0, "maximumRepositionDistance must be positive");
+    require(minimumAltitude <= maximumAltitude, "minimumAltitude must not exceed maximumAltitude");
+    require(f.areaMinX < f.areaMaxX, "areaMinX must be below areaMaxX");
+    require(f.areaMinY < f.areaMaxY, "areaMinY must be below areaMaxY");
+    require(f.horizontalSpeed > 0, "horizontalSpeed must be positive");
+    require(f.climbSpeed > 0, "climbSpeed must be positive");
+    require(f.descentSpeed > 0, "descentSpeed must be positive");
+    require(f.flightTimeLimit > 0, "flightTimeLimit must be positive");
+
+    require(f.obstacleSigma > 0, "obstacleSigma must be positive");
+    require(f.obstacleSafetyMargin >= 0, "obstacleSafetyMargin must not be negative");
+    require(f.linkNormalizationDistance > 0, "linkNormalizationDistance must be positive");
+    require(f.wLink >= 0 && f.wObstacle >= 0 && f.wMove >= 0,
+            "fitness weights must not be negative");
+    require(std::abs(f.wLink + f.wObstacle + f.wMove - 1) <= 1e-9,
+            "fitness weights must sum to 1");
+
+    require(b.populationSize > 0, "batPopulation must be positive");
+    require(b.iterations > 0, "batIterations must be positive");
+    require(b.initializationAttempts > 0, "batInitializationAttempts must be positive");
+    require(b.frequencyMin >= 0, "batFrequencyMin must not be negative");
+    require(b.frequencyMax >= b.frequencyMin, "batFrequencyMax must not be below batFrequencyMin");
+    require(b.initialAmplitude > 0 && b.initialAmplitude <= 1, "batInitialAmplitude must be 0..1");
+    require(b.initialPulseRate >= 0 && b.initialPulseRate <= 1, "batInitialPulseRate must be 0..1");
+    require(b.amplitudeDecay > 0 && b.amplitudeDecay <= 1, "batAmplitudeDecay must be 0..1");
+    require(b.pulseGrowth > 0, "batPulseGrowth must be positive");
+    require(b.localSearchScale > 0 && b.localSearchScale <= 1, "batLocalSearchScale must be 0..1");
+}
+
 void DroneApp::initialize(int stage)
 {
     ApplicationBase::initialize(stage);
@@ -75,31 +137,7 @@ void DroneApp::initialize(int stage)
         batParameters.amplitudeDecay = par("batAmplitudeDecay");
         batParameters.pulseGrowth = par("batPulseGrowth");
         batParameters.localSearchScale = par("batLocalSearchScale");
-        if (droneId.empty() || retryInterval <= 0 || ackTimeout <= 0 || ackTimeout > retryInterval ||
-            appPort <= 0 || appPort > 65535 || victimAlertPayloadBytes <= 0 ||
-            maxAttempts <= 0 || alertTtl < retryInterval || linkWindow <= 0 || teamSilenceTimeout <= 0 ||
-            maintenanceInterval <= 0 || pdrThreshold < 0 || pdrThreshold > 1 || maxBaCycles < 0 ||
-            maximumRepositionDistance <= 0 || minimumAltitude > maximumAltitude ||
-            fitnessParameters.areaMinX >= fitnessParameters.areaMaxX ||
-            fitnessParameters.areaMinY >= fitnessParameters.areaMaxY ||
-            fitnessParameters.horizontalSpeed <= 0 || fitnessParameters.climbSpeed <= 0 ||
-            fitnessParameters.descentSpeed <= 0 || fitnessParameters.flightTimeLimit <= 0 ||
-            applicationIpTtl <= 0 || applicationIpTtl > 255 ||
-            fitnessParameters.obstacleSigma <= 0 || fitnessParameters.obstacleSafetyMargin < 0 ||
-            fitnessParameters.linkNormalizationDistance <= 0 ||
-            batParameters.populationSize <= 0 || batParameters.iterations <= 0 ||
-            batParameters.initializationAttempts <= 0 || batParameters.frequencyMin < 0 ||
-            batParameters.frequencyMax < batParameters.frequencyMin ||
-            batParameters.initialAmplitude <= 0 || batParameters.initialAmplitude > 1 ||
-            batParameters.initialPulseRate < 0 || batParameters.initialPulseRate > 1 ||
-            batParameters.amplitudeDecay <= 0 || batParameters.amplitudeDecay > 1 ||
-            batParameters.pulseGrowth <= 0 || batParameters.localSearchScale <= 0 ||
-            batParameters.localSearchScale > 1 ||
-            fitnessParameters.wLink < 0 || fitnessParameters.wObstacle < 0 ||
-            fitnessParameters.wMove < 0 ||
-            std::abs(fitnessParameters.wLink + fitnessParameters.wObstacle +
-                     fitnessParameters.wMove - 1) > 1e-9)
-            throw cRuntimeError("Invalid alert, link-quality, or fitness parameters");
+        validateParameters();
         rssiSignal = registerSignal("positionUpdateRssi");
         pdrSignal = registerSignal("linkWindowPdr");
         repositionDistanceSignal = registerSignal("repositionDistance");
@@ -150,7 +188,7 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
     }
     else if (message == movementCompleteTimer) {
         // A próxima tentativa passa a validar a posição escolhida pelo BA.
-        repositionState = RepositionState::AWAITING_VALIDATION;
+        reposition.arrived();
     }
     else if (message->arrivedOn("assignmentIn"))
         handleAssignment(check_and_cast<VictimAssignment *>(message));
@@ -261,8 +299,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     alert.attempts++;
     alert.sequence++;
     std::string messageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
-    if (activeRepositionAlertId == alert.alertId &&
-        repositionState == RepositionState::AWAITING_VALIDATION)
+    if (reposition.awaitingValidationOf(alert.alertId))
         alert.validationMessageId = messageId;
     alert.attemptSentTimes[messageId] = simTime();
     auto message = makeShared<VictimAlertChunk>();
@@ -327,13 +364,12 @@ void DroneApp::performMaintenance()
         if (simTime() - alert.generationTime >= alertTtl ||
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             alertsExpired++;
-            if (activeRepositionAlertId == alert.alertId && repositionState != RepositionState::IDLE) {
+            if (reposition.owns(alert.alertId) && !reposition.idle()) {
                 failedRepositions++;
                 repositionExpiredBeforeAck++;
             }
-            if (activeRepositionAlertId == alert.alertId) {
-                activeRepositionAlertId.clear();
-                repositionState = RepositionState::IDLE;
+            if (reposition.owns(alert.alertId)) {
+                reposition.release();
                 if (movementCompleteTimer->isScheduled()) cancelEvent(movementCompleteTimer);
                 resumeMobility();
             }
@@ -382,8 +418,8 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         return;
     }
     sensorConfirmations++;
-    if (!baEnabled || alert.baCycles >= maxBaCycles || repositionState == RepositionState::MOVING ||
-        (!activeRepositionAlertId.empty() && activeRepositionAlertId != alert.alertId))
+    if (!baEnabled || alert.baCycles >= maxBaCycles || reposition.moving() ||
+        reposition.busyWithOther(alert.alertId))
         return;
 
     baActivations++;
@@ -430,8 +466,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
     controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
                        fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
-    activeRepositionAlertId = alert.alertId;
-    repositionState = RepositionState::MOVING;
+    reposition.begin(alert.alertId);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
 }
 
@@ -452,7 +487,7 @@ void DroneApp::handleVictimAck(Packet *packet)
         }
         uniqueAlertsAcked++;
         totalRtt += simTime() - sentIt->second;
-        bool ownsReposition = activeRepositionAlertId == it->first;
+        bool ownsReposition = reposition.owns(it->first);
         bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
             alert.validationMessageId == ack->getReceivedMessageId();
         if (ownsReposition) {
@@ -485,8 +520,7 @@ void DroneApp::handleVictimAck(Packet *packet)
             }
         }
         if (ownsReposition) {
-            activeRepositionAlertId.clear();
-            repositionState = RepositionState::IDLE;
+            reposition.release();
             if (movementCompleteTimer->isScheduled()) cancelEvent(movementCompleteTimer);
         }
         pendingAlerts.erase(it);

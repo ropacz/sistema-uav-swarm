@@ -93,6 +93,10 @@ esse filtro contaria cada quadro duas vezes.
 | `rssi_min_dbm` | mínimo de `positionUpdateRssi:min` | dBm | `DroneApp` | Pior amostra observada na execução |
 | `udp_packets_received` | `packetReceived:count` | pacotes | `udp` | Todos os pacotes da aplicação, de qualquer tipo |
 | `attempt_delivery_pct` | `attemptsReceived` ÷ `alertAttemptsSent` | % | aplicações | Tentativas, não alertas únicos |
+| `sensor_outside_range` | contagem | — | `DroneApp` | Havia obstáculo na visada, além do alcance do sensor |
+| `sensor_clear_line_of_sight` | contagem | — | `DroneApp` | Não havia obstáculo: a degradação teve outra causa |
+| `unique_alerts_received` | contagem | — | `TeamApp` | Contrapartida na equipe de `uniqueAlertsGenerated` |
+| `application_acks_sent` | contagem | — | `TeamApp` | Inclui reenvios para tentativas duplicadas |
 
 Uma métrica cujo denominador é vazio é registrada como indefinida, nunca como
 zero — por exemplo, `hop_count_mean` numa execução sem nenhuma entrega.
