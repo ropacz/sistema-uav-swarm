@@ -24,7 +24,6 @@ struct BatParameters {
 struct BatResult {
     inet::Coord position;
     double fitness = INFINITY;
-    int evaluations = 0;
     bool valid = false;
 };
 

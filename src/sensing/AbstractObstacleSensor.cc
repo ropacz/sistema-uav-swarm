@@ -5,7 +5,6 @@
 #include "inet/common/IVisitor.h"
 #include "inet/common/geometry/common/RotationMatrix.h"
 #include "inet/common/geometry/object/LineSegment.h"
-#include "inet/environment/common/PhysicalObject.h"
 
 using namespace omnetpp;
 using namespace inet;
@@ -63,7 +62,6 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
                                                     const Coord& teamPosition) const
 {
     ObstacleObservation result;
-    result.timestamp = simTime();
     Coord direction = teamPosition - dronePosition;
     if (direction.length() == 0) {
         result.reason = "invalidTargetDirection";
@@ -76,10 +74,6 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
         result.reason = "clearLineOfSight";
         return result;
     }
-    auto physicalObject = check_and_cast<const PhysicalObject *>(visitor.closest);
-    result.obstacleId = physicalObject->getId();
-    result.obstacleName = physicalObject->getName();
-    result.center = visitor.closest->getPosition();
     result.nearestSurfacePoint = visitor.closestPoint;
     result.distance = visitor.closestDistance;
     // Interseção geométrica fora do alcance não equivale a confirmação sensorial.

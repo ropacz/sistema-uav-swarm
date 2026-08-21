@@ -21,7 +21,6 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     std::string ipAddress;
     omnetpp::simtime_t updateInterval;
     omnetpp::simtime_t initialJitter;
-    bool ackEnabled = true;
     omnetpp::simtime_t ackStartTime;
     int appPort = 5000;
     int64_t positionUpdatePayloadBytes = 160;

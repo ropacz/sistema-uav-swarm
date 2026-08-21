@@ -115,9 +115,9 @@ protocolo. O contrato de cada métrica está em
 
 ## Diagnóstico de rede
 
-As configurações `Network_*` gravam PCAPNG por nó para auditoria de tráfego.
-Elas alteram parâmetros de rádio ou injetam falha e por isso **não** são
-evidência científica; a análise as separa automaticamente.
+`Network_Realistic_Evaluation` grava PCAPNG por nó sobre o mesmo cenário do
+experimento, permitindo auditar no nível do fio o que o modelo afirma enviar.
+É diagnóstico e a análise o separa automaticamente das tabelas científicas.
 
 ```bash
 ./run.sh -c Network_Realistic_Evaluation

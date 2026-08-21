@@ -1,6 +1,5 @@
 #include "BatAlgorithm.h"
 
-#include <algorithm>
 #include <cmath>
 
 using inet::Coord;
@@ -54,14 +53,13 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
         bat.pulseRate = p.initialPulseRate;
         if (feasible(bat.position)) {
             bat.fitness = fitness(bat.position);
-            best.evaluations++;
             if (bat.fitness < best.fitness)
-                best = {bat.position, bat.fitness, best.evaluations, true};
+                best = {bat.position, bat.fitness, true};
         }
     }
     // O centro preserva uma solução válida quando nenhum candidato aleatório serve.
     if (!best.valid && feasible(center)) {
-        best = {center, fitness(center), best.evaluations + 1, true};
+        best = {center, fitness(center), true};
     }
 
     for (int t = 0; t < p.iterations && best.valid; ++t) {
@@ -82,7 +80,6 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
             if (candidate.distance(center) > maxDistance || !feasible(candidate))
                 continue;
             double candidateFitness = fitness(candidate);
-            best.evaluations++;
             // Uma solução só é aceita se melhorar o morcego e passar pelo teste de amplitude.
             if (candidateFitness <= bat.fitness && rng->doubleRand() < bat.amplitude) {
                 bat.position = candidate;
@@ -91,7 +88,7 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
                 bat.pulseRate = p.initialPulseRate *
                     (1 - std::exp(-p.pulseGrowth * (t + 1)));
                 if (candidateFitness < best.fitness)
-                    best = {candidate, candidateFitness, best.evaluations, true};
+                    best = {candidate, candidateFitness, true};
             }
         }
     }

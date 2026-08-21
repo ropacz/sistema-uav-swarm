@@ -10,12 +10,12 @@ namespace echosar {
 
 struct ObstacleObservation {
     bool confirmed = false;
-    int obstacleId = -1;
-    std::string obstacleName;
-    inet::Coord center;
+    /// Primeiro ponto da superfície a partir do drone: onde a linha de visada
+    /// começa a ser bloqueada. É o único ponto que o BA consome.
     inet::Coord nearestSurfacePoint;
+    /// Distância drone-superfície, comparada com os limites do sensor.
     double distance = NAN;
-    omnetpp::simtime_t timestamp;
+    /// Motivo da confirmação ou da rejeição, contabilizado pela aplicação.
     std::string reason;
 };
 

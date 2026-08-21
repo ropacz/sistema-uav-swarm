@@ -48,8 +48,8 @@ Exclusivamente `**.drone[*].app[0].baEnabled`.
 | Controle | `Experiment_Control_BaOff` | `baEnabled = false` |
 | Proposta | `Experiment_Proposed_BaOn` | `baEnabled = true` |
 
-Ambas estendem `DissertationBase`, que é `abstract` e não pode ser
-executada diretamente. `analysis/process_results.py` compara os parâmetros
+Ambas estendem `UrbanMission`, que é `abstract` e não pode ser executada
+diretamente. `analysis/process_results.py` compara os parâmetros
 gravados nos `.sca` dos dois braços e **falha** se divergirem em qualquer
 parâmetro além de `baEnabled`.
 
@@ -57,7 +57,7 @@ parâmetro além de `baEnabled`.
 
 Topologia, duração, obstáculos, posições iniciais, evento da vítima, tráfego,
 modelos de mobilidade, parâmetros de rádio e conjunto de seeds são idênticos
-nos dois braços, por herança de `DissertationBase`.
+nos dois braços, por herança de `UrbanMission`.
 
 ### Fluxos aleatórios
 
@@ -89,8 +89,8 @@ substituem** evidência experimental com múltiplas seeds.
 |---|---|---|
 | Verificação determinística | `Validation_*` | Confirmam que a implementação satisfaz contratos. Não são evidência científica. |
 | Experimento | `Experiment_Control_BaOff`, `Experiment_Proposed_BaOn` | Única fonte de evidência sobre H0/H1. |
-| Demonstração | `Visual_Demo` | Inspeção no Qtenv. Altera limiares para tornar o comportamento visível. |
-| Diagnóstico de rede | `Network_*` | Auditoria de tráfego em PCAP. Alteram parâmetros de rádio ou injetam falha. |
+| Demonstração | `Visual_Demo` | Inspeção do cenário urbano no Qtenv. Mesmos parâmetros do experimento. |
+| Diagnóstico de rede | `Network_Realistic_Evaluation` | Auditoria de tráfego em PCAP sobre o cenário urbano. |
 
 `Validation_BaOn` usa **injeção controlada de falha** (`ackStartTime`) e
 sensibilidade de recepção alterada para exercitar a máquina de estados do
@@ -129,13 +129,14 @@ braços**:
 
 | Alteração | De | Para | Justificativa |
 |---|---|---|---|
-| Setor de busca | 1 km × 1 km | 200 m × 200 m | Uma sortie cobre um setor delimitado pelo comando do incidente, não a área inteira |
-| Obstáculos | 2 blocos de 3×2×5 m | 4 edificações de 30×30×10 m | A proposta trata de degradação ar-solo em terreno construído; um bloco de 3×2×5 m é um anteparo pontual |
+| Setor de busca | 1 km × 1 km | 160 m × 160 m | Uma sortie cobre um setor delimitado pelo comando do incidente, não a área inteira |
+| Obstáculos | 2 blocos de 3×2×5 m | 4 quadras de 50×50×10 m, 39 % de ocupação | A proposta trata de degradação ar-solo em terreno construído; um bloco de 3×2×5 m é um anteparo pontual |
+| Faixa de voo | 10–20 m | 12–15 m | Voo rasante entre quadras, acima do topo das edificações; é essa geometria que aproxima a fachada do sensor |
+| UAVs | 4 | 2 | Com quatro, a malha contornava toda obstrução ar-solo e nenhum alerta expirava |
 | Vítimas | 1 em `t = 2 s` | 10 ao longo de 660 s | Uma sortie acumula detecções; AppACK passa a ser proporção com variância interna (resolve D2) |
 
-Consequências deliberadas: o piso de voo sobe para 12 m, acima do topo das
-edificações, para que um drone nunca ocupe o volume de um prédio — inclusive os
-candidatos propostos pelo BA. A geometria antiga permanece em
+Consequências deliberadas: o piso de voo fica acima do topo das edificações,
+para que nem a mobilidade nem um candidato do BA ocupem o volume de um prédio. A geometria antiga permanece em
 `dissertation-obstacles.xml`, usada pelos cenários determinísticos, cujos testes
 de RSSI e de alcance do sensor dependem daquelas dimensões exatas.
 

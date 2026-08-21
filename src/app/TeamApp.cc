@@ -27,7 +27,6 @@ void TeamApp::initialize(int stage)
         victimAckPayloadBytes = par("victimAckPayloadBytes");
         updateInterval = par("positionUpdateInterval");
         initialJitter = par("initialJitter");
-        ackEnabled = par("ackEnabled");
         ackStartTime = par("ackStartTime");
         int applicationIpTtl = par("applicationIpTtl");
         if (teamId.empty())
@@ -146,7 +145,9 @@ void TeamApp::handleVictimAlert(Packet *packet)
     if (auto hop = packet->findTag<HopLimitInd>())
         emit(hopCountSignal, initialTtl - hop->getHopLimit());
 
-    if (!ackEnabled || simTime() < ackStartTime) {
+    // Janela de injeção determinística: antes de ackStartTime a equipe recebe
+    // e contabiliza o alerta, mas não confirma.
+    if (simTime() < ackStartTime) {
         delete packet;
         return;
     }

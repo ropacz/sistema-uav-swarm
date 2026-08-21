@@ -100,9 +100,9 @@ meio.
 A interseção é calculada no sistema local de cada objeto e convertida de volta
 ao global, porque cada obstáculo tem posição e orientação próprias.
 
-O sensor devolve `center` (centro geométrico) e `nearestSurfacePoint` (primeira
-superfície a partir do drone). O BA recebe `nearestSurfacePoint`, porque é onde
-a linha de visada começa a ser bloqueada.
+O sensor devolve `nearestSurfacePoint`, a primeira superfície encontrada a
+partir do drone — onde a linha de visada começa a ser bloqueada. É esse ponto,
+e não o centro geométrico do objeto, que o Bat Algorithm consome.
 
 | `reason` | Significado |
 |---|---|
@@ -214,7 +214,7 @@ criar uma quarta cópia divergente.
 | Movimento | `horizontalSpeed`, `climbSpeed`, `descentSpeed`, `minimumAltitude`, `maximumAltitude`, `flightTimeLimit` |
 | Bat Algorithm | `bat*`, `maximumRepositionDistance`, `maxBaCycles` |
 | Aptidão | `wLink`, `wObstacle`, `wMove`, `obstacleSigma`, `obstacleSafetyMargin`, `linkNormalizationDistance` |
-| Injeção de falha | `ackEnabled`, `ackStartTime` — apenas em cenários de verificação |
+| Injeção de falha | `ackStartTime` — apenas em `Validation_BaOn` |
 
 ## 8. Limitações
 
