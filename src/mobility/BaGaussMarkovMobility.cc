@@ -9,6 +9,33 @@ namespace echosar {
 
 Define_Module(BaGaussMarkovMobility);
 
+void BaGaussMarkovMobility::initialize(int stage)
+{
+    GaussMarkovMobility::initialize(stage);
+    if (stage == INITSTAGE_LOCAL) {
+        elevationMean = deg(par("elevation"));
+        elevationStdDev = deg(par("elevationStdDev"));
+        elevation = elevationMean;
+    }
+}
+
+void BaGaussMarkovMobility::move()
+{
+    preventBorderHugging();
+    LineSegmentsMobilityBase::move();
+    // A sobrecarga com elevação reflete também nos limites verticais.
+    handleIfOutside(REFLECT, lastPosition, lastVelocity, angle, elevation);
+    minimumObservedZ = std::min(minimumObservedZ, lastPosition.z);
+    maximumObservedZ = std::max(maximumObservedZ, lastPosition.z);
+}
+
+void BaGaussMarkovMobility::finish()
+{
+    recordScalar("minimumObservedZ", minimumObservedZ);
+    recordScalar("maximumObservedZ", maximumObservedZ);
+    GaussMarkovMobility::finish();
+}
+
 void BaGaussMarkovMobility::setTargetPosition()
 {
     // Ao terminar a perna do BA, mantém a posição até a aplicação validar o enlace.
@@ -21,7 +48,23 @@ void BaGaussMarkovMobility::setTargetPosition()
         return;
     }
     waypointId++;
-    GaussMarkovMobility::setTargetPosition();
+    speed = alpha * speed
+        + (1.0 - alpha) * speedMean
+        + sqrt(1.0 - alpha * alpha) * normal(0.0, 1.0) * speedStdDev;
+    angle = alpha * angle
+        + (1.0 - alpha) * angleMean
+        + rad(sqrt(1.0 - alpha * alpha) * normal(0.0, 1.0) * angleStdDev);
+    elevation = alpha * elevation
+        + (1.0 - alpha) * elevationMean
+        + rad(sqrt(1.0 - alpha * alpha) * normal(0.0, 1.0) * elevationStdDev);
+
+    double azimuth = rad(angle).get();
+    double vertical = rad(elevation).get();
+    Coord direction(cos(vertical) * cos(azimuth),
+                    cos(vertical) * sin(azimuth),
+                    sin(vertical));
+    nextChange = simTime() + updateInterval;
+    targetPosition = lastPosition + direction * (speed * updateInterval.dbl());
 }
 
 void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSpeed,
@@ -62,7 +105,7 @@ void BaGaussMarkovMobility::resumeNormal()
     baOverride = false;
     holding = false;
     stationary = false;
-    GaussMarkovMobility::setTargetPosition();
+    setTargetPosition();
     scheduleUpdate();
 }
 

@@ -1,0 +1,41 @@
+<config>
+    <!--
+      Dois edifícios ocos com envelope externo de 120 x 120 x 18 m.
+      Cada parede e cobertura possui 0,30 m de concreto. Um único cuboide
+      maciço faria o INET interpretar até 120 m contínuos de concreto.
+    -->
+
+    <!-- Edifício O1, centro (250, 775, 9). -->
+    <object id="601" name="PROFESSOR-O1-WEST" position="center 190.15 775 9"
+            orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="602" name="PROFESSOR-O1-EAST" position="center 309.85 775 9"
+            orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="603" name="PROFESSOR-O1-SOUTH" position="center 250 715.15 9"
+            orientation="0 0 0" shape="cuboid 119.40 0.30 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="604" name="PROFESSOR-O1-NORTH" position="center 250 834.85 9"
+            orientation="0 0 0" shape="cuboid 119.40 0.30 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="605" name="PROFESSOR-O1-ROOF" position="center 250 775 17.85"
+            orientation="0 0 0" shape="cuboid 119.40 119.40 0.30" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+
+    <!-- Edifício O2, centro (750, 225, 9). -->
+    <object id="611" name="PROFESSOR-O2-WEST" position="center 690.15 225 9"
+            orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="612" name="PROFESSOR-O2-EAST" position="center 809.85 225 9"
+            orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="613" name="PROFESSOR-O2-SOUTH" position="center 750 165.15 9"
+            orientation="0 0 0" shape="cuboid 119.40 0.30 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="614" name="PROFESSOR-O2-NORTH" position="center 750 284.85 9"
+            orientation="0 0 0" shape="cuboid 119.40 0.30 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+    <object id="615" name="PROFESSOR-O2-ROOF" position="center 750 225 17.85"
+            orientation="0 0 0" shape="cuboid 119.40 119.40 0.30" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+</config>

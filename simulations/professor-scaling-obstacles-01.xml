@@ -1,0 +1,6 @@
+<config>
+    <!-- Barreira O01; 120 m de comprimento, 18 m de altura e 0,30 m de concreto. -->
+    <object id="1001" name="SCALE-O01" position="center 200 200 9"
+            orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"
+            line-width="2" line-color="120 30 30" fill-color="190 100 60" opacity="1"/>
+</config>

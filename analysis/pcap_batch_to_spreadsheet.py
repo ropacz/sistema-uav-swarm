@@ -3,8 +3,8 @@
 
 O script descobre automaticamente arquivos com nomes como::
 
-    HypothesisPilot_BaOn-BasicNetwork.team[0].pcapng
-    HypothesisPilot_BaOn-BasicNetwork.drone[0].pcapng
+    Scenario1_TwoVictims_BaOn-0-BasicNetwork.team[0].pcapng
+    Scenario1_TwoVictims_BaOn-0-BasicNetwork.drone[0].pcapng
 
 Para cada cenário, ele lê o IP gravado no Interface Description Block do
 PCAPNG e usa a direção registrada pelo INET (inbound/outbound). Cada transmissão

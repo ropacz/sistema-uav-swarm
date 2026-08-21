@@ -1,19 +1,11 @@
-# Ferramentas de análise
+# Análise
 
-- `report_hypothesis_pilot.py`: relatório e portões de integridade do piloto;
-- `process_results.py`: entrada compatível e funções compartilhadas para SCA;
-- `network_metrics.py`: diagnóstico MAC, IP, rádio e transporte;
-- `pcap_batch_to_spreadsheet.py` e `pcap_core.py`: auditoria PCAPNG;
-- `tests/`: testes dos decodificadores e da agregação PCAP.
+- `report_professor_scenarios.py`: casos de uma e duas vítimas por equipes/seed;
+- `report_professor_scaling_test.py`: sonda 1/40 vítimas × 1/20 obstáculos;
+- `validate_ba_smoke_test.py`: contrato automático do gatilho e recuperação;
+- `network_metrics.py`: diagnóstico MAC/IP/UDP;
+- `pcap_batch_to_spreadsheet.py`: consolidação dos PCAPNG.
 
-```bash
-python3 analysis/report_hypothesis_pilot.py
-python3 analysis/network_metrics.py simulations/results/omnetpp \
-  --configs HypothesisPilot_BaOff HypothesisPilot_BaOn
-python3 -m unittest discover -s analysis/tests -v
-```
-
-O relatório exige cinco seeds em cada braço, um alerta por execução, escalares
-obrigatórios, pareamento de seed, igualdade de configuração exceto
-`baEnabled` e salto direto nas entregas. Ele grava o manifesto de proveniência
-em `simulations/results/pilot_manifest.json`.
+Use `make professor-scenarios`, `make professor-scaling-test` e
+`make professor-pcap`. Três seeds são somente validação preliminar; o protocolo
+final exige 30.

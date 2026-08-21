@@ -1,0 +1,23 @@
+<config>
+    <!-- Lista cumulativa: O01 é idêntico ao arquivo com um obstáculo. -->
+    <object id="1001" name="SCALE-O01" position="center 200 200 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1002" name="SCALE-O02" position="center 400 200 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1003" name="SCALE-O03" position="center 600 200 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1004" name="SCALE-O04" position="center 800 200 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1005" name="SCALE-O05" position="center 200 400 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1006" name="SCALE-O06" position="center 400 400 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1007" name="SCALE-O07" position="center 600 400 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1008" name="SCALE-O08" position="center 800 400 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1009" name="SCALE-O09" position="center 200 600 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1010" name="SCALE-O10" position="center 400 600 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1011" name="SCALE-O11" position="center 600 600 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1012" name="SCALE-O12" position="center 800 600 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1013" name="SCALE-O13" position="center 200 800 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1014" name="SCALE-O14" position="center 400 800 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1015" name="SCALE-O15" position="center 600 800 9" orientation="90 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1016" name="SCALE-O16" position="center 800 800 9" orientation="0 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1017" name="SCALE-O17" position="center 300 500 9" orientation="45 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1018" name="SCALE-O18" position="center 500 300 9" orientation="135 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1019" name="SCALE-O19" position="center 500 700 9" orientation="45 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+    <object id="1020" name="SCALE-O20" position="center 700 500 9" orientation="135 0 0" shape="cuboid 0.30 120 18" material="concrete"/>
+</config>

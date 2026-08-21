@@ -1,6 +1,7 @@
 #pragma once
 
 #include "inet/mobility/single/GaussMarkovMobility.h"
+#include <limits>
 
 namespace echosar {
 
@@ -10,6 +11,15 @@ class BaGaussMarkovMobility : public inet::GaussMarkovMobility
     bool baOverride = false;
     bool holding = false;
     int waypointId = 0;
+    inet::rad elevation = inet::rad(0);
+    inet::rad elevationMean = inet::rad(0);
+    inet::rad elevationStdDev = inet::rad(0);
+    double minimumObservedZ = std::numeric_limits<double>::infinity();
+    double maximumObservedZ = -std::numeric_limits<double>::infinity();
+
+    virtual void initialize(int stage) override;
+    virtual void move() override;
+    virtual void finish() override;
 
     /// Alterna entre concluir a perna comandada pelo BA e gerar um alvo Gauss-Markov.
     virtual void setTargetPosition() override;

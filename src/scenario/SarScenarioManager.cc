@@ -66,7 +66,12 @@ void SarScenarioManager::handleMessage(cMessage *message)
     int bestIndex = std::numeric_limits<int>::max();
     std::string bestId;
     int count = network->getSubmoduleVectorSize("drone");
+    int requestedIndex = victim->par("assignedDroneIndex");
+    if (requestedIndex < -1 || requestedIndex >= count)
+        throw cRuntimeError("Invalid assignedDroneIndex=%d for %d drones", requestedIndex, count);
     for (int i = 0; i < count; ++i) {
+        if (requestedIndex >= 0 && i != requestedIndex)
+            continue;
         auto drone = network->getSubmodule("drone", i);
         auto status = dynamic_cast<NodeStatus *>(drone->getSubmodule("status"));
         if (status && status->getState() != NodeStatus::UP)
@@ -85,7 +90,7 @@ void SarScenarioManager::handleMessage(cMessage *message)
         }
     }
     if (!selectedApp)
-        throw cRuntimeError("No active drone available for victim assignment");
+        throw cRuntimeError("No active drone available for victim assignment (requested index %d)", requestedIndex);
 
     auto assignment = new VictimAssignment("victimAssignment");
     std::string victimId = victim->par("victimId").stdstringValue();

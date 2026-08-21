@@ -4,10 +4,12 @@ INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
 ANALYSIS_SCRIPTS := analysis/process_results.py \
 	analysis/network_metrics.py analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py \
-	analysis/report_hypothesis_pilot.py
+	analysis/report_professor_scenarios.py analysis/report_professor_scaling_test.py \
+	analysis/validate_ba_smoke_test.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests \
-	experiment analyze network-metrics reproduce hypothesis-pilot
+	experiment analyze network-metrics reproduce professor-scenarios professor-pcap \
+	ba-smoke-test professor-scaling-test
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -40,31 +42,61 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	PYTHONPATH=analysis python3 -c "import network_metrics, pcap_batch_to_spreadsheet, process_results, report_hypothesis_pilot"
-	@! grep -rEn "Professor_|Validation_|DissertationBase|professor-scenarios" \
-		README.md docs run.sh simulations/omnetpp.ini simulations/*.xml src
+	PYTHONPATH=analysis python3 -c "import network_metrics, pcap_batch_to_spreadsheet, process_results, report_professor_scenarios, report_professor_scaling_test, validate_ba_smoke_test"
+	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
+		README.md docs run.sh simulations analysis --exclude-dir=results
 
 analysis-tests: check
 	python3 -m unittest discover -s analysis/tests -v
 
-# Experimento causal pareado do artigo.
-hypothesis-pilot:
-	./run.sh -c HypothesisPilot_BaOff
-	./run.sh -c HypothesisPilot_BaOn
-	python3 analysis/report_hypothesis_pilot.py
+# Verifica integração do gatilho e BA; não produz evidência científica.
+ba-smoke-test:
+	./run.sh -c BA_SmokeTest -r 0
+	python3 analysis/validate_ba_smoke_test.py
 
-experiment: hypothesis-pilot
+# Sonda 2x2: 1/40 vítimas x 1/20 obstáculos, 3 seeds, BA desligado.
+professor-scaling-test:
+	./run.sh -c ProfessorScaling_Obs01 -r 3,4,5,15,16,17
+	./run.sh -c ProfessorScaling_Obs20 -r 3,4,5,15,16,17
+	./run.sh -c ProfessorScaling_Obs20_BaOn -r 15,16,17
+	python3 analysis/report_professor_scaling_test.py
+
+# 2 casos x 3 braços x 4 quantidades de equipes x 3 seeds = 72 runs.
+professor-scenarios:
+	./run.sh -c Scenario1_OneVictim_BaOff
+	./run.sh -c Scenario1_OneVictim_BaOn
+	./run.sh -c Scenario1_OneVictim_Multihop
+	./run.sh -c Scenario1_TwoVictims_BaOff
+	./run.sh -c Scenario1_TwoVictims_BaOn
+	./run.sh -c Scenario1_TwoVictims_Multihop
+	python3 analysis/report_professor_scenarios.py
+
+# Captura todos os nós em todas as seeds preliminares.
+professor-pcap:
+	./run.sh -c Scenario1_OneVictim_BaOff --pcap
+	./run.sh -c Scenario1_OneVictim_BaOn --pcap
+	./run.sh -c Scenario1_OneVictim_Multihop --pcap
+	./run.sh -c Scenario1_TwoVictims_BaOff --pcap
+	./run.sh -c Scenario1_TwoVictims_BaOn --pcap
+	./run.sh -c Scenario1_TwoVictims_Multihop --pcap
+	python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+		-o simulations/results/spreadsheets/professor-all-seeds.xlsx
+
+experiment: professor-scenarios
 
 analyze:
 	python3 analysis/process_results.py
 
 network-metrics:
 	python3 analysis/network_metrics.py simulations/results/omnetpp \
-		--configs HypothesisPilot_BaOff HypothesisPilot_BaOn
+		--configs Scenario1_OneVictim_BaOff Scenario1_OneVictim_BaOn \
+			Scenario1_OneVictim_Multihop Scenario1_TwoVictims_BaOff \
+			Scenario1_TwoVictims_BaOn Scenario1_TwoVictims_Multihop
 
-# Caminho único do código-fonte ao resultado do piloto.
+# Caminho completo do código-fonte aos cenários e à auditoria de rede.
 reproduce:
-	./run.sh --build -c HypothesisPilot_BaOff -r 0
+	./run.sh --build -c Scenario1_OneVictim_BaOff -r 0
 	$(MAKE) analysis-tests
-	$(MAKE) hypothesis-pilot
+	$(MAKE) professor-scenarios
+	$(MAKE) professor-pcap
 	$(MAKE) network-metrics

@@ -1,57 +1,25 @@
-# ECHOSAR-Net — piloto da hipótese
+# ECHOSAR-Net — cenários da professora
 
-Simulação OMNeT++ 6.2/INET 4.5.4 para verificar se o reposicionamento de um
-UAV pelo Bat Algorithm recupera a comunicação com uma equipe móvel após uma
-obstrução física.
+Simulação de busca e salvamento com OMNeT++ 6.2 e INET 4.5.4. O projeto contém
+os dois casos da linha 1 de `docs/references/CenáriosReunião14_8Rodrigo.pdf`:
 
-O projeto possui somente um experimento pareado:
+- cenário 1A: 4 drones e 1 vítima;
+- cenário 1B: 4 drones e 2 vítimas, anunciadas por 2 drones diferentes.
 
-| Configuração | Tratamento |
-|---|---|
-| `HypothesisPilot_BaOff` | controle, BA desligado |
-| `HypothesisPilot_BaOn` | proposta, BA ligado |
-
-Os braços possuem a mesma topologia, trajetória, rádio, obstáculo e seeds;
-somente `baEnabled` muda. Cada braço executa cinco repetições.
-
-## Executar
+Ambos usam 2 obstáculos grandes, 1/5/10/15 equipes, área 1000 × 1000 m,
+Random Waypoint terrestre e Gauss–Markov 3D aéreo até 20 m. A sonda atual usa
+450 s e 3 seeds; o lote final deve usar 900 s e 30 seeds.
 
 ```bash
 cp .env.example .env
-./run.sh --build -c HypothesisPilot_BaOn -r 0
-make hypothesis-pilot
-make network-metrics
+./run.sh --build -c Scenario1_OneVictim_BaOn -r 0
+make professor-scenarios
+make professor-pcap
+make ba-smoke-test             # integração do BA, não experimento científico
 ```
 
-O último comando executa os dez runs pareados e imprime o resumo. Para auditar
-pacotes de uma seed:
-
-```bash
-./run.sh -c HypothesisPilot_BaOff -r 0 --pcap
-./run.sh -c HypothesisPilot_BaOn -r 0 --pcap
-```
-
-Os escalares ficam em `simulations/results/omnetpp/` e os PCAPNG opcionais em
-`simulations/results/pcap/`.
-
-## Resultado atual do piloto
-
-Em cinco seeds, o controle obteve 0/5 AppACK e o BA ligado obteve 5/5 AppACK.
-Todas as entregas tiveram `hopCount = 0`: o movimento recuperou um enlace
-direto; não houve encaminhamento multihop. Os ACKs chegaram durante o
-deslocamento, após 31,51 m reais em média, antes da validação da posição final.
-O teste exato bilateral de McNemar é `p = 0,0625`; o resultado é exploratório,
-não uma rejeição confirmatória de H0 a 5%.
-
-A descrição científica completa, incluindo fórmulas, gatilho, Bat Algorithm,
-métricas e limites de validade está em
-[docs/pilot_experiment.md](docs/pilot_experiment.md).
-
-## Estrutura
-
-```text
-src/          aplicações, sensor, mobilidade e otimização
-simulations/  cenário, trajetória, obstáculo e resultados
-analysis/     relatório do piloto e auditoria PCAP
-docs/         protocolo, métricas e premissas
-```
+Os arquivos experimentais estão separados em `simulations/professor-common.ini`,
+`simulations/scenario-1-one-victim.ini` e
+`simulations/scenario-1-two-victims.ini`. A especificação, fórmulas, hipóteses,
+gatilho do BA e ameaças à validade estão em
+[docs/professor_scenarios.md](docs/professor_scenarios.md).

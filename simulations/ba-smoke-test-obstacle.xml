@@ -1,0 +1,7 @@
+<config>
+    <!-- Parede fina: a face oeste fica a 27,85 m do drone. -->
+    <object id="901" name="BA-SMOKE-WALL" position="center 128 100 9"
+            orientation="0 0 0" shape="cuboid 0.30 60 18" material="concrete"
+            line-width="4" line-color="130 20 20"
+            fill-color="220 100 70" opacity="1"/>
+</config>
