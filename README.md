@@ -16,6 +16,7 @@ cp .env.example .env
 make professor-scenarios
 make professor-pcap
 make ba-smoke-test             # integração do BA, não experimento científico
+make network-discovery-validation # descoberta local por broadcast
 ```
 
 Os arquivos experimentais estão separados em `simulations/professor-common.ini`,

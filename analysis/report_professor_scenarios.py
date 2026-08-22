@@ -1,8 +1,4 @@
-"""Resumo descritivo dos cenários da professora, com uma linha por execução.
-
-Três seeds são apenas uma sonda de funcionamento. Troque repeat para 30 antes
-de usar inferência estatística no artigo.
-"""
+"""Resumo descritivo dos cenários da professora, com uma linha por execução."""
 
 from __future__ import annotations
 
@@ -47,7 +43,7 @@ def run_record(path: str) -> dict:
         "attendance_pct": 100 * acked / generated if generated else float("nan"),
         "attempt_loss_pct": 100 * (1 - received / attempts) if attempts else float("nan"),
         "degradation_indications": sum_where(frame, "degradationIndications", APP),
-        "sensor_obstacle_confirmed": sum_where(frame, "sensorObstacleConfirmed", APP),
+        "sensor_obstacle_confirmed": sum_where(frame, "sensorConfirmations", APP),
         "ba_activations": sum_where(frame, "baActivations", APP),
         "successful_repositions": sum_where(frame, "successfulRepositions", APP),
     })
@@ -70,7 +66,7 @@ def main() -> None:
     runs.to_csv(os.path.join(OUTPUT, "professor_runs.csv"), index=False)
     summary.to_csv(os.path.join(OUTPUT, "professor_summary.csv"))
     print(summary.to_string())
-    print("\nAtenção: n=3 é validação preliminar; o protocolo final exige n=30.")
+    print("\nA unidade experimental é a seed; confira a contagem antes de inferência.")
 
 
 if __name__ == "__main__":

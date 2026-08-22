@@ -119,14 +119,23 @@ def collect(path: str) -> dict:
         # ou havia e estava fora do alcance do sensor.
         "sensor_clear_line_of_sight": sum_where(frame, "sensorClearLineOfSight", APP),
         "sensor_outside_range": sum_where(frame, "sensorOutsideRange", APP),
-        # Contrapartida na equipe: alertas únicos vistos e ACKs emitidos.
-        "unique_alerts_received": sum_where(frame, "uniqueAlertsReceived", APP),
+        # Soma de conjuntos locais: pode contar o mesmo alertId em equipes
+        # distintas e, portanto, não é uma cardinalidade global.
+        "team_local_unique_alert_receptions": sum_where(
+            frame, "uniqueAlertsReceived", APP),
+        # Cardinalidade global operacional: o drone aceita apenas o primeiro
+        # ACK válido e encerra o alerta pendente.
+        "globally_confirmed_unique_alerts": acked,
         "application_acks_sent": sum_where(frame, "applicationAcksSent", APP),
 
         # ── Rádio ─────────────────────────────────────────────────────────
         "rssi_mean_dbm": mean_where(frame, "positionUpdateRssi:mean"),
         "rssi_min_dbm": extreme_where(frame, "positionUpdateRssi:min", lowest=True),
         "rssi_max_dbm": extreme_where(frame, "positionUpdateRssi:max", lowest=False),
+        "rssi_samples_available": sum_where(frame, "rssiSamplesAvailable", APP),
+        "rssi_samples_missing": sum_where(frame, "rssiSamplesMissing", APP),
+        "team_entries_discovered": sum_where(frame, "teamEntriesDiscovered", APP),
+        "team_entries_expired": sum_where(frame, "teamEntriesExpired", APP),
 
         # ── Aplicação ─────────────────────────────────────────────────────
         "appack_pct": ratio(acked, generated, 100),
@@ -161,6 +170,10 @@ HIGHLIGHT = [
     ("hop_count_mean", "Saltos por alerta entregue", "{:.2f}"),
     ("rssi_mean_dbm", "RSSI médio (dBm)", "{:.1f}"),
     ("rssi_min_dbm", "RSSI mínimo (dBm)", "{:.1f}"),
+    ("rssi_samples_available", "Amostras RSSI disponíveis", "{:.0f}"),
+    ("rssi_samples_missing", "Amostras RSSI ausentes", "{:.0f}"),
+    ("team_entries_discovered", "Entradas de equipe descobertas", "{:.0f}"),
+    ("team_entries_expired", "Entradas de equipe expiradas", "{:.0f}"),
     ("delivery_delay_mean_s", "Atraso unidirecional médio (s)", "{:.4f}"),
     ("sensor_outside_range", "Rejeições por obstáculo fora de alcance", "{:.1f}"),
     ("sensor_clear_line_of_sight", "Rejeições por visada livre", "{:.1f}"),

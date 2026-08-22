@@ -66,7 +66,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::cMessage *movementCompleteTimer = nullptr;
     std::string droneId;
     std::string ipAddress;
-    std::map<std::string, TeamLinkState> teams;
+    std::map<std::string, TeamLinkState> discoveredTeams;
     std::map<std::string, PendingVictimAlert> pendingAlerts;
     RepositionController reposition;
 
@@ -74,7 +74,9 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t ackTimeout;
     omnetpp::simtime_t alertTtl;
     omnetpp::simtime_t linkWindow;
+    omnetpp::simtime_t positionUpdateInterval;
     omnetpp::simtime_t teamSilenceTimeout;
+    omnetpp::simtime_t teamEntryLifetime;
     omnetpp::simtime_t teamPredictionHorizon;
     omnetpp::simtime_t maintenanceInterval;
     int maxAttempts = 5;
@@ -86,6 +88,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     double rssiThresholdDbm = -80;
     double maximumTeamPredictionSpeed = 5;
     bool baEnabled = true;
+    bool requireObstacleConfirmation = true;
     double maximumRepositionDistance = 25;
     double minimumAltitude = 6;
     double maximumAltitude = 20;
@@ -140,6 +143,10 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     double postRepositionRssiSum = 0;
     int preRepositionRssiSamples = 0;
     int postRepositionRssiSamples = 0;
+    int rssiSamplesAvailable = 0;
+    int rssiSamplesMissing = 0;
+    int teamEntriesDiscovered = 0;
+    int teamEntriesExpired = 0;
 
     omnetpp::simsignal_t rssiSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t pdrSignal = SIMSIGNAL_NULL;
@@ -178,10 +185,12 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void performMaintenance();
     /// Monta e envia uma nova tentativa do VictimAlert para a equipe selecionada.
     void sendAttempt(PendingVictimAlert& alert);
-    /// Escolhe a equipe posicionada mais próxima; menor ID é o fallback sem posição.
+    /// Escolhe a equipe descoberta mais próxima; vazio significa nenhuma visível.
     std::string selectTargetTeam() const;
     /// Calcula PDR/RSSI da janela e indica degradação enquanto falta AppACK.
     bool detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const;
+    /// Calcula PDR contra o número de beacons esperado na janela temporal.
+    double calculatePositionUpdatePdr(const TeamLinkState& team) const;
     /// Extrapola a equipe pela última velocidade observada, com limites de tempo e velocidade.
     inet::Coord estimateTeamPosition(const TeamLinkState& team, double& predictionAge) const;
     /// Confirma o obstáculo, executa o BA e inicia o deslocamento quando permitido.

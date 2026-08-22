@@ -31,6 +31,9 @@ def main():
     attempts = total(frame, "alertAttemptsSent")
     validated = total(frame, "successfulRepositions")
     during_movement = total(frame, "repositionAckedBeforeValidation")
+    rssi_available = total(frame, "rssiSamplesAvailable")
+    rssi_missing = total(frame, "rssiSamplesMissing")
+    pdr = total(frame, "linkWindowPdr:mean")
     if distance <= 0:
         failures.append(f"repositionDistance:sum deve ser > 0, obtido {distance}")
     if attempts < 1:
@@ -38,6 +41,13 @@ def main():
     if validated + during_movement != 1:
         failures.append("a recuperação deve ocorrer na posição final ou durante o movimento; "
                         f"obtido {validated}+{during_movement}")
+    if rssi_available <= 0 or rssi_missing != 0:
+        failures.append(
+            "SignalPowerInd deve estar disponível no smoke test; "
+            f"obtido disponíveis={rssi_available}, ausentes={rssi_missing}"
+        )
+    if pdr >= 0.8:
+        failures.append(f"PDR deve cruzar o limiar 0.8, obtido {pdr}")
     if failures:
         raise SystemExit("BA smoke test FALHOU:\n- " + "\n- ".join(failures))
     print("BA smoke test OK")
@@ -45,6 +55,8 @@ def main():
     print(f"  distância real de reposicionamento: {distance:.2f} m")
     mode = "posição final" if validated else "durante o movimento (pacote em fila no AODV)"
     print(f"  recuperação: {mode}")
+    print(f"  RSSI: {rssi_available:.0f} amostras disponíveis, {rssi_missing:.0f} ausentes")
+    print(f"  PDR temporal no gatilho: {pdr:.2f}")
     print("  degradação → sensor → BA → movimento → AppACK: confirmado")
 
 

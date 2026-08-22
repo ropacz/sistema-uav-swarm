@@ -81,14 +81,30 @@ garante ativação em toda seed porque os nós se movem.
 ## Gatilho e Bat Algorithm
 
 Atualizações da equipe alimentam uma janela de enlace e sua posição futura é
-estimada pelas últimas posições, velocidades e direções. Há indicação de
-degradação quando PDR ou RSSI cruza os limiares configurados. O BA só inicia se:
+estimada pelas últimas posições, velocidades e direções. O PDR desses beacons
+é calculado contra a quantidade temporalmente esperada na janela,
+`ceil(linkWindow / expectedPositionUpdateInterval)`, e não apenas entre a
+primeira e a última sequência recebidas. Assim, perdas nas extremidades da
+janela também são observáveis. Há indicação de degradação quando esse PDR ou o
+RSSI cruza os limiares configurados. O BA só inicia se:
+
+Os drones começam sem diretório de equipes. Cada entrada temporária é criada
+somente quando um `PositionUpdate` broadcast é recebido: o identificador e a
+posição vêm do payload, e o IP vem do endereço de origem indicado pelo INET.
+Sem novos broadcasts, a entrada expira após `teamEntryLifetime` (30 s no
+cenário principal). Como esses broadcasts têm TTL 1, apenas equipes diretamente
+ouvidas ficam disponíveis; AODV não descobre sozinho o IP de uma equipe remota.
 
 1. existe alerta ainda pendente;
 2. existe posição atual ou prevista da equipe;
 3. a degradação está indicada;
 4. o sensor confirma um obstáculo na linha de visada e entre 0,7 e 30 m;
 5. ainda existem ciclos e tempo de voo disponíveis.
+
+O item 4 é obrigatório nos cenários científicos (`requireObstacleConfirmation
+= true`). O parâmetro pode ser desligado somente em uma ablação: nesse modo o
+gatilho usa silêncio/PDR/RSSI e a aptidão ignora completamente a geometria e a
+penalidade de obstáculos.
 
 A aptidão minimizada é
 
@@ -107,9 +123,16 @@ câmera e enlace, mas seu impacto visual não é modelado.
 
 Unidade experimental é a seed, nunca cada pacote. As métricas primárias são
 atendimento (`ACKs únicos/alertas únicos`), perda por tentativa, atraso e
-expiração. Diagnósticos incluem RSSI, PDR, saltos, ativações do BA, distância de
-reposicionamento, confirmações do sensor e descartes MAC/IP. Deve valer a
-conservação `gerados = atendidos + expirados`.
+expiração. O PDR de PositionUpdate usado no gatilho, a entrega das tentativas e
+o atendimento global são métricas distintas. A soma de `uniqueAlertsReceived`
+das equipes representa recepções únicas **locais** e pode repetir um `alertId`;
+o total global confirmado vem de `uniqueAlertsAcked` no drone originador.
+Diagnósticos incluem RSSI, quantidade de tags RSSI presentes/ausentes, PDR,
+roteadores intermediários, ativações do BA, distância de reposicionamento,
+confirmações do sensor e descartes MAC/IP. `hopCount=0` significa entrega
+direta. Valores positivos só existem depois que o originador conhece o IP e o
+AODV constrói uma rota; o broadcast local, sozinho, não fornece descoberta
+multihop. Deve valer a conservação `gerados = atendidos + expirados`.
 
 PCAPNG é auditoria de rede, não substitui os escalares de aplicação: habilite
 com `--pcap`; `make professor-pcap` captura todos os nós de todas as seeds.
@@ -121,6 +144,7 @@ distribuição; não selecione seeds após observar resultados.
 
 ```bash
 make ba-smoke-test             # teste determinístico da integração, não evidência
+make network-discovery-validation # descoberta direta e limite do relay
 make professor-scenarios        # 72 runs preliminares e resumo CSV
 make professor-pcap             # repete os 72 runs com PCAPNG
 ./run.sh -c Scenario1_TwoVictims_BaOn -r 0 --pcap
@@ -142,19 +166,9 @@ há também um braço pareado com BA ligado. As detecções são distribuídas e
 inferência confirmatória. Os resultados ficam em
 `analysis/figures/professor_scaling_{runs,summary}.csv`.
 
-Resultado exploratório de 21 de agosto de 2026:
-
-| Vítimas | Obstáculos | BA | Atendimento | Perda/tentativa | Degradações | Confirmações |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 1 | não | 100,00% | 0,00% | 0,00 | 0,00 |
-| 1 | 20 | não | 100,00% | 0,00% | 0,00 | 0,00 |
-| 40 | 1 | não | 100,00% | 6,88% | 0,67 | 0,00 |
-| 40 | 20 | não | 94,17% | 53,60% | 46,67 | 4,33 |
-| 40 | 20 | sim | 93,33% | 52,46% | 43,33 | 2,33 |
-
-No braço BA ligado ocorreram em média 2 ativações e 0,33 reposicionamento
-bem-sucedido por execução. O resultado não demonstra benefício médio do BA e
-deve permanecer identificado como diagnóstico, não conclusão do artigo.
+Resultados exploratórios anteriores à descoberta dinâmica e ao novo PDR não
+são comparáveis com a implementação atual e foram removidos deste documento.
+Qualquer tabela científica deve ser regenerada a partir do commit final.
 
 Arquivos gerados: `analysis/figures/professor_{runs,summary}.csv`, escalares em
 `simulations/results/omnetpp/` e capturas em `simulations/results/pcap/`.

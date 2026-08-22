@@ -28,8 +28,12 @@ simple DroneApp like IApp
         // Observação da qualidade do enlace
         // Duração da janela deslizante usada para calcular RSSI e PDR.
         double linkWindow @unit(s) = default(10s);
+        // Intervalo esperado dos PositionUpdates; deve coincidir com TeamApp.
+        double expectedPositionUpdateInterval @unit(s) = default(1s);
         // Tempo sem PositionUpdate que caracteriza silêncio da equipe.
         double teamSilenceTimeout @unit(s) = default(3s);
+        // Tempo sem broadcast após o qual a equipe deixa a tabela descoberta.
+        double teamEntryLifetime @unit(s) = default(30s);
         // Horizonte máximo da extrapolação linear após a última posição recebida.
         double teamPredictionHorizon @unit(s) = default(15s);
         // Limite de velocidade aplicado à estimativa para rejeitar saltos espúrios.
@@ -44,6 +48,9 @@ simple DroneApp like IApp
         // Controle e limites do reposicionamento
         // Ativa ou desativa somente o reposicionamento pelo BA.
         bool baEnabled = default(true);
+        // Exige confirmação sensorial para ativar o BA. Quando falso, a
+        // ablação usa apenas indicadores de rede e ignora a geometria.
+        bool requireObstacleConfirmation = default(true);
         // Quantidade máxima de execuções do BA para o mesmo alerta.
         int maxBaCycles = default(2);
         // Raio máximo da região de busca ao redor da posição atual.

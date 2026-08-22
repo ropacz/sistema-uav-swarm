@@ -50,7 +50,10 @@ void DroneApp::validateParameters() const
     require(alertTtl >= retryInterval, "alertTtl must be at least one retryInterval");
 
     require(linkWindow > 0, "linkWindow must be positive");
+    require(positionUpdateInterval > 0, "expectedPositionUpdateInterval must be positive");
     require(teamSilenceTimeout > 0, "teamSilenceTimeout must be positive");
+    require(teamEntryLifetime > teamSilenceTimeout,
+            "teamEntryLifetime must exceed teamSilenceTimeout");
     require(teamPredictionHorizon >= 0, "teamPredictionHorizon must not be negative");
     require(maximumTeamPredictionSpeed > 0, "maximumTeamPredictionSpeed must be positive");
     require(maintenanceInterval > 0, "maintenanceInterval must be positive");
@@ -101,13 +104,16 @@ void DroneApp::initialize(int stage)
         alertTtl = par("alertTtl");
         maxAttempts = par("maxAttempts");
         linkWindow = par("linkWindow");
+        positionUpdateInterval = par("expectedPositionUpdateInterval");
         teamSilenceTimeout = par("teamSilenceTimeout");
+        teamEntryLifetime = par("teamEntryLifetime");
         teamPredictionHorizon = par("teamPredictionHorizon");
         maximumTeamPredictionSpeed = par("maximumTeamPredictionSpeed").doubleValueInUnit("mps");
         maintenanceInterval = par("maintenanceInterval");
         pdrThreshold = par("pdrThreshold");
         rssiThresholdDbm = par("rssiThreshold").doubleValueInUnit("dBm");
         baEnabled = par("baEnabled");
+        requireObstacleConfirmation = par("requireObstacleConfirmation");
         maxBaCycles = par("maxBaCycles");
         maximumRepositionDistance = par("maximumRepositionDistance").doubleValueInUnit("m");
         fitnessParameters.maximumRepositionDistance = maximumRepositionDistance;
@@ -160,18 +166,8 @@ void DroneApp::initialize(int stage)
         }
         if (ipAddress.empty())
             throw cRuntimeError("Drone '%s' has no configured IPv4 address", droneId.c_str());
-        auto network = getParentModule()->getParentModule();
-        int teamCount = network->getSubmoduleVectorSize("team");
-        for (int i = 0; i < teamCount; ++i) {
-            auto team = network->getSubmodule("team", i);
-            auto app = team->getSubmodule("app", 0);
-            std::string id = app->par("teamId").stdstringValue();
-            if (id.empty()) id = team->getFullName();
-            TeamLinkState state;
-            state.ipAddress = L3AddressResolver().resolve(team->getFullPath().c_str()).str();
-            // A posição só se torna conhecida após um PositionUpdate recebido.
-            teams[id] = state;
-        }
+        // A tabela de equipes começa vazia. IP, posição e presença são
+        // aprendidos exclusivamente de PositionUpdates recebidos por broadcast.
         socket.setOutputGate(gate("socketOut"));
         socket.setCallback(this);
         socket.setBroadcast(true);
@@ -246,13 +242,16 @@ void DroneApp::handlePositionUpdate(Packet *packet)
         delete packet;
         return;
     }
-    auto teamIt = teams.find(update->getSenderId());
-    if (teamIt == teams.end()) {
+    std::string senderId = update->getSenderId();
+    if (senderId.empty()) {
         delete packet;
         return;
     }
-    auto& team = teamIt->second;
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
+    auto [teamIt, discovered] = discoveredTeams.try_emplace(senderId);
+    auto& team = teamIt->second;
+    if (discovered)
+        teamEntriesDiscovered++;
     team.ipAddress = sourceAddress.str();
     Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
     simtime_t sourceTime = update->getTimestamp();
@@ -282,8 +281,13 @@ void DroneApp::handlePositionUpdate(Packet *packet)
         rssi = 10 * std::log10(power->getPower().get() / 0.001);
         emit(rssiSignal, rssi);
     }
-    if (team.samples.empty() || update->getSequenceNumber() > team.samples.back().sequence)
+    if (team.samples.empty() || update->getSequenceNumber() > team.samples.back().sequence) {
         team.samples.push_back({update->getSequenceNumber(), simTime(), rssi});
+        if (std::isnan(rssi))
+            rssiSamplesMissing++;
+        else
+            rssiSamplesAvailable++;
+    }
     // Mantém somente amostras pertencentes à janela deslizante configurada.
     while (!team.samples.empty() && simTime() - team.samples.front().receptionTime > linkWindow)
         team.samples.pop_front();
@@ -295,14 +299,9 @@ std::string DroneApp::selectTargetTeam() const
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
     std::string selected;
-    std::string fallback;
     double best = INFINITY;
-    for (const auto& [id, team] : teams) {
+    for (const auto& [id, team] : discoveredTeams) {
         if (team.ipAddress.empty()) continue;
-        // Broadcasts de posição não atravessam AODV. O menor ID fornece um
-        // destino determinístico quando nenhuma equipe foi ouvida diretamente.
-        if (fallback.empty() || id < fallback)
-            fallback = id;
         if (team.lastSeen < SIMTIME_ZERO) continue;
         double distance = current.distance(team.position);
         // O identificador resolve empates de forma reprodutível.
@@ -311,7 +310,7 @@ std::string DroneApp::selectTargetTeam() const
             best = distance;
         }
     }
-    return selected.empty() ? fallback : selected;
+    return selected;
 }
 
 void DroneApp::sendAttempt(PendingVictimAlert& alert)
@@ -323,7 +322,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
         alert.nextAttempt = simTime() + retryInterval;
         return;
     }
-    auto& team = teams.at(alert.targetTeamId);
+    auto& team = discoveredTeams.at(alert.targetTeamId);
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord position = mobility->getCurrentPosition();
     alert.attempts++;
@@ -364,14 +363,12 @@ bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, d
 {
     pdr = 0;
     rssi = NAN;
-    auto teamIt = teams.find(alert.targetTeamId);
-    if (teamIt == teams.end())
+    auto teamIt = discoveredTeams.find(alert.targetTeamId);
+    if (teamIt == discoveredTeams.end())
         return true;
     const auto& team = teamIt->second;
     if (!team.samples.empty()) {
-        // Lacunas de sequência estimam perdas sem gerar tráfego de sondagem.
-        int64_t expected = team.samples.back().sequence - team.samples.front().sequence + 1;
-        pdr = expected > 0 ? std::clamp(static_cast<double>(team.samples.size()) / expected, 0.0, 1.0) : 0;
+        pdr = calculatePositionUpdatePdr(team);
         double sum = 0;
         int count = 0;
         for (const auto& sample : team.samples)
@@ -380,6 +377,17 @@ bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, d
     }
     bool silence = team.lastSeen < SIMTIME_ZERO || simTime() - team.lastSeen >= teamSilenceTimeout;
     return silence || pdr < pdrThreshold || (!std::isnan(rssi) && rssi < rssiThresholdDbm);
+}
+
+double DroneApp::calculatePositionUpdatePdr(const TeamLinkState& team) const
+{
+    // A contagem temporal detecta inclusive beacons perdidos antes do primeiro
+    // e depois do último pacote recebido. O cálculo antigo baseado apenas na
+    // diferença entre sequências observadas não enxergava essas perdas.
+    double expected = std::ceil(linkWindow.dbl() / positionUpdateInterval.dbl());
+    if (expected <= 0)
+        return 0;
+    return std::clamp(static_cast<double>(team.samples.size()) / expected, 0.0, 1.0);
 }
 
 Coord DroneApp::estimateTeamPosition(const TeamLinkState& team, double& predictionAge) const
@@ -397,9 +405,18 @@ Coord DroneApp::estimateTeamPosition(const TeamLinkState& team, double& predicti
 
 void DroneApp::performMaintenance()
 {
-    for (auto& [id, team] : teams)
+    for (auto it = discoveredTeams.begin(); it != discoveredTeams.end(); ) {
+        auto& team = it->second;
         while (!team.samples.empty() && simTime() - team.samples.front().receptionTime > linkWindow)
             team.samples.pop_front();
+        if (team.lastSeen >= SIMTIME_ZERO &&
+            simTime() - team.lastSeen >= teamEntryLifetime) {
+            teamEntriesExpired++;
+            it = discoveredTeams.erase(it);
+        }
+        else
+            ++it;
+    }
 
     for (auto it = pendingAlerts.begin(); it != pendingAlerts.end(); ) {
         auto& alert = it->second;
@@ -439,8 +456,8 @@ void DroneApp::performMaintenance()
 
 void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double preRssi)
 {
-    auto teamIt = teams.find(alert.targetTeamId);
-    if (teamIt == teams.end() || teamIt->second.lastSeen < SIMTIME_ZERO) {
+    auto teamIt = discoveredTeams.find(alert.targetTeamId);
+    if (teamIt == discoveredTeams.end() || teamIt->second.lastSeen < SIMTIME_ZERO) {
         // Sem posição conhecida da equipe não há linha de visada a consultar.
         // Isto não é uma rejeição do sensor: a consulta nem chegou a ocorrer.
         teamUnknownForReposition++;
@@ -456,12 +473,15 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         teamPredictionAgeSum += predictionAge;
         teamPredictionAgeMax = std::max(teamPredictionAgeMax, predictionAge);
     }
-    auto observation = sensor->inspect(current, teamPosition);
+    ObstacleObservation observation;
+    if (requireObstacleConfirmation)
+        observation = sensor->inspect(current, teamPosition);
     EV_INFO << "Team position for repositioning: observed=" << teamIt->second.position
             << " estimated=" << teamPosition << " velocity=" << teamIt->second.velocity
             << " predictionAge=" << predictionAge << "s\n";
-    // O BA depende de confirmação geométrica independente da camada de rede.
-    if (!observation.confirmed) {
+    // No experimento principal, o BA depende de confirmação geométrica
+    // independente. A ablação pode ativá-lo somente pelos indicadores de rede.
+    if (requireObstacleConfirmation && !observation.confirmed) {
         sensorRejections++;
         // Separa "não havia obstáculo" de "havia, porém fora do alcance": as
         // duas rejeições apontam para causas opostas da degradação.
@@ -471,7 +491,8 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
             sensorOutsideRange++;
         return;
     }
-    sensorConfirmations++;
+    if (observation.confirmed)
+        sensorConfirmations++;
     if (!baEnabled || alert.baCycles >= maxBaCycles || reposition.moving() ||
         reposition.busyWithOther(alert.alertId))
         return;
@@ -484,7 +505,8 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     alert.preRepositionPdr = prePdr;
     alert.preRepositionRssi = preRssi;
     RepositionFitness fitness(fitnessParameters, sensor, current,
-                              teamPosition, observation.nearestSurfacePoint, simTime());
+                              teamPosition, observation.nearestSurfacePoint, simTime(),
+                              requireObstacleConfirmation);
     BatResult result = BatAlgorithm::optimize(current, maximumRepositionDistance,
         batParameters, getRNG(0),
         [&](const Coord& candidate) { return fitness.cost(candidate); },
@@ -547,7 +569,7 @@ void DroneApp::handleVictimAck(Packet *packet)
         auto& alert = it->second;
         auto sentIt = alert.attemptSentTimes.find(ack->getReceivedMessageId());
         bool valid = ack->getOriginDroneId() == droneId && ack->getVictimId() == alert.victimId &&
-            teams.count(ack->getTeamId()) &&
+            discoveredTeams.count(ack->getTeamId()) &&
             sentIt != alert.attemptSentTimes.end();
         // Aceita somente ACK de equipe conhecida para uma tentativa realmente enviada.
         if (!valid) {
@@ -646,6 +668,10 @@ void DroneApp::finish()
     recordScalar("postRepositionRssiSum", postRepositionRssiSum);
     recordScalar("preRepositionRssiSamples", preRepositionRssiSamples);
     recordScalar("postRepositionRssiSamples", postRepositionRssiSamples);
+    recordScalar("rssiSamplesAvailable", rssiSamplesAvailable);
+    recordScalar("rssiSamplesMissing", rssiSamplesMissing);
+    recordScalar("teamEntriesDiscovered", teamEntriesDiscovered);
+    recordScalar("teamEntriesExpired", teamEntriesExpired);
 }
 
 } // namespace echosar
