@@ -1,4 +1,8 @@
-# Cenários científicos da professora
+# Cenários científicos da professora — arquivo histórico
+
+> Documento anterior à simplificação do protocolo. Não é normativo e contém
+> gatilhos, métricas e valores removidos. Consulte os quatro documentos em
+> `docs/` e as configurações `.ini` para o estado atual.
 
 ## Pergunta e hipóteses
 

@@ -16,8 +16,8 @@ com a análise.
 
 Leitura recomendada: modelo → protocolo científico → métricas →
 rastreabilidade. Para executar o projeto diretamente, a seção
-[Procedimento reproduzível](traceability.md#procedimento-reproduzível) reúne os
-comandos e os artefatos esperados.
+[Níveis de validação](traceability.md#3-níveis-de-validação) reúne os comandos e
+os artefatos esperados.
 
 ## Fonte única dos parâmetros
 
@@ -33,9 +33,8 @@ divergência, prevalecem, nesta ordem:
 
 ## Material complementar
 
-- [`professor_scenarios.md`](professor_scenarios.md) preserva a descrição ampla
-  dos cenários solicitados e deve ser lido como material complementar; os
-  contratos normativos estão nos quatro documentos acima.
+- [`professor_scenarios_legacy.md`](references/professor_scenarios_legacy.md)
+  preserva a descrição anterior à simplificação apenas como histórico.
 - [`references/`](references/) contém especificações e material externo. Esses
   arquivos não alteram o comportamento da simulação.
 

@@ -4,6 +4,7 @@ INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
 ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/experiment_metrics.py analysis/core/network_metrics.py \
+	analysis/core/write_manifest.py \
 	analysis/pcap/pcap_batch_to_spreadsheet.py \
 	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
 	analysis/reports/report_main_experiment.py \
@@ -17,7 +18,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	experiment main-experiment robustness-experiment optional-multihop \
 	optional-pcap optional-scaling \
 	analyze network-metrics reproduce professor-scenarios professor-pcap \
-	ba-smoke-test professor-scaling-test
+	ba-smoke-test professor-scaling-test manifest
 
 .PHONY: scenario1-line1-900 network-discovery-validation
 
@@ -83,6 +84,7 @@ network-discovery-validation:
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
 main-experiment:
+	INET_VERSION=$(INET_VERSION) python3 analysis/core/write_manifest.py
 	./run.sh -c MainExperiment_BaOff
 	./run.sh -c MainExperiment_BaOn
 	python3 analysis/reports/report_main_experiment.py
@@ -130,6 +132,9 @@ optional-pcap: professor-pcap
 optional-scaling: professor-scaling-test
 
 experiment: main-experiment
+
+manifest:
+	INET_VERSION=$(INET_VERSION) python3 analysis/core/write_manifest.py
 
 analyze:
 	python3 analysis/reports/report_main_experiment.py

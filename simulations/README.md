@@ -35,7 +35,7 @@ arquivos de configuração por domínio.
 
 ## Validações técnicas
 
-- `ba-smoke-test.ini`: verifica a cadeia degradação, sensor, BA, movimento e ACK;
+- `ba-smoke-test.ini`: verifica timeout sem ACK, sensor, BA, movimento e ACK;
 - `network-discovery-validation.ini`: verifica descoberta direta e o limite do
   broadcast através de relay;
 - `ba-smoke-test-obstacle.xml` e `ba-smoke-test-team.xml`: dados determinísticos

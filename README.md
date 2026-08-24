@@ -15,11 +15,8 @@ documentação descreve seus significados sem criar uma segunda fonte de valores
 cp .env.example .env
 ./run.sh --build -c MainExperiment_BaOn -r 0
 make experiment                 # experimento confirmatório BA Off/On
-make robustness-experiment      # equipes e vítimas adicionais
-make optional-multihop          # pergunta complementar de roteamento
-make optional-pcap              # auditoria, não fonte primária
-make optional-scaling           # sonda exploratória
-make ba-smoke-test             # integração do BA, não experimento científico
+make analysis-tests             # contratos do analisador
+make ba-smoke-test              # integração do BA, não experimento científico
 make network-discovery-validation # descoberta local por broadcast
 ```
 
@@ -28,6 +25,8 @@ e de protocolo são herdados das configurações-base. Robustez e diagnósticos
 permanecem separados. A arquitetura, as fórmulas, as hipóteses e as validações
 estão organizadas no [índice da documentação técnica](docs/README.md). Os valores
 dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
+Multihop, PCAP, escala e robustez possuem alvos `optional-*` ou
+`robustness-experiment`, fora do fluxo confirmatório.
 
 ## Organização
 
