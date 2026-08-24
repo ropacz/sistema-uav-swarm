@@ -17,7 +17,7 @@ import pandas as pd
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from analysis.core.network_metrics import collect  # noqa: E402
+from analysis.core.experiment_metrics import collect  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
@@ -28,14 +28,16 @@ METRIC_SPECS = {
     "alert_pdr_pct": ("primary", "higher"),
     "appack_pct": ("secondary", "higher"),
     "delivery_delay_mean_s": ("secondary", "lower"),
+    "retries_per_alert": ("secondary", "lower"),
 }
 OUTCOME_METRICS = tuple(METRIC_SPECS)
 
-MECHANISM_METRICS = (
+EXPOSURE_METRICS = (
+    "reposition_triggers",
+    "obstacles_detected",
+    "ba_activations",
     "repositions_started",
-    "repositions_validated",
-    "reposition_validation_pct",
-    "validated_recovery_time_mean_s",
+    "repositions_completed",
     "reposition_distance_sum_m",
 )
 
@@ -108,6 +110,7 @@ def summarize_exposure(treatment: pd.DataFrame) -> pd.DataFrame:
         "runs_with_ba_activation": int((activations > 0).sum()),
         "ba_activations": activations.sum(),
         "repositions_started": treatment["repositions_started"].sum(),
+        "repositions_completed": treatment["repositions_completed"].sum(),
         "exposure_status": "observed" if activations.sum() > 0 else "not_observed",
     }])
 
@@ -144,8 +147,8 @@ def main() -> None:
     paired.drop(columns=["result_path_off", "result_path_on"]).to_csv(
         OUTPUT / "main_experiment_paired_effects.csv", index=False)
     summary.to_csv(OUTPUT / "main_experiment_summary.csv", index=False)
-    treatment[["seed", *MECHANISM_METRICS]].to_csv(
-        OUTPUT / "main_experiment_ba_mechanism.csv", index=False)
+    treatment[["seed", *EXPOSURE_METRICS]].to_csv(
+        OUTPUT / "main_experiment_ba_exposure.csv", index=False)
     exposure.to_csv(OUTPUT / "main_experiment_exposure_summary.csv", index=False)
 
     print(summary.to_string(index=False, float_format=lambda value: f"{value:.4f}"))
@@ -154,7 +157,7 @@ def main() -> None:
         print("AVISO: a política BA não foi acionada. O efeito da política neste "
               "cenário continua estimável, mas não informa o efeito condicional "
               "de um reposicionamento quando acionado.")
-    print("Métricas do mecanismo BA foram exportadas separadamente e não são "
+    print("Diagnósticos de exposição ao BA foram exportados separadamente e não são "
           "comparadas ao controle quando o denominador não existe.")
 
 

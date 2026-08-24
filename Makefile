@@ -3,7 +3,8 @@ WORKSPACE ?= $(abspath ..)
 INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
 ANALYSIS_SCRIPTS := analysis/core/process_results.py \
-	analysis/core/network_metrics.py analysis/pcap/pcap_batch_to_spreadsheet.py \
+	analysis/core/experiment_metrics.py analysis/core/network_metrics.py \
+	analysis/pcap/pcap_batch_to_spreadsheet.py \
 	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
 	analysis/reports/report_main_experiment.py \
 	analysis/reports/report_professor_scaling_test.py \
@@ -51,7 +52,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 

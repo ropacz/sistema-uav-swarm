@@ -16,6 +16,7 @@ class MainExperimentContractTests(unittest.TestCase):
         frame = pd.DataFrame([{
             "ba_activations": 0,
             "repositions_started": 0,
+            "repositions_completed": 0,
         }])
         summary = summarize_exposure(frame).iloc[0]
         self.assertEqual(summary["exposure_status"], "not_observed")
@@ -24,8 +25,10 @@ class MainExperimentContractTests(unittest.TestCase):
 
     def test_reports_exposure_without_filtering_runs(self):
         frame = pd.DataFrame([
-            {"ba_activations": 0, "repositions_started": 0},
-            {"ba_activations": 2, "repositions_started": 1},
+            {"ba_activations": 0, "repositions_started": 0,
+             "repositions_completed": 0},
+            {"ba_activations": 2, "repositions_started": 1,
+             "repositions_completed": 1},
         ])
         summary = summarize_exposure(frame).iloc[0]
         self.assertEqual(summary["exposure_status"], "observed")
