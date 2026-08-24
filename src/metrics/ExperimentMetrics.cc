@@ -19,18 +19,20 @@ void ExperimentMetrics::initialize()
     deliveredSignal = registerSignal("victimAlertDelivered");
     confirmedSignal = registerSignal("victimAlertConfirmed");
     expiredSignal = registerSignal("victimAlertExpired");
-    degradationSignal = registerSignal("victimDegradationIndicated");
+    repositionTriggerSignal = registerSignal("victimRepositionTriggered");
     sensorSignal = registerSignal("victimSensorEvaluated");
     baActivationSignal = registerSignal("victimBaActivated");
     repositionSignal = registerSignal("victimRepositionEvent");
 
+    // Assinar no módulo raiz permite observar todos os UAVs e equipes sem
+    // acoplar as aplicações diretamente ao coletor.
     auto network = getSimulation()->getSystemModule();
     network->subscribe(generatedSignal, this);
     network->subscribe(attemptSentSignal, this);
     network->subscribe(deliveredSignal, this);
     network->subscribe(confirmedSignal, this);
     network->subscribe(expiredSignal, this);
-    network->subscribe(degradationSignal, this);
+    network->subscribe(repositionTriggerSignal, this);
     network->subscribe(sensorSignal, this);
     network->subscribe(baActivationSignal, this);
     network->subscribe(repositionSignal, this);
@@ -57,13 +59,9 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
     else if (signalId == attemptSentSignal) {
         alertAttemptsSent++;
         attemptsByAlert[event->alertId]++;
-        if (!event->messageId.empty())
-            attemptSentTimes[event->messageId] = event->referenceTime;
     }
     else if (signalId == deliveredSignal) {
-        if (!event->messageId.empty() && deliveredMessageIds.insert(event->messageId).second) {
-            attemptDeliveryDelaySum += simTime() - event->secondaryTime;
-        }
+        // A primeira equipe que recebe o alertId define entrega e atraso fim a fim.
         if (deliveredAlertIds.insert(event->alertId).second) {
             auto generation = generationTimes.find(event->alertId);
             simtime_t start = generation == generationTimes.end()
@@ -72,89 +70,36 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
             deliveryDelayCount++;
         }
     }
-    else if (signalId == confirmedSignal) {
-        if (confirmedAlertIds.insert(event->alertId).second) {
-            auto sent = attemptSentTimes.find(event->messageId);
-            simtime_t start = sent == attemptSentTimes.end()
-                ? event->referenceTime : sent->second;
-            rttSum += simTime() - start;
-            rttCount++;
-        }
-    }
+    else if (signalId == confirmedSignal)
+        confirmedAlertIds.insert(event->alertId);
     else if (signalId == expiredSignal)
         expiredAlertIds.insert(event->alertId);
-    else if (signalId == degradationSignal)
-        degradationIndications++;
+    else if (signalId == repositionTriggerSignal)
+        repositionTriggers++;
     else if (signalId == sensorSignal) {
-        if (event->category == "confirmed")
-            sensorConfirmations++;
-        else if (event->category == "teamUnknown")
-            teamUnknownForReposition++;
-        else {
-            sensorRejections++;
-            if (event->category == "clearLineOfSight")
-                sensorClearLineOfSight++;
-            else if (event->category == "outsideVisualRange")
-                sensorOutsideRange++;
-        }
+        if (event->category == "detected")
+            obstaclesDetected++;
     }
     else if (signalId == baActivationSignal)
         baActivations++;
     else if (signalId == repositionSignal) {
+        // Há no máximo uma decisão por alerta, portanto alertId identifica o ciclo.
         if (event->category == "started") {
-            if (event->messageId.empty())
-                throw cRuntimeError("Started reposition requires a cycle id");
-            if (startedRepositionCycleIds.insert(event->messageId).second) {
+            if (startedRepositionAlertIds.insert(event->alertId).second)
                 repositionsStarted++;
-                commandedRepositionDistanceSum += event->value;
-            }
         }
         else if (event->category == "completed") {
-            if (!startedRepositionCycleIds.count(event->messageId))
-                throw cRuntimeError("Completed unknown reposition cycle '%s'",
-                                    event->messageId.c_str());
-            if (completedRepositionCycleIds.insert(event->messageId).second)
+            if (!startedRepositionAlertIds.count(event->alertId))
+                throw cRuntimeError("Completed reposition for unknown alert '%s'",
+                                    event->alertId.c_str());
+            if (completedRepositionAlertIds.insert(event->alertId).second)
                 repositionsCompleted++;
         }
-        else if (event->category == "validated" ||
-                 event->category == "recoveredDuringMovement" ||
-                 event->category == "recoveredAfterArrival") {
-            if (!startedRepositionCycleIds.count(event->messageId))
-                throw cRuntimeError("Recovery of unknown reposition cycle '%s'",
-                                    event->messageId.c_str());
-            if (terminalRepositionCycleIds.insert(event->messageId).second) {
-                if (event->category == "validated") {
-                    repositionsValidated++;
-                    validatedRecoveryTimeSum += simTime() - event->referenceTime;
-                    validatedRecoveryTimeCount++;
-                }
-                else if (event->category == "recoveredDuringMovement")
-                    repositionsRecoveredDuringMovement++;
-                else
-                    repositionsRecoveredAfterArrival++;
-                recoveryTimeSum += simTime() - event->referenceTime;
-            }
-        }
-        else if (event->category == "expired") {
-            if (!startedRepositionCycleIds.count(event->messageId))
-                throw cRuntimeError("Expiration of unknown reposition cycle '%s'",
-                                    event->messageId.c_str());
-            if (terminalRepositionCycleIds.insert(event->messageId).second)
-                repositionsExpired++;
-        }
-        else if (event->category == "noFeasibleSolution" ||
-                 event->category == "redundantCandidate") {
-            repositionsFailedBeforeMovement++;
-            if (event->category == "noFeasibleSolution")
-                baNoFeasibleSolution++;
-            else
-                baRedundantCandidate++;
-        }
         else if (event->category == "distance") {
-            if (!startedRepositionCycleIds.count(event->messageId))
-                throw cRuntimeError("Distance of unknown reposition cycle '%s'",
-                                    event->messageId.c_str());
-            if (measuredRepositionCycleIds.insert(event->messageId).second) {
+            if (!startedRepositionAlertIds.count(event->alertId))
+                throw cRuntimeError("Distance for unknown reposition alert '%s'",
+                                    event->alertId.c_str());
+            if (measuredRepositionAlertIds.insert(event->alertId).second) {
                 repositionDistanceSum += event->value;
                 repositionDistanceCount++;
             }
@@ -171,84 +116,43 @@ void ExperimentMetrics::finish()
     const double undefined = std::numeric_limits<double>::quiet_NaN();
     double generated = generatedAlertIds.size();
     double pdr = generated > 0 ? deliveredAlertIds.size() / generated : undefined;
-    double confirmationRate = generated > 0 ? confirmedAlertIds.size() / generated : undefined;
-    double attemptDeliveryRate = alertAttemptsSent > 0
-        ? static_cast<double>(deliveredMessageIds.size()) / alertAttemptsSent : undefined;
-    int recoveredWithoutValidation = repositionsRecoveredDuringMovement +
-        repositionsRecoveredAfterArrival;
-    int successfulRepositions = repositionsValidated + recoveredWithoutValidation;
-    double repositionSuccessRate = repositionsStarted > 0
-        ? static_cast<double>(successfulRepositions) / repositionsStarted : undefined;
-    double repositionValidationRate = repositionsStarted > 0
-        ? static_cast<double>(repositionsValidated) / repositionsStarted : undefined;
+    double confirmationRate = generated > 0
+        ? confirmedAlertIds.size() / generated : undefined;
 
+    // Relações que detectam contagem duplicada e estados impossíveis.
     if (deliveredAlertIds.size() > generatedAlertIds.size() ||
         confirmedAlertIds.size() > deliveredAlertIds.size() ||
         confirmedAlertIds.size() + expiredAlertIds.size() > generatedAlertIds.size() ||
-        deliveredMessageIds.size() > static_cast<size_t>(alertAttemptsSent) ||
-        successfulRepositions > repositionsStarted)
+        repositionsCompleted > repositionsStarted ||
+        repositionsStarted > baActivations ||
+        obstaclesDetected > repositionTriggers ||
+        repositionDistanceCount > repositionsStarted)
         throw cRuntimeError("ExperimentMetrics invariant violation: generated=%zu, "
-                            "delivered=%zu, confirmed=%zu, expired=%zu, attempts=%d, "
-                            "attemptsDelivered=%zu, repositionsStarted=%d, successes=%d",
+                            "delivered=%zu, confirmed=%zu, expired=%zu, triggers=%d, "
+                            "obstacles=%d, BA=%d, started=%d, completed=%d, distances=%d",
                             generatedAlertIds.size(), deliveredAlertIds.size(),
                             confirmedAlertIds.size(), expiredAlertIds.size(),
-                            alertAttemptsSent, deliveredMessageIds.size(),
-                            repositionsStarted, successfulRepositions);
+                            repositionTriggers, obstaclesDetected, baActivations,
+                            repositionsStarted, repositionsCompleted,
+                            repositionDistanceCount);
 
     recordScalar("alertsGenerated", generatedAlertIds.size());
     recordScalar("alertsDelivered", deliveredAlertIds.size());
     recordScalar("alertsConfirmed", confirmedAlertIds.size());
     recordScalar("alertsExpired", expiredAlertIds.size());
     recordScalar("alertAttemptsSent", alertAttemptsSent);
-    recordScalar("alertAttemptsDelivered", deliveredMessageIds.size());
-    recordScalar("alertAttemptsLost",
-                 alertAttemptsSent - static_cast<int>(deliveredMessageIds.size()));
     recordScalar("applicationRetries", applicationRetries);
     recordScalar("deliveryDelaySum", deliveryDelaySum.dbl());
     recordScalar("deliveryDelayCount", deliveryDelayCount);
-    recordScalar("attemptDeliveryDelaySum", attemptDeliveryDelaySum.dbl());
-    recordScalar("attemptDeliveryDelayCount", deliveredMessageIds.size());
-    recordScalar("rttSum", rttSum.dbl());
-    recordScalar("rttCount", rttCount);
     recordScalar("pdr", pdr);
-    recordScalar("packetLossRate", generated > 0 ? 1 - pdr : undefined);
     recordScalar("confirmationRate", confirmationRate);
-    recordScalar("attemptDeliveryRate", attemptDeliveryRate);
-    recordScalar("attemptLossRate", alertAttemptsSent > 0 ? 1 - attemptDeliveryRate : undefined);
-    recordScalar("degradationIndications", degradationIndications);
-    recordScalar("sensorConfirmations", sensorConfirmations);
-    recordScalar("sensorRejections", sensorRejections);
-    recordScalar("teamUnknownForReposition", teamUnknownForReposition);
-    recordScalar("sensorClearLineOfSight", sensorClearLineOfSight);
-    recordScalar("sensorOutsideRange", sensorOutsideRange);
+    recordScalar("repositionTriggers", repositionTriggers);
+    recordScalar("obstaclesDetected", obstaclesDetected);
     recordScalar("baActivations", baActivations);
     recordScalar("repositionsStarted", repositionsStarted);
     recordScalar("repositionsCompleted", repositionsCompleted);
-    recordScalar("repositionsValidated", repositionsValidated);
-    recordScalar("repositionsRecoveredDuringMovement", repositionsRecoveredDuringMovement);
-    recordScalar("repositionsRecoveredAfterArrival", repositionsRecoveredAfterArrival);
-    recordScalar("repositionsRecoveredWithoutValidation", recoveredWithoutValidation);
-    recordScalar("repositionsExpired", repositionsExpired);
-    recordScalar("repositionsFailedBeforeMovement", repositionsFailedBeforeMovement);
-    recordScalar("baNoFeasibleSolution", baNoFeasibleSolution);
-    recordScalar("baRedundantCandidate", baRedundantCandidate);
-    // Alias histórico mantido para arquivos e scripts antigos. A semântica é
-    // operacional: inclui recuperações sem validar a posição final escolhida.
-    recordScalar("successfulRepositions", successfulRepositions);
-    recordScalar("operationallySuccessfulRepositions", successfulRepositions);
-    recordScalar("repositionSuccessRate", repositionSuccessRate);
-    recordScalar("operationalRepositionRecoveryRate", repositionSuccessRate);
-    recordScalar("repositionValidationRate", repositionValidationRate);
-    // recoveryTime* é mantido como alias operacional para resultados antigos.
-    recordScalar("recoveryTimeSum", recoveryTimeSum.dbl());
-    recordScalar("recoveryTimeCount", successfulRepositions);
-    recordScalar("operationalRecoveryTimeSum", recoveryTimeSum.dbl());
-    recordScalar("operationalRecoveryTimeCount", successfulRepositions);
-    recordScalar("validatedRecoveryTimeSum", validatedRecoveryTimeSum.dbl());
-    recordScalar("validatedRecoveryTimeCount", validatedRecoveryTimeCount);
     recordScalar("repositionDistanceSum", repositionDistanceSum);
     recordScalar("repositionDistanceCount", repositionDistanceCount);
-    recordScalar("commandedRepositionDistanceSum", commandedRepositionDistanceSum);
 }
 
 } // namespace echosar

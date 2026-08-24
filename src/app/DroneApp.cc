@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <sstream>
 
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
@@ -11,7 +10,6 @@
 #include "inet/networklayer/contract/IInterfaceTable.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
 #include "inet/networklayer/ipv4/Ipv4InterfaceData.h"
-#include "inet/physicallayer/wireless/common/contract/packetlevel/SignalTag_m.h"
 #include "mobility/BaGaussMarkovMobility.h"
 #include "metrics/AlertMetricEvent.h"
 #include "sensing/AbstractObstacleSensor.h"
@@ -50,19 +48,16 @@ void DroneApp::validateParameters() const
     require(maxAttempts > 0, "maxAttempts must be positive");
     require(alertTtl >= retryInterval, "alertTtl must be at least one retryInterval");
 
-    require(linkWindow > 0, "linkWindow must be positive");
-    require(positionUpdateInterval > 0, "expectedPositionUpdateInterval must be positive");
-    require(teamSilenceTimeout > 0, "teamSilenceTimeout must be positive");
-    require(teamEntryLifetime > teamSilenceTimeout,
-            "teamEntryLifetime must exceed teamSilenceTimeout");
-    require(teamPredictionHorizon >= 0, "teamPredictionHorizon must not be negative");
-    require(maximumTeamPredictionSpeed > 0, "maximumTeamPredictionSpeed must be positive");
+    require(teamEntryLifetime > 0, "teamEntryLifetime must be positive");
     require(maintenanceInterval > 0, "maintenanceInterval must be positive");
-    require(pdrThreshold >= 0 && pdrThreshold <= 1, "pdrThreshold must be 0..1");
+    require(repositionAfterUnackedAttempts > 0,
+            "repositionAfterUnackedAttempts must be positive");
+    require(repositionAfterUnackedAttempts < maxAttempts,
+            "repositionAfterUnackedAttempts must leave one post-movement attempt");
 
-    require(maxBaCycles >= 0, "maxBaCycles must not be negative");
-    require(maximumRepositionDistance > 0, "maximumRepositionDistance must be positive");
-    require(minimumAltitude <= maximumAltitude, "minimumAltitude must not exceed maximumAltitude");
+    require(f.maximumRepositionDistance > 0, "maximumRepositionDistance must be positive");
+    require(f.minimumAltitude <= f.maximumAltitude,
+            "minimumAltitude must not exceed maximumAltitude");
     require(f.areaMinX < f.areaMaxX, "areaMinX must be below areaMaxX");
     require(f.areaMinY < f.areaMaxY, "areaMinY must be below areaMaxY");
     require(f.horizontalSpeed > 0, "horizontalSpeed must be positive");
@@ -104,24 +99,14 @@ void DroneApp::initialize(int stage)
         ackTimeout = par("ackTimeout");
         alertTtl = par("alertTtl");
         maxAttempts = par("maxAttempts");
-        linkWindow = par("linkWindow");
-        positionUpdateInterval = par("expectedPositionUpdateInterval");
-        teamSilenceTimeout = par("teamSilenceTimeout");
+        repositionAfterUnackedAttempts = par("repositionAfterUnackedAttempts");
         teamEntryLifetime = par("teamEntryLifetime");
-        teamPredictionHorizon = par("teamPredictionHorizon");
-        maximumTeamPredictionSpeed = par("maximumTeamPredictionSpeed").doubleValueInUnit("mps");
         maintenanceInterval = par("maintenanceInterval");
-        pdrThreshold = par("pdrThreshold");
-        rssiThresholdDbm = par("rssiThreshold").doubleValueInUnit("dBm");
         baEnabled = par("baEnabled");
-        requireObstacleConfirmation = par("requireObstacleConfirmation");
-        maxBaCycles = par("maxBaCycles");
-        maximumRepositionDistance = par("maximumRepositionDistance").doubleValueInUnit("m");
-        fitnessParameters.maximumRepositionDistance = maximumRepositionDistance;
-        minimumAltitude = par("minimumAltitude").doubleValueInUnit("m");
-        maximumAltitude = par("maximumAltitude").doubleValueInUnit("m");
-        fitnessParameters.minimumAltitude = minimumAltitude;
-        fitnessParameters.maximumAltitude = maximumAltitude;
+        fitnessParameters.maximumRepositionDistance =
+            par("maximumRepositionDistance").doubleValueInUnit("m");
+        fitnessParameters.minimumAltitude = par("minimumAltitude").doubleValueInUnit("m");
+        fitnessParameters.maximumAltitude = par("maximumAltitude").doubleValueInUnit("m");
         fitnessParameters.areaMinX = par("areaMinX").doubleValueInUnit("m");
         fitnessParameters.areaMaxX = par("areaMaxX").doubleValueInUnit("m");
         fitnessParameters.areaMinY = par("areaMinY").doubleValueInUnit("m");
@@ -149,16 +134,11 @@ void DroneApp::initialize(int stage)
         batParameters.pulseGrowth = par("batPulseGrowth");
         batParameters.localSearchScale = par("batLocalSearchScale");
         validateParameters();
-        rssiSignal = registerSignal("positionUpdateRssi");
-        receivedPowerSignal = registerSignal("positionUpdatePowerMilliwatt");
-        pdrSignal = registerSignal("linkWindowPdr");
-        repositionDistanceSignal = registerSignal("repositionDistance");
-        recoveryTimeSignal = registerSignal("recoveryTime");
         alertGeneratedSignal = registerSignal("victimAlertGenerated");
         alertAttemptSentSignal = registerSignal("victimAlertAttemptSent");
         alertConfirmedSignal = registerSignal("victimAlertConfirmed");
         alertExpiredSignal = registerSignal("victimAlertExpired");
-        degradationSignal = registerSignal("victimDegradationIndicated");
+        repositionTriggerSignal = registerSignal("victimRepositionTriggered");
         sensorEvaluationSignal = registerSignal("victimSensorEvaluated");
         baActivationSignal = registerSignal("victimBaActivated");
         repositionEventSignal = registerSignal("victimRepositionEvent");
@@ -191,23 +171,31 @@ void DroneApp::initialize(int stage)
 
 void DroneApp::handleMessageWhenUp(cMessage *message)
 {
-    // Um único timer coordena expiração, degradação e novas tentativas.
+    // Um único timer coordena expiração, timeouts de ACK e novas tentativas.
     if (message == maintenanceTimer) {
         performMaintenance();
         scheduleAt(simTime() + maintenanceInterval, maintenanceTimer);
     }
     else if (message == movementCompleteTimer) {
-        for (auto& [id, alert] : pendingAlerts)
+        PendingVictimAlert *completedAlert = nullptr;
+        for (auto& [id, alert] : pendingAlerts) {
             if (reposition.owns(id)) {
                 recordActualRepositionDistance(alert);
-                AlertMetricEvent completedEvent(alert.alertId,
-                                                alert.activeRepositionCycleId, simTime(),
-                                                SimTime::ZERO, "completed");
+                AlertMetricEvent completedEvent(alert.alertId, simTime(), "completed");
                 emit(repositionEventSignal, &completedEvent);
+                completedAlert = &alert;
                 break;
             }
-        // A próxima tentativa passa a validar a posição escolhida pelo BA.
-        reposition.arrived();
+        }
+        if (!completedAlert)
+            throw cRuntimeError("Movement completed without an active alert");
+
+        // Envia ainda na posição escolhida e só depois retoma o Gauss-Markov.
+        reposition.release();
+        if (simTime() - completedAlert->generationTime < alertTtl &&
+            completedAlert->attempts < maxAttempts)
+            sendAttempt(*completedAlert);
+        resumeMobility();
     }
     else if (message->arrivedOn("assignmentIn"))
         handleAssignment(check_and_cast<VictimAssignment *>(message));
@@ -244,8 +232,7 @@ void DroneApp::handleAssignment(VictimAssignment *assignment)
     alert.generationTime = assignment->getDetectionTimestamp();
     alert.nextAttempt = simTime();
     pendingAlerts[alertId] = alert;
-    uniqueAlertsGenerated++;
-    AlertMetricEvent generatedEvent(alertId, "", alert.generationTime);
+    AlertMetricEvent generatedEvent(alertId, alert.generationTime);
     emit(alertGeneratedSignal, &generatedEvent);
     delete assignment;
     sendAttempt(pendingAlerts.at(alertId));
@@ -264,57 +251,17 @@ void DroneApp::handlePositionUpdate(Packet *packet)
         return;
     }
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
-    auto [teamIt, discovered] = discoveredTeams.try_emplace(senderId);
+    auto [teamIt, inserted] = discoveredTeams.try_emplace(senderId);
     auto& team = teamIt->second;
-    if (discovered) {
-        teamEntriesDiscovered++;
-        team.observationStart = simTime();
-    }
+    (void)inserted;
     team.ipAddress = sourceAddress.str();
     Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
-    simtime_t sourceTime = update->getTimestamp();
-    if (sourceTime < SIMTIME_ZERO || sourceTime > simTime())
-        sourceTime = simTime();
     if (update->getSequenceNumber() > team.lastSequence) {
-        if (team.positionTime >= SIMTIME_ZERO && sourceTime > team.positionTime) {
-            double elapsed = (sourceTime - team.positionTime).dbl();
-            Coord measuredVelocity((receivedPosition.x - team.position.x) / elapsed,
-                                   (receivedPosition.y - team.position.y) / elapsed,
-                                   (receivedPosition.z - team.position.z) / elapsed);
-            double speed = measuredVelocity.length();
-            if (speed > maximumTeamPredictionSpeed)
-                measuredVelocity *= maximumTeamPredictionSpeed / speed;
-            team.velocity = measuredVelocity;
-            team.velocityValid = true;
-        }
         team.position = receivedPosition;
-        team.positionTime = sourceTime;
         team.lastSequence = update->getSequenceNumber();
-        // Somente informação nova comprova que a equipe ainda está visível.
-        // Duplicatas ou pacotes reordenados não podem renovar o silêncio.
+        // Duplicatas e pacotes reordenados não renovam a entrada descoberta.
         team.lastSeen = simTime();
     }
-    double rssi = NAN;
-    if (auto power = packet->findTag<SignalPowerInd>()) {
-        const double powerMilliwatt = power->getPower().get() / 0.001;
-        rssi = 10 * std::log10(powerMilliwatt);
-        emit(rssiSignal, rssi);
-        // Potências devem ser agregadas em escala linear. A conversão da média
-        // global para dBm é feita apenas no pós-processamento.
-        emit(receivedPowerSignal, powerMilliwatt);
-    }
-    if (team.samples.empty() || update->getSequenceNumber() > team.samples.back().sequence) {
-        team.samples.push_back({update->getSequenceNumber(), simTime(), rssi});
-        if (std::isnan(rssi))
-            rssiSamplesMissing++;
-        else
-            rssiSamplesAvailable++;
-    }
-    // Mantém somente amostras pertencentes à janela deslizante configurada.
-    // A janela é (agora-linkWindow, agora]. Remover também a fronteira esquerda
-    // faz uma janela de 10 s com período de 1 s conter no máximo 10 beacons.
-    while (!team.samples.empty() && simTime() - team.samples.front().receptionTime >= linkWindow)
-        team.samples.pop_front();
     delete packet;
 }
 
@@ -350,13 +297,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord position = mobility->getCurrentPosition();
     alert.attempts++;
-    alert.sequence++;
     std::string messageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
-    if (reposition.awaitingValidationOf(alert.alertId)) {
-        alert.validationMessageId = messageId;
-        alert.validationCycleId = alert.activeRepositionCycleId;
-    }
-    alert.attemptSentTimes[messageId] = simTime();
     alert.attemptTeamIds[messageId] = alert.targetTeamId;
     alert.attemptTeamAddresses[messageId] = team.ipAddress;
     auto message = makeShared<VictimAlertChunk>();
@@ -374,7 +315,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     message->setDronePositionZ(position.z);
     auto controlledMobility = dynamic_cast<BaGaussMarkovMobility *>(mobility);
     message->setWaypointId(controlledMobility ? controlledMobility->getWaypointId() : -1);
-    message->setSequenceNumber(alert.sequence);
+    message->setSequenceNumber(alert.attempts);
     message->setAttemptNumber(alert.attempts);
     message->setGenerationTimestamp(alert.generationTime);
     message->setTransmissionTimestamp(simTime());
@@ -383,84 +324,17 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
                   Ipv4Address(team.ipAddress.c_str()), appPort);
     alert.ackDeadline = simTime() + ackTimeout;
     alert.nextAttempt = simTime() + retryInterval;
-    alert.degradationEvaluated = false;
-    alertAttemptsSent++;
-    AlertMetricEvent attemptEvent(alert.alertId, messageId, simTime());
+    AlertMetricEvent attemptEvent(alert.alertId);
     emit(alertAttemptSentSignal, &attemptEvent);
-}
-
-bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const
-{
-    pdr = 0;
-    rssi = NAN;
-    auto teamIt = discoveredTeams.find(alert.targetTeamId);
-    if (teamIt == discoveredTeams.end())
-        return true;
-    const auto& team = teamIt->second;
-    if (!team.samples.empty()) {
-        pdr = calculatePositionUpdatePdr(team);
-        double sum = 0;
-        int count = 0;
-        for (const auto& sample : team.samples)
-            if (!std::isnan(sample.rssiDbm)) { sum += sample.rssiDbm; count++; }
-        if (count) rssi = sum / count;
-    }
-    bool silence = team.lastSeen < SIMTIME_ZERO || simTime() - team.lastSeen >= teamSilenceTimeout;
-    return silence || pdr < pdrThreshold || (!std::isnan(rssi) && rssi < rssiThresholdDbm);
-}
-
-double DroneApp::calculatePositionUpdatePdr(const TeamLinkState& team) const
-{
-    if (team.samples.empty())
-        return 0;
-
-    // O denominador temporal cresce desde a primeira observação até preencher a
-    // janela. Assim, uma equipe recém-descoberta começa em 1/1, não em 1/N.
-    const double observedAge = std::min(
-        linkWindow.dbl(),
-        std::max(0.0, (simTime() - team.observationStart).dbl()));
-    const int windowCapacity = std::max(
-        1, static_cast<int>(std::ceil(linkWindow.dbl() /
-                                     positionUpdateInterval.dbl() - 1e-12)));
-    const int expectedByTime = std::min(
-        windowCapacity,
-        1 + static_cast<int>(std::floor(observedAge /
-                                       positionUpdateInterval.dbl() + 1e-12)));
-
-    // A sequência preserva perdas internas mesmo quando os pacotes nas bordas da
-    // janela já expiraram. O maior dos dois estimadores é o denominador honesto:
-    // tempo detecta silêncio final; sequência detecta lacunas entre recepções.
-    const int64_t sequenceSpan = team.samples.back().sequence -
-        team.samples.front().sequence + 1;
-    const int expected = std::max(expectedByTime,
-                                  static_cast<int>(std::max<int64_t>(1, sequenceSpan)));
-    return std::clamp(static_cast<double>(team.samples.size()) / expected, 0.0, 1.0);
-}
-
-Coord DroneApp::estimateTeamPosition(const TeamLinkState& team, double& predictionAge) const
-{
-    predictionAge = 0;
-    if (!team.velocityValid || team.positionTime < SIMTIME_ZERO)
-        return team.position;
-    predictionAge = std::clamp((simTime() - team.positionTime).dbl(), 0.0,
-                               teamPredictionHorizon.dbl());
-    Coord estimate = team.position + team.velocity * predictionAge;
-    estimate.x = std::clamp(estimate.x, fitnessParameters.areaMinX, fitnessParameters.areaMaxX);
-    estimate.y = std::clamp(estimate.y, fitnessParameters.areaMinY, fitnessParameters.areaMaxY);
-    return estimate;
 }
 
 void DroneApp::performMaintenance()
 {
     for (auto it = discoveredTeams.begin(); it != discoveredTeams.end(); ) {
         auto& team = it->second;
-        while (!team.samples.empty() && simTime() - team.samples.front().receptionTime >= linkWindow)
-            team.samples.pop_front();
         if (team.lastSeen >= SIMTIME_ZERO &&
-            simTime() - team.lastSeen >= teamEntryLifetime) {
-            teamEntriesExpired++;
+            simTime() - team.lastSeen >= teamEntryLifetime)
             it = discoveredTeams.erase(it);
-        }
         else
             ++it;
     }
@@ -470,107 +344,71 @@ void DroneApp::performMaintenance()
         // TTL e limite de tentativas encerram alertas sem confirmação.
         if (simTime() - alert.generationTime >= alertTtl ||
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
-            alertsExpired++;
             AlertMetricEvent expiredEvent(alert.alertId);
             emit(alertExpiredSignal, &expiredEvent);
-            if (reposition.owns(alert.alertId) && !reposition.idle()) {
-                recordActualRepositionDistance(alert);
-                failedRepositions++;
-                repositionExpiredBeforeAck++;
-                AlertMetricEvent repositionExpiredEvent(
-                    alert.alertId, alert.activeRepositionCycleId,
-                    alert.repositionStart,
-                    SimTime::ZERO, "expired");
-                emit(repositionEventSignal, &repositionExpiredEvent);
-            }
             if (reposition.owns(alert.alertId)) {
+                recordActualRepositionDistance(alert);
                 reposition.release();
-                if (movementCompleteTimer->isScheduled()) cancelEvent(movementCompleteTimer);
+                if (movementCompleteTimer->isScheduled())
+                    cancelEvent(movementCompleteTimer);
                 resumeMobility();
             }
             it = pendingAlerts.erase(it);
             continue;
         }
-        if (!alert.degradationEvaluated && alert.ackDeadline >= SIMTIME_ZERO && simTime() >= alert.ackDeadline) {
-            // Ausência de ACK apenas dispara a avaliação; não confirma obstáculo.
-            double pdr, rssi;
-            bool degraded = detectDegradation(alert, pdr, rssi);
-            emit(pdrSignal, pdr);
-            alert.degradationEvaluated = true;
-            if (degraded) {
-                degradationIndications++;
-                AlertMetricEvent degradationEvent(alert.alertId);
-                emit(degradationSignal, &degradationEvent);
-                tryReposition(alert, pdr, rssi);
+        if (alert.ackDeadline >= SIMTIME_ZERO && simTime() >= alert.ackDeadline) {
+            // O alerta continua pendente, portanto todas as tentativas feitas
+            // até aqui são consecutivas sem ACK válido.
+            alert.ackDeadline = -1;
+            if (alert.attempts >= repositionAfterUnackedAttempts &&
+                !alert.repositionDecisionMade) {
+                alert.repositionDecisionMade = true;
+                AlertMetricEvent triggerEvent(alert.alertId);
+                emit(repositionTriggerSignal, &triggerEvent);
+                tryReposition(alert);
             }
         }
-        if (simTime() >= alert.nextAttempt && alert.attempts < maxAttempts)
+        // O alerta que comanda o movimento espera a tentativa imediata da chegada.
+        if (simTime() >= alert.nextAttempt && alert.attempts < maxAttempts &&
+            !(reposition.moving() && reposition.owns(alert.alertId)))
             sendAttempt(alert);
         ++it;
     }
 }
 
-void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double preRssi)
+void DroneApp::tryReposition(PendingVictimAlert& alert)
 {
     auto teamIt = discoveredTeams.find(alert.targetTeamId);
     if (teamIt == discoveredTeams.end() || teamIt->second.lastSeen < SIMTIME_ZERO) {
-        // Sem posição conhecida da equipe não há linha de visada a consultar.
-        // Isto não é uma rejeição do sensor: a consulta nem chegou a ocorrer.
-        teamUnknownForReposition++;
-        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "teamUnknown");
-        emit(sensorEvaluationSignal, &sensorEvent);
+        EV_DEBUG << "Reposition skipped: target team is no longer known\n";
+        return;
+    }
+    if (!reposition.idle()) {
+        EV_DEBUG << "Reposition skipped: drone is already moving for another alert\n";
         return;
     }
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
-    double predictionAge = 0;
-    Coord teamPosition = estimateTeamPosition(teamIt->second, predictionAge);
-    if (predictionAge > 0) {
-        predictedTeamPositions++;
-        teamPredictionAgeSum += predictionAge;
-        teamPredictionAgeMax = std::max(teamPredictionAgeMax, predictionAge);
-    }
-    ObstacleObservation observation;
-    if (requireObstacleConfirmation)
-        observation = sensor->inspect(current, teamPosition);
-    EV_INFO << "Team position for repositioning: observed=" << teamIt->second.position
-            << " estimated=" << teamPosition << " velocity=" << teamIt->second.velocity
-            << " predictionAge=" << predictionAge << "s\n";
-    // No experimento principal, o BA depende de confirmação geométrica
-    // independente. A ablação pode ativá-lo somente pelos indicadores de rede.
-    if (requireObstacleConfirmation && !observation.confirmed) {
-        sensorRejections++;
-        // Separa "não havia obstáculo" de "havia, porém fora do alcance": as
-        // duas rejeições apontam para causas opostas da degradação.
-        if (observation.reason == "clearLineOfSight")
-            sensorClearLineOfSight++;
-        else if (observation.reason == "outsideVisualRange")
-            sensorOutsideRange++;
-        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, observation.reason);
-        emit(sensorEvaluationSignal, &sensorEvent);
+    Coord teamPosition = teamIt->second.position;
+    ObstacleObservation observation = sensor->inspect(current, teamPosition);
+    AlertMetricEvent sensorEvent(alert.alertId, simTime(),
+                                 observation.confirmed ? "detected" : "notDetected");
+    emit(sensorEvaluationSignal, &sensorEvent);
+    if (!observation.confirmed) {
+        EV_DEBUG << "Reposition skipped: obstacle not detected ("
+                 << observation.reason << ")\n";
         return;
     }
-    if (observation.confirmed) {
-        sensorConfirmations++;
-        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "confirmed");
-        emit(sensorEvaluationSignal, &sensorEvent);
-    }
-    if (!baEnabled || alert.baCycles >= maxBaCycles || reposition.moving() ||
-        reposition.busyWithOther(alert.alertId))
+    if (!baEnabled)
         return;
 
-    baActivations++;
     AlertMetricEvent baEvent(alert.alertId);
     emit(baActivationSignal, &baEvent);
-    alert.baCycles++;
     RepositionFitness fitness(fitnessParameters, sensor, current,
-                              teamPosition, observation.nearestSurfacePoint, simTime(),
-                              requireObstacleConfirmation);
-    BatResult result = BatAlgorithm::optimize(current, maximumRepositionDistance,
+                              teamPosition, observation.nearestSurfacePoint, simTime());
+    BatResult result = BatAlgorithm::optimize(
+        current, fitnessParameters.maximumRepositionDistance,
         batParameters, getRNG(0),
         [&](const Coord& candidate) { return fitness.cost(candidate); },
         [&](const Coord& candidate) { return fitness.feasible(candidate); });
@@ -578,66 +416,26 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
             << " candidate=" << result.position << " fitness=" << result.fitness
             << " valid=" << result.valid << "\n";
     if (!result.valid) {
-        failedRepositions++;
-        baNoFeasibleSolution++;
-        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "noFeasibleSolution");
-        emit(repositionEventSignal, &failedEvent);
-        return;
-    }
-    std::ostringstream key;
-    key << std::round(result.position.x * 10) / 10 << ':'
-        << std::round(result.position.y * 10) / 10 << ':'
-        << std::round(result.position.z * 10) / 10;
-    // A quantização evita repetir candidatos praticamente idênticos.
-    if (!alert.testedPositions.insert(key.str()).second) {
-        failedRepositions++;
-        baRedundantCandidate++;
-        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "redundantCandidate");
-        emit(repositionEventSignal, &failedEvent);
+        EV_DEBUG << "Reposition skipped: BA found no feasible solution\n";
         return;
     }
     auto controlled = dynamic_cast<BaGaussMarkovMobility *>(mobility);
     if (!controlled) {
-        failedRepositions++;
-        baNoFeasibleSolution++;
-        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "noFeasibleSolution");
-        emit(repositionEventSignal, &failedEvent);
-        return;
+        throw cRuntimeError("BA reposition requires BaGaussMarkovMobility");
     }
     double distance = current.distance(result.position);
     if (distance <= 1e-6) {
-        failedRepositions++;
-        baRedundantCandidate++;
-        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
-                                     SimTime::ZERO, "redundantCandidate");
-        emit(repositionEventSignal, &failedEvent);
+        EV_DEBUG << "Reposition skipped: BA candidate equals current position\n";
         return;
     }
-    // O ciclo só nasce depois que há candidato e mobilidade utilizáveis. Uma
-    // execução do otimizador que falha não pode substituir a identidade do
-    // movimento anterior que ainda aguarda validação.
-    alert.repositionCycle++;
-    alert.activeRepositionCycleId = alert.alertId + "-reposition-" +
-        std::to_string(alert.repositionCycle);
-    alert.validationMessageId.clear();
-    alert.validationCycleId.clear();
-    alert.repositionStart = simTime();
     alert.repositionOrigin = current;
     alert.repositionDistanceRecorded = false;
-    alert.preRepositionPdr = prePdr;
-    alert.preRepositionRssi = preRssi;
-    commandedBaDistance += distance;
     double travelTime = fitness.travelTime(current, result.position);
     // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
     controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
                        fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
     reposition.begin(alert.alertId);
-    AlertMetricEvent startedEvent(alert.alertId, alert.activeRepositionCycleId,
-                                  alert.repositionStart,
-                                  SimTime::ZERO, "started", distance);
+    AlertMetricEvent startedEvent(alert.alertId, simTime(), "started", distance);
     emit(repositionEventSignal, &startedEvent);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
 }
@@ -648,11 +446,7 @@ void DroneApp::recordActualRepositionDistance(PendingVictimAlert& alert)
         return;
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     double distance = alert.repositionOrigin.distance(mobility->getCurrentPosition());
-    baDistance += distance;
-    emit(repositionDistanceSignal, distance);
-    AlertMetricEvent distanceEvent(alert.alertId, alert.activeRepositionCycleId,
-                                   simTime(),
-                                   SimTime::ZERO, "distance", distance);
+    AlertMetricEvent distanceEvent(alert.alertId, simTime(), "distance", distance);
     emit(repositionEventSignal, &distanceEvent);
     alert.repositionDistanceRecorded = true;
 }
@@ -663,12 +457,10 @@ void DroneApp::handleVictimAck(Packet *packet)
     auto it = pendingAlerts.find(ack->getAlertId());
     if (it != pendingAlerts.end()) {
         auto& alert = it->second;
-        auto sentIt = alert.attemptSentTimes.find(ack->getReceivedMessageId());
         auto teamIt = alert.attemptTeamIds.find(ack->getReceivedMessageId());
         auto addressIt = alert.attemptTeamAddresses.find(ack->getReceivedMessageId());
         auto source = packet->findTag<L3AddressInd>();
         bool valid = ack->getOriginDroneId() == droneId && ack->getVictimId() == alert.victimId &&
-            sentIt != alert.attemptSentTimes.end() &&
             teamIt != alert.attemptTeamIds.end() &&
             addressIt != alert.attemptTeamAddresses.end() && source &&
             ack->getTeamId() == teamIt->second &&
@@ -680,62 +472,15 @@ void DroneApp::handleVictimAck(Packet *packet)
             delete packet;
             return;
         }
-        uniqueAlertsAcked++;
-        totalRtt += simTime() - sentIt->second;
-        AlertMetricEvent confirmedEvent(alert.alertId,
-                                        ack->getReceivedMessageId(),
-                                        sentIt->second);
+        AlertMetricEvent confirmedEvent(alert.alertId);
         emit(alertConfirmedSignal, &confirmedEvent);
         bool ownsReposition = reposition.owns(it->first);
-        bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
-            alert.validationMessageId == ack->getReceivedMessageId() &&
-            alert.validationCycleId == alert.activeRepositionCycleId;
-        if (ownsReposition) {
+        if (ownsReposition)
             recordActualRepositionDistance(alert);
-            if (validatedReposition) {
-                // Comparações pré/pós só são causais quando o ACK corresponde à
-                // tentativa transmitida na posição final deste mesmo ciclo.
-                repositionValidationSamples++;
-                double postPdr, postRssi;
-                detectDegradation(alert, postPdr, postRssi);
-                preRepositionPdrSum += alert.preRepositionPdr;
-                postRepositionPdrSum += postPdr;
-                if (!std::isnan(alert.preRepositionRssi)) {
-                    preRepositionRssiSum += alert.preRepositionRssi;
-                    preRepositionRssiSamples++;
-                }
-                if (!std::isnan(postRssi)) {
-                    postRepositionRssiSum += postRssi;
-                    postRepositionRssiSamples++;
-                }
-                successfulRepositions++;
-                simtime_t recovery = simTime() - alert.repositionStart;
-                totalRecoveryTime += recovery;
-                recoverySamples++;
-                emit(recoveryTimeSignal, recovery);
-                AlertMetricEvent repositionEvent(alert.alertId,
-                                                 alert.activeRepositionCycleId,
-                                                 alert.repositionStart,
-                                                 SimTime::ZERO, "validated");
-                emit(repositionEventSignal, &repositionEvent);
-            }
-            else {
-                // O alerta foi entregue, mas por uma tentativa anterior à
-                // validação: a recuperação ocorreu durante o trajeto ou por
-                // pacote antigo após a chegada; a posição final não foi testada.
-                repositionAckedBeforeValidation++;
-                const char *recoveryCategory = reposition.moving()
-                    ? "recoveredDuringMovement" : "recoveredAfterArrival";
-                AlertMetricEvent repositionEvent(
-                    alert.alertId, alert.activeRepositionCycleId,
-                    alert.repositionStart,
-                    SimTime::ZERO, recoveryCategory);
-                emit(repositionEventSignal, &repositionEvent);
-            }
-        }
         if (ownsReposition) {
             reposition.release();
-            if (movementCompleteTimer->isScheduled()) cancelEvent(movementCompleteTimer);
+            if (movementCompleteTimer->isScheduled())
+                cancelEvent(movementCompleteTimer);
         }
         pendingAlerts.erase(it);
         if (ownsReposition)
@@ -754,46 +499,6 @@ DroneApp::~DroneApp()
 {
     cancelAndDelete(maintenanceTimer);
     cancelAndDelete(movementCompleteTimer);
-}
-
-void DroneApp::finish()
-{
-    recordScalar("uniqueAlertsGenerated", uniqueAlertsGenerated);
-    recordScalar("alertAttemptsSent", alertAttemptsSent);
-    recordScalar("uniqueAlertsAcked", uniqueAlertsAcked);
-    recordScalar("alertsExpired", alertsExpired);
-    recordScalar("degradationIndications", degradationIndications);
-    recordScalar("sensorConfirmations", sensorConfirmations);
-    recordScalar("sensorRejections", sensorRejections);
-    recordScalar("teamUnknownForReposition", teamUnknownForReposition);
-    recordScalar("sensorClearLineOfSight", sensorClearLineOfSight);
-    recordScalar("sensorOutsideRange", sensorOutsideRange);
-    recordScalar("baActivations", baActivations);
-    recordScalar("successfulRepositions", successfulRepositions);
-    recordScalar("failedRepositions", failedRepositions);
-    recordScalar("baNoFeasibleSolution", baNoFeasibleSolution);
-    recordScalar("baRedundantCandidate", baRedundantCandidate);
-    recordScalar("repositionExpiredBeforeAck", repositionExpiredBeforeAck);
-    recordScalar("repositionAckedBeforeValidation", repositionAckedBeforeValidation);
-    recordScalar("baDistance", baDistance);
-    recordScalar("commandedBaDistance", commandedBaDistance);
-    recordScalar("predictedTeamPositions", predictedTeamPositions);
-    recordScalar("teamPredictionAgeSum", teamPredictionAgeSum);
-    recordScalar("teamPredictionAgeMax", teamPredictionAgeMax);
-    recordScalar("totalRTT", totalRtt.dbl());
-    recordScalar("totalRecoveryTime", totalRecoveryTime.dbl());
-    recordScalar("recoverySamples", recoverySamples);
-    recordScalar("repositionValidationSamples", repositionValidationSamples);
-    recordScalar("preRepositionPdrSum", preRepositionPdrSum);
-    recordScalar("postRepositionPdrSum", postRepositionPdrSum);
-    recordScalar("preRepositionRssiSum", preRepositionRssiSum);
-    recordScalar("postRepositionRssiSum", postRepositionRssiSum);
-    recordScalar("preRepositionRssiSamples", preRepositionRssiSamples);
-    recordScalar("postRepositionRssiSamples", postRepositionRssiSamples);
-    recordScalar("rssiSamplesAvailable", rssiSamplesAvailable);
-    recordScalar("rssiSamplesMissing", rssiSamplesMissing);
-    recordScalar("teamEntriesDiscovered", teamEntriesDiscovered);
-    recordScalar("teamEntriesExpired", teamEntriesExpired);
 }
 
 } // namespace echosar

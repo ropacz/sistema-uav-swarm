@@ -42,8 +42,7 @@ class RepositionFitness
                       const inet::Coord& current,
                       const inet::Coord& teamPosition,
                       const inet::Coord& obstaclePoint,
-                      omnetpp::simtime_t now,
-                      bool useObstacleModel = true);
+                      omnetpp::simtime_t now);
 
     /// Custo normalizado do candidato: enlace, obstáculo e deslocamento.
     double cost(const inet::Coord& candidate) const;
@@ -55,7 +54,6 @@ class RepositionFitness
   private:
     const FitnessParameters& parameters;
     const AbstractObstacleSensor *sensor;
-    bool useObstacleModel;
     inet::Coord current;
     inet::Coord teamPosition;
     inet::Coord obstaclePoint;

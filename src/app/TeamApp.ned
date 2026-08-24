@@ -15,10 +15,6 @@ simple TeamApp like IApp
         int applicationIpTtl = default(32);
         // Injeção determinística de falha: nenhum VictimAck antes deste instante.
         double ackStartTime @unit(s) = default(0s);
-        @signal[deliveryDelay](type="simtime_t");
-        @statistic[deliveryDelay](source="deliveryDelay"; record=vector,histogram,mean; unit="s");
-        @signal[hopCount](type=long);
-        @statistic[hopCount](source="hopCount"; record=vector,histogram,count,sum,mean);
         @signal[victimAlertDelivered](type=echosar::AlertMetricEvent);
         @display("i=block/user,green,50");
     gates:

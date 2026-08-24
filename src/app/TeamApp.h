@@ -26,18 +26,8 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int64_t positionUpdatePayloadBytes = 160;
     int64_t victimAckPayloadBytes = 96;
     int64_t updateSequence = 0;
-    std::set<std::string> attendedAlerts;
     std::set<std::string> receivedAttempts;
 
-    int positionUpdatesSent = 0;
-    int uniqueAlertsReceived = 0;
-    int attemptsReceived = 0;
-    int duplicatePackets = 0;
-    int applicationAcksSent = 0;
-    omnetpp::simtime_t totalDeliveryDelay = 0;
-    omnetpp::simtime_t totalAlertAgeAtReception = 0;
-    omnetpp::simsignal_t deliveryDelaySignal = SIMSIGNAL_NULL;
-    omnetpp::simsignal_t hopCountSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t alertDeliveredSignal = SIMSIGNAL_NULL;
 
     /// Cancela o timer periódico e encerra o socket da aplicação.
@@ -48,8 +38,6 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual void initialize(int stage) override;
     /// Processa o timer de PositionUpdate e as indicações recebidas pelo socket.
     virtual void handleMessageWhenUp(omnetpp::cMessage *message) override;
-    /// Registra contadores e tempos acumulados como escalares OMNeT++.
-    virtual void finish() override;
     /// Hooks vazios: os experimentos não param nem reiniciam a aplicação em runtime.
     virtual void handleStartOperation(inet::LifecycleOperation *) override {}
     virtual void handleStopOperation(inet::LifecycleOperation *) override {}
@@ -62,7 +50,7 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
 
     /// Publica a posição atual da equipe por broadcast UDP de um salto.
     void sendPositionUpdate();
-    /// Valida e deduplica o alerta, registra métricas e envia VictimAck.
+    /// Valida e deduplica a tentativa, registra a entrega e envia VictimAck.
     void handleVictimAlert(inet::Packet *packet);
 };
 

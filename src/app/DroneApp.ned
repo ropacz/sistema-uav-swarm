@@ -22,37 +22,20 @@ simple DroneApp like IApp
         double ackTimeout @unit(s) = default(5s);
         // Número máximo de tentativas de aplicação por alerta.
         int maxAttempts = default(5);
+        // Após esta quantidade de tentativas sem ACK, o sensor é consultado uma vez.
+        int repositionAfterUnackedAttempts = default(2);
         // Validade total do alerta desde sua geração.
         double alertTtl @unit(s) = default(180s);
 
-        // Observação da qualidade do enlace
-        // Duração da janela deslizante usada para calcular RSSI e PDR.
-        double linkWindow @unit(s) = default(10s);
-        // Intervalo esperado dos PositionUpdates; deve coincidir com TeamApp.
-        double expectedPositionUpdateInterval @unit(s) = default(1s);
-        // Tempo sem PositionUpdate que caracteriza silêncio da equipe.
-        double teamSilenceTimeout @unit(s) = default(3s);
+        // Descoberta da equipe
         // Tempo sem broadcast após o qual a equipe deixa a tabela descoberta.
         double teamEntryLifetime @unit(s) = default(30s);
-        // Horizonte máximo da extrapolação linear após a última posição recebida.
-        double teamPredictionHorizon @unit(s) = default(15s);
-        // Limite de velocidade aplicado à estimativa para rejeitar saltos espúrios.
-        double maximumTeamPredictionSpeed @unit(mps) = default(5mps);
         // Período do timer que verifica alertas, ACKs, TTL e reposicionamento.
         double maintenanceInterval @unit(s) = default(0.1s);
-        // PDR mínimo aceitável na janela, entre 0 e 1.
-        double pdrThreshold = default(0.8);
-        // RSSI médio mínimo aceitável para o enlace observado.
-        double rssiThreshold @unit(dBm) = default(-80dBm);
 
         // Controle e limites do reposicionamento
         // Ativa ou desativa somente o reposicionamento pelo BA.
         bool baEnabled = default(true);
-        // Exige confirmação sensorial para ativar o BA. Quando falso, a
-        // ablação usa apenas indicadores de rede e ignora a geometria.
-        bool requireObstacleConfirmation = default(true);
-        // Quantidade máxima de execuções do BA para o mesmo alerta.
-        int maxBaCycles = default(2);
         // Raio máximo da região de busca ao redor da posição atual.
         double maximumRepositionDistance @unit(m) = default(25m);
         // Menor altitude permitida para uma posição candidata.
@@ -114,22 +97,12 @@ simple DroneApp like IApp
         // Fração do raio de busca usada para perturbações locais.
         double batLocalSearchScale = default(0.1);
 
-        // Sinais exportados para vetores e escalares de resultados.
-        @signal[positionUpdateRssi](type=double; unit=dBm);
-        @statistic[positionUpdateRssi](source=positionUpdateRssi; record=vector,count,sum,mean,min,max);
-        @signal[positionUpdatePowerMilliwatt](type=double; unit=mW);
-        @statistic[positionUpdatePowerMilliwatt](source=positionUpdatePowerMilliwatt; record=count,sum,mean);
-        @signal[linkWindowPdr](type=double);
-        @statistic[linkWindowPdr](source=linkWindowPdr; record=vector,mean);
-        @signal[repositionDistance](type=double; unit=m);
-        @statistic[repositionDistance](source=repositionDistance; record=vector,sum,mean);
-        @signal[recoveryTime](type="simtime_t");
-        @statistic[recoveryTime](source=recoveryTime; record=vector,mean; unit=s);
+        // Eventos consumidos exclusivamente pelo coletor central.
         @signal[victimAlertGenerated](type=echosar::AlertMetricEvent);
         @signal[victimAlertAttemptSent](type=echosar::AlertMetricEvent);
         @signal[victimAlertConfirmed](type=echosar::AlertMetricEvent);
         @signal[victimAlertExpired](type=echosar::AlertMetricEvent);
-        @signal[victimDegradationIndicated](type=echosar::AlertMetricEvent);
+        @signal[victimRepositionTriggered](type=echosar::AlertMetricEvent);
         @signal[victimSensorEvaluated](type=echosar::AlertMetricEvent);
         @signal[victimBaActivated](type=echosar::AlertMetricEvent);
         @signal[victimRepositionEvent](type=echosar::AlertMetricEvent);

@@ -67,9 +67,16 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
         result.reason = "invalidTargetDirection";
         return result;
     }
-    // O sensor abstrato é orientado para a equipe; a LOS fica no centro do FOV.
-    IntersectionVisitor visitor(dronePosition, teamPosition);
-    environment->visitObjects(&visitor, LineSegment(dronePosition, teamPosition));
+    // O sensor é orientado pelo azimute da última posição conhecida. Quando a
+    // equipe acabou de cruzar uma superfície, o último broadcast válido pode
+    // estar poucos centímetros antes dela. Estender o raio até o alcance do
+    // sensor evita que essa discretização temporal esconda o obstáculo.
+    Coord horizontalBearing(direction.x, direction.y, 0);
+    Coord inspectionDestination = teamPosition;
+    if (horizontalBearing.length() > 0)
+        inspectionDestination += horizontalBearing / horizontalBearing.length() * maximumRange;
+    IntersectionVisitor visitor(dronePosition, inspectionDestination);
+    environment->visitObjects(&visitor, LineSegment(dronePosition, inspectionDestination));
     if (!visitor.closest) {
         result.reason = "clearLineOfSight";
         return result;

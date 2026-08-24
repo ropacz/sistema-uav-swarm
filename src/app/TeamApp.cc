@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "inet/mobility/contract/IMobility.h"
-#include "inet/networklayer/common/HopLimitTag_m.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/networklayer/contract/IInterfaceTable.h"
@@ -37,8 +36,6 @@ void TeamApp::initialize(int stage)
             updateInterval <= 0 || initialJitter < 0 || ackStartTime < 0 ||
             applicationIpTtl <= 0 || applicationIpTtl > 255)
             throw cRuntimeError("Invalid team identity, timing, or IP TTL parameter");
-        deliveryDelaySignal = registerSignal("deliveryDelay");
-        hopCountSignal = registerSignal("hopCount");
         alertDeliveredSignal = registerSignal("victimAlertDelivered");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
@@ -96,7 +93,6 @@ void TeamApp::sendPositionUpdate()
     update->setOperationalState("mobile");
     socket.sendTo(new Packet("PositionUpdate", update),
                   Ipv4Address::ALLONES_ADDRESS, appPort);
-    positionUpdatesSent++;
 }
 
 void TeamApp::socketDataArrived(UdpSocket *, Packet *packet)
@@ -128,30 +124,13 @@ void TeamApp::handleVictimAlert(Packet *packet)
     }
 
     bool newAttempt = receivedAttempts.insert(messageId).second;
-    bool newAlert = attendedAlerts.insert(alertId).second;
-    // messageId deduplica pacotes; alertId impede contabilizar novo atendimento.
+    // messageId deduplica uma tentativa que a pilha possa entregar novamente.
+    // A deduplicacao fim a fim por alertId pertence ao coletor central.
     if (newAttempt) {
-        attemptsReceived++;
-        simtime_t delay = simTime() - alert->getTransmissionTimestamp();
-        totalDeliveryDelay += delay;
-        totalAlertAgeAtReception += simTime() - alert->getGenerationTimestamp();
-        emit(deliveryDelaySignal, delay);
-    }
-    if (newAlert)
-        uniqueAlertsReceived++;
-    if (newAttempt) {
-        AlertMetricEvent deliveredEvent(alertId, messageId,
-                                        alert->getGenerationTimestamp(),
-                                        alert->getTransmissionTimestamp());
+        AlertMetricEvent deliveredEvent(alertId,
+                                        alert->getGenerationTimestamp());
         emit(alertDeliveredSignal, &deliveredEvent);
     }
-    if (!newAttempt)
-        // Mesmo messageId indica duplicação do pacote/tentativa, não novo retry.
-        duplicatePackets++;
-
-    int initialTtl = par("applicationIpTtl");
-    if (auto hop = packet->findTag<HopLimitInd>())
-        emit(hopCountSignal, initialTtl - hop->getHopLimit());
 
     // Janela de injeção determinística: antes de ackStartTime a equipe recebe
     // e contabiliza o alerta, mas não confirma.
@@ -171,24 +150,12 @@ void TeamApp::handleVictimAlert(Packet *packet)
     ack->setAckTimestamp(simTime());
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     socket.sendTo(new Packet("VictimAck", ack), sourceAddress, appPort);
-    applicationAcksSent++;
     delete packet;
 }
 
 TeamApp::~TeamApp()
 {
     cancelAndDelete(updateTimer);
-}
-
-void TeamApp::finish()
-{
-    recordScalar("positionUpdatesSent", positionUpdatesSent);
-    recordScalar("uniqueAlertsReceived", uniqueAlertsReceived);
-    recordScalar("attemptsReceived", attemptsReceived);
-    recordScalar("duplicatePackets", duplicatePackets);
-    recordScalar("applicationAcksSent", applicationAcksSent);
-    recordScalar("totalDeliveryDelay", totalDeliveryDelay.dbl());
-    recordScalar("totalAlertAgeAtReception", totalAlertAgeAtReception.dbl());
 }
 
 } // namespace echosar
