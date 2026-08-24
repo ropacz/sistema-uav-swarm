@@ -25,9 +25,9 @@ make network-discovery-validation # descoberta local por broadcast
 
 O escopo principal está em `simulations/main-experiment.ini`; parâmetros físicos
 e de protocolo são herdados das configurações-base. Robustez e diagnósticos
-permanecem separados. A especificação, fórmulas, hipóteses, gatilho do BA e
-ameaças à validade estão em
-[docs/professor_scenarios.md](docs/professor_scenarios.md).
+permanecem separados. A arquitetura, as fórmulas, as hipóteses e as validações
+estão organizadas no [índice da documentação técnica](docs/README.md). Os valores
+dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
 
 ## Organização
 
