@@ -21,7 +21,7 @@ def command_output(*command: str) -> str:
     except (FileNotFoundError, subprocess.CalledProcessError):
         return "unavailable"
     lines = (completed.stdout or completed.stderr).strip().splitlines()
-    return lines[0] if lines else "unavailable"
+    return lines[0] if lines else ""
 
 
 def sha256(path: Path) -> str:
