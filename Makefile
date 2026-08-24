@@ -83,8 +83,7 @@ network-discovery-validation:
 	python3 analysis/validation/validate_network_discovery.py
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
-main-experiment:
-	INET_VERSION=$(INET_VERSION) python3 analysis/core/write_manifest.py
+main-experiment: manifest
 	./run.sh -c MainExperiment_BaOff
 	./run.sh -c MainExperiment_BaOn
 	python3 analysis/reports/report_main_experiment.py
@@ -134,7 +133,9 @@ optional-scaling: professor-scaling-test
 experiment: main-experiment
 
 manifest:
-	INET_VERSION=$(INET_VERSION) python3 analysis/core/write_manifest.py
+	opp_env run $(INET_VERSION) -w $(WORKSPACE) --no-isolated \
+		-c "cd '$(CURDIR)' && INET_VERSION='$(INET_VERSION)' \
+		python3 analysis/core/write_manifest.py"
 
 analyze:
 	python3 analysis/reports/report_main_experiment.py

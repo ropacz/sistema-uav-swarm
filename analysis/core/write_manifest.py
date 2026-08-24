@@ -32,6 +32,19 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def omnetpp_version() -> str:
+    try:
+        completed = subprocess.run(
+            ("opp_run", "-h"), cwd=ROOT, check=True,
+            capture_output=True, text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return "unavailable"
+    lines = (completed.stdout or completed.stderr).splitlines()
+    return next((line.strip() for line in lines if line.startswith("Version:")),
+                "unavailable")
+
+
 def main() -> None:
     ini_hashes = {
         str(path.relative_to(ROOT)): sha256(path)
@@ -42,7 +55,7 @@ def main() -> None:
         "git_dirty": bool(command_output(
             "git", "status", "--porcelain", "--untracked-files=no"
         )),
-        "omnetpp": command_output("opp_run", "--version"),
+        "omnetpp": omnetpp_version(),
         "inet": os.environ.get("INET_VERSION", "not_recorded"),
         "python": platform.python_version(),
         "config_sha256": ini_hashes,
