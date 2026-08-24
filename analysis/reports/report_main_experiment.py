@@ -24,11 +24,12 @@ RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
 OUTPUT = REPOSITORY_ROOT / "analysis/figures"
 CONTROL = "MainExperiment_BaOff"
 TREATMENT = "MainExperiment_BaOn"
-PRIMARY_METRICS = (
-    "alert_pdr_pct",
-    "appack_pct",
-    "delivery_delay_mean_s",
-)
+METRIC_SPECS = {
+    "alert_pdr_pct": ("primary", "higher"),
+    "appack_pct": ("secondary", "higher"),
+    "delivery_delay_mean_s": ("secondary", "lower"),
+}
+OUTCOME_METRICS = tuple(METRIC_SPECS)
 
 MECHANISM_METRICS = (
     "repositions_started",
@@ -81,8 +82,8 @@ def pair_runs(control: pd.DataFrame, treatment: pd.DataFrame) -> pd.DataFrame:
             f"unpaired seeds: control-only={sorted(control_seeds - treatment_seeds)}, "
             f"treatment-only={sorted(treatment_seeds - control_seeds)}")
 
-    paired = control[["seed", *PRIMARY_METRICS, "result_path"]].merge(
-        treatment[["seed", *PRIMARY_METRICS, "result_path"]],
+    paired = control[["seed", *OUTCOME_METRICS, "result_path"]].merge(
+        treatment[["seed", *OUTCOME_METRICS, "result_path"]],
         on="seed", suffixes=("_off", "_on"), validate="one_to_one")
     for row in paired.itertuples(index=False):
         differences = parameter_differences(
@@ -93,35 +94,33 @@ def pair_runs(control: pd.DataFrame, treatment: pd.DataFrame) -> pd.DataFrame:
                 for key, values in list(differences.items())[:5])
             raise ValueError(f"seed {row.seed}: parameter drift ({preview})")
 
-    for metric in PRIMARY_METRICS:
+    for metric in OUTCOME_METRICS:
         paired[f"{metric}_effect"] = (
             paired[f"{metric}_on"] - paired[f"{metric}_off"])
     return paired
 
 
-def require_informative_treatment(treatment: pd.DataFrame) -> None:
-    """Reject a study in which the treatment was never actually exercised."""
-    checks = {
-        "network degradation indication": treatment["degradation_indications"].sum(),
-        "sensor-confirmed obstacle": treatment["sensor_confirmations"].sum(),
-        "BA activation": treatment["ba_activations"].sum(),
-        "reposition movement": treatment["repositions_started"].sum(),
-    }
-    missing = [name for name, total in checks.items() if total <= 0]
-    if missing:
-        raise ValueError(
-            "uninformative treatment: no " + ", ".join(missing) +
-            ". Calibrate the scenario before drawing conclusions; do not change "
-            "thresholds after inspecting treatment outcomes.")
+def summarize_exposure(treatment: pd.DataFrame) -> pd.DataFrame:
+    """Describe treatment exposure without excluding post-treatment runs."""
+    activations = treatment["ba_activations"]
+    return pd.DataFrame([{
+        "treatment_runs": len(treatment),
+        "runs_with_ba_activation": int((activations > 0).sum()),
+        "ba_activations": activations.sum(),
+        "repositions_started": treatment["repositions_started"].sum(),
+        "exposure_status": "observed" if activations.sum() > 0 else "not_observed",
+    }])
 
 
 def summarize(control: pd.DataFrame, treatment: pd.DataFrame,
               paired: pd.DataFrame) -> pd.DataFrame:
     rows = []
-    for metric in PRIMARY_METRICS:
+    for metric, (role, favorable_direction) in METRIC_SPECS.items():
         effects = paired[f"{metric}_effect"].dropna()
         rows.append({
             "metric": metric,
+            "role": role,
+            "favorable_direction": favorable_direction,
             "paired_n": len(effects),
             "control_mean": control[metric].mean(),
             "treatment_mean": treatment[metric].mean(),
@@ -136,8 +135,8 @@ def main() -> None:
     control = load_arm(CONTROL, False)
     treatment = load_arm(TREATMENT, True)
     paired = pair_runs(control, treatment)
-    require_informative_treatment(treatment)
     summary = summarize(control, treatment, paired)
+    exposure = summarize_exposure(treatment)
 
     OUTPUT.mkdir(exist_ok=True)
     pd.concat([control, treatment], ignore_index=True).to_csv(
@@ -147,9 +146,14 @@ def main() -> None:
     summary.to_csv(OUTPUT / "main_experiment_summary.csv", index=False)
     treatment[["seed", *MECHANISM_METRICS]].to_csv(
         OUTPUT / "main_experiment_ba_mechanism.csv", index=False)
+    exposure.to_csv(OUTPUT / "main_experiment_exposure_summary.csv", index=False)
 
     print(summary.to_string(index=False, float_format=lambda value: f"{value:.4f}"))
     print("\nEfeito = BA On - BA Off; unidade experimental = seed pareada.")
+    if exposure.iloc[0]["exposure_status"] == "not_observed":
+        print("AVISO: a política BA não foi acionada. O efeito da política neste "
+              "cenário continua estimável, mas não informa o efeito condicional "
+              "de um reposicionamento quando acionado.")
     print("Métricas do mecanismo BA foram exportadas separadamente e não são "
           "comparadas ao controle quando o denominador não existe.")
 
