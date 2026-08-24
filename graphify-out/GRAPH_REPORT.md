@@ -1,16 +1,16 @@
-# Graph Report - sistema  (2026-08-22)
+# Graph Report - sistema  (2026-08-24)
 
 ## Corpus Check
-- 35 files · ~16,520 words
+- 38 files · ~16,856 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 540 nodes · 820 edges · 30 communities (18 shown, 12 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 36 edges (avg confidence: 0.79)
+- 555 nodes · 839 edges · 32 communities (21 shown, 11 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 29 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `550956fd`
+- Built from commit: `90d4f0e6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,30 +19,32 @@
 - TeamApp
 - AbstractObstacleSensor
 - BatParameters
-- PendingVictimAlert
+- StaticVictim
 - DroneApp.cc
 - FitnessParameters
-- LifecycleOperation
+- TeamApp.h
 - BaGaussMarkovMobility
 - network_metrics.py
 - Cenários científicos da professora
 - plot_scenario1_line1.py
 - run.sh
 - SarScenarioManager
-- pcap_batch_to_spreadsheet.py
+- PendingVictimAlert
 - RepositionController
 - Repository Guidelines
 - UdpSocket
-- TeamApp.h
-- pcap_core.py
-- AbstractObstacleSensor
-- Packet
+- TeamLinkState
+- pcap_batch_to_spreadsheet.py
+- DroneApp.h
+- LinkSample
+- LifecycleOperation
+- cMessage
 - Indication
 - simsignal_t
-- UdpSocket::ICallback
 - TeamApp.cc
 - UdpSocket
 - LifecycleOperation
+- UdpSocket::ICallback
 - SarMessageSerializers.cc
 - analysis/README.md
 
@@ -50,34 +52,34 @@
 1. `DroneApp` - 109 edges
 2. `TeamApp` - 43 edges
 3. `PendingVictimAlert` - 30 edges
-4. `FitnessParameters` - 22 edges
+4. `FitnessParameters` - 21 edges
 5. `BaGaussMarkovMobility` - 19 edges
 6. `TeamLinkState` - 17 edges
 7. `RepositionFitness` - 14 edges
 8. `RepositionController` - 13 edges
-9. `BatParameters` - 12 edges
-10. `collect()` - 11 edges
+9. `parse_sca()` - 13 edges
+10. `BatParameters` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `optimize` --calls--> `feasible`  [INFERRED]
   src/optimization/BatAlgorithm.h → src/optimization/RepositionFitness.h
-- `pcap_metrics()` --calls--> `compare_group()`  [INFERRED]
-  analysis/compare_sca_pcap_scenario1.py → analysis/pcap_batch_to_spreadsheet.py
-- `pcap_metrics()` --calls--> `discover_captures()`  [INFERRED]
-  analysis/compare_sca_pcap_scenario1.py → analysis/pcap_batch_to_spreadsheet.py
-- `collect()` --calls--> `parse_sca()`  [INFERRED]
-  analysis/network_metrics.py → analysis/process_results.py
-- `aggregate()` --calls--> `ci95()`  [INFERRED]
-  analysis/network_metrics.py → analysis/process_results.py
+- `DroneApp` --references--> `PendingVictimAlert`  [EXTRACTED]
+  src/app/DroneApp.h → src/app/PendingVictimAlert.h
+- `DroneApp` --references--> `TeamLinkState`  [EXTRACTED]
+  src/app/DroneApp.h → src/app/TeamLinkState.h
+- `sendAttempt` --references--> `PendingVictimAlert`  [EXTRACTED]
+  src/app/DroneApp.h → src/app/PendingVictimAlert.h
+- `detectDegradation` --references--> `PendingVictimAlert`  [EXTRACTED]
+  src/app/DroneApp.h → src/app/PendingVictimAlert.h
 
 ## Import Cycles
 - None detected.
 
-## Communities (30 total, 12 thin omitted)
+## Communities (32 total, 11 thin omitted)
 
 ### Community 0 - "DroneApp"
-Cohesion: 0.03
-Nodes (78): BatParameters, RepositionController, simsignal_t, DroneApp, ackTimeout, alertAttemptsSent, alertsExpired, alertTtl (+70 more)
+Cohesion: 0.02
+Nodes (80): BatParameters, cMessage, FitnessParameters, RepositionController, simsignal_t, DroneApp, ackTimeout, alertAttemptsSent (+72 more)
 
 ### Community 1 - "TeamApp"
 Cohesion: 0.06
@@ -89,39 +91,43 @@ Nodes (26): cObject, IPhysicalEnvironment, IPhysicalObject, IVisitor, ModuleRefB
 
 ### Community 3 - "BatParameters"
 Cohesion: 0.08
-Nodes (32): cRNG, FeasibilityFunction, FitnessFunction, Coord, Bat, amplitude, fitness, frequency (+24 more)
+Nodes (31): cRNG, FeasibilityFunction, FitnessFunction, Bat, amplitude, fitness, frequency, position (+23 more)
 
-### Community 4 - "PendingVictimAlert"
-Cohesion: 0.05
-Nodes (42): ApplicationBase, deque, map, set, simtime_t, string, LinkSample, receptionTime (+34 more)
+### Community 4 - "StaticVictim"
+Cohesion: 0.33
+Nodes (3): cMessage, cSimpleModule, StaticVictim
 
 ### Community 5 - "DroneApp.cc"
 Cohesion: 0.15
-Nodes (23): Packet, cMessage, Coord, string, UdpSocket, calculatePositionUpdatePdr, detectDegradation, estimateTeamPosition (+15 more)
+Nodes (23): cMessage, Coord, Packet, string, UdpSocket, calculatePositionUpdatePdr, detectDegradation, estimateTeamPosition (+15 more)
 
 ### Community 6 - "FitnessParameters"
-Cohesion: 0.08
-Nodes (35): tryReposition, AbstractObstacleSensor, Coord, simtime_t, FitnessParameters, areaMaxX, areaMaxY, areaMinX (+27 more)
+Cohesion: 0.07
+Nodes (36): AbstractObstacleSensor, tryReposition, AbstractObstacleSensor, Coord, simtime_t, FitnessParameters, areaMaxX, areaMaxY (+28 more)
+
+### Community 7 - "TeamApp.h"
+Cohesion: 0.40
+Nodes (4): ApplicationBase, LifecycleOperation, UdpSocket, set
 
 ### Community 8 - "BaGaussMarkovMobility"
 Cohesion: 0.13
 Nodes (18): GaussMarkovMobility, rad, BaGaussMarkovMobility, baOverride, elevation, elevationMean, elevationStdDev, finish (+10 more)
 
 ### Community 9 - "network_metrics.py"
-Cohesion: 0.12
+Cohesion: 0.13
 Nodes (28): aggregate(), collect(), extreme_where(), main(), mean_where(), DataFrame, ratio(), Extract INET network-layer metrics per run and aggregate them across seeds.… (+20 more)
 
 ### Community 10 - "Cenários científicos da professora"
-Cohesion: 0.14
-Nodes (11): Cenários científicos da professora, Desenho solicitado, Execução, Gatilho e Bat Algorithm, Mobilidade e referência física, Métricas e validade, Pergunta e hipóteses, Rádio, obstáculo e FSPL (+3 more)
+Cohesion: 0.10
+Nodes (16): Cenários científicos da professora, Desenho solicitado, Execução, Gatilho e Bat Algorithm, Mobilidade e referência física, Métricas e validade, Pergunta e hipóteses, Rádio, obstáculo e FSPL (+8 more)
 
 ### Community 13 - "SarScenarioManager"
-Cohesion: 0.18
-Nodes (11): cModule, map, cMessage, cMessage, cSimpleModule, map, SarScenarioManager, detections (+3 more)
+Cohesion: 0.20
+Nodes (10): cModule, cMessage, cMessage, cSimpleModule, map, SarScenarioManager, detections, handleMessage (+2 more)
 
-### Community 14 - "pcap_batch_to_spreadsheet.py"
-Cohesion: 0.10
-Nodes (29): main(), pcap_metrics(), plot_pcap(), DataFrame, Capture, compare_group(), discover_captures(), main() (+21 more)
+### Community 14 - "PendingVictimAlert"
+Cohesion: 0.09
+Nodes (23): map, simtime_t, string, PendingVictimAlert, ackDeadline, alertId, attempts, attemptSentTimes (+15 more)
 
 ### Community 15 - "RepositionController"
 Cohesion: 0.22
@@ -131,13 +137,21 @@ Nodes (5): string, RepositionController, activeAlertId, state, State
 Cohesion: 0.25
 Nodes (7): Build, Test, and Development Commands, Coding Style & Naming Conventions, Commit & Pull Request Guidelines, graphify, Project Structure & Module Organization, Repository Guidelines, Testing Guidelines
 
-### Community 18 - "TeamApp.h"
-Cohesion: 0.50
-Nodes (3): ApplicationBase, LifecycleOperation, set
+### Community 18 - "TeamLinkState"
+Cohesion: 0.17
+Nodes (12): deque, Coord, string, TeamLinkState, ipAddress, lastSeen, lastSequence, position (+4 more)
 
-### Community 19 - "pcap_core.py"
-Cohesion: 0.10
-Nodes (30): compare_direction(), decode_echosar_payload(), find_ipv4_udp(), is_group_destination(), iter_pcapng_packets(), load_capture(), packet_identity_method(), packet_key() (+22 more)
+### Community 19 - "pcap_batch_to_spreadsheet.py"
+Cohesion: 0.06
+Nodes (59): main(), pcap_metrics(), plot_pcap(), DataFrame, Capture, compare_group(), discover_captures(), main() (+51 more)
+
+### Community 20 - "DroneApp.h"
+Cohesion: 0.36
+Nodes (5): ApplicationBase, set, map, string, Coord
+
+### Community 21 - "LinkSample"
+Cohesion: 0.40
+Nodes (5): simtime_t, LinkSample, receptionTime, rssiDbm, sequence
 
 ### Community 26 - "TeamApp.cc"
 Cohesion: 0.24
@@ -148,23 +162,23 @@ Cohesion: 0.13
 Nodes (26): b, Chunk, ChunkSerializer, MemoryInputStream, MemoryOutputStream, PositionUpdateChunk, Ptr, simtime_t (+18 more)
 
 ## Knowledge Gaps
-- **207 isolated node(s):** `ECHOSAR-Net — cenários da professora`, `Análise`, `Pergunta e hipóteses`, `Desenho solicitado`, `Mobilidade e referência física` (+202 more)
+- **210 isolated node(s):** `Organização`, `Cenários científicos`, `Validações técnicas`, `Resultados`, `socket` (+205 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `PendingVictimAlert`, `DroneApp.cc`, `FitnessParameters`, `LifecycleOperation`, `UdpSocket`?**
-  _High betweenness centrality (0.272) - this node is a cross-community bridge._
-- **Why does `TeamApp` connect `TeamApp` to `TeamApp.cc`, `TeamApp.h`, `UdpSocket`, `LifecycleOperation`?**
-  _High betweenness centrality (0.104) - this node is a cross-community bridge._
-- **Why does `PendingVictimAlert` connect `PendingVictimAlert` to `DroneApp`, `BatParameters`, `DroneApp.cc`, `FitnessParameters`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
-- **What connects `ECHOSAR-Net — cenários da professora`, `Análise`, `Pergunta e hipóteses` to the rest of the system?**
-  _207 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `DroneApp` connect `DroneApp` to `DroneApp.cc`, `FitnessParameters`, `PendingVictimAlert`, `UdpSocket`, `TeamLinkState`, `DroneApp.h`, `LifecycleOperation`?**
+  _High betweenness centrality (0.277) - this node is a cross-community bridge._
+- **Why does `TeamApp` connect `TeamApp` to `TeamApp.cc`, `UdpSocket`, `LifecycleOperation`, `TeamApp.h`?**
+  _High betweenness centrality (0.101) - this node is a cross-community bridge._
+- **Why does `tryReposition` connect `FitnessParameters` to `DroneApp`, `BatParameters`, `DroneApp.cc`, `PendingVictimAlert`?**
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+- **What connects `Organização`, `Cenários científicos`, `Validações técnicas` to the rest of the system?**
+  _210 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
-  _Cohesion score 0.02531645569620253 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.024691358024691357 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._
 - **Should `AbstractObstacleSensor` be split into smaller, more focused modules?**

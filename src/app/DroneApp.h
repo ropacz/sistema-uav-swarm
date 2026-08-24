@@ -1,8 +1,6 @@
 #pragma once
 
-#include <deque>
 #include <map>
-#include <set>
 #include <string>
 
 #include "inet/applications/base/ApplicationBase.h"
@@ -13,50 +11,13 @@
 #include "messages/VictimAck_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAssignment_m.h"
+#include "PendingVictimAlert.h"
 #include "RepositionController.h"
+#include "TeamLinkState.h"
 #include "optimization/BatAlgorithm.h"
 #include "optimization/RepositionFitness.h"
 
 namespace echosar {
-
-struct LinkSample {
-    int64_t sequence = 0;
-    omnetpp::simtime_t receptionTime;
-    double rssiDbm = NAN;
-};
-
-struct TeamLinkState {
-    std::string ipAddress;
-    inet::Coord position;
-    inet::Coord velocity;
-    omnetpp::simtime_t positionTime = -1;
-    omnetpp::simtime_t lastSeen = -1;
-    int64_t lastSequence = -1;
-    bool velocityValid = false;
-    std::deque<LinkSample> samples;
-};
-
-struct PendingVictimAlert {
-    std::string alertId;
-    std::string victimId;
-    inet::Coord victimPosition;
-    omnetpp::simtime_t generationTime;
-    omnetpp::simtime_t ackDeadline = -1;
-    omnetpp::simtime_t nextAttempt = -1;
-    int attempts = 0;
-    int64_t sequence = 0;
-    std::string targetTeamId;
-    std::map<std::string, omnetpp::simtime_t> attemptSentTimes;
-    bool degradationEvaluated = false;
-    int baCycles = 0;
-    std::set<std::string> testedPositions;
-    std::string validationMessageId;
-    omnetpp::simtime_t repositionStart = -1;
-    inet::Coord repositionOrigin;
-    bool repositionDistanceRecorded = false;
-    double preRepositionPdr = NAN;
-    double preRepositionRssi = NAN;
-};
 
 class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
 {
