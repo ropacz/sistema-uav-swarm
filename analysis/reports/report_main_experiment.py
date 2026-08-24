@@ -157,8 +157,8 @@ def main() -> None:
         print("AVISO: a política BA não foi acionada. O efeito da política neste "
               "cenário continua estimável, mas não informa o efeito condicional "
               "de um reposicionamento quando acionado.")
-    print("Diagnósticos de exposição ao BA foram exportados separadamente e não são "
-          "comparadas ao controle quando o denominador não existe.")
+    print("Diagnósticos de exposição ao BA foram exportados separadamente; "
+          "não são desfechos confirmatórios.")
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ import pandas as pd
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
+from analysis.core.experiment_metrics import central_scalar  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 
 ROOT = str(REPOSITORY_ROOT)
@@ -37,8 +38,6 @@ OUTPUT = os.path.join(ROOT, "analysis", "figures")
 MAC = r"\.wlan\[\d+\]\.mac$"
 IP = r"\.ipv4\.ip$"
 UDP = r"\.udp$"
-APP = r"\.app\[0\]$"
-METRICS = r"\.experimentMetrics$"
 
 
 def sum_where(frame: pd.DataFrame, name: str, module_pattern: str | None = None) -> float:
@@ -49,60 +48,8 @@ def sum_where(frame: pd.DataFrame, name: str, module_pattern: str | None = None)
     return float(values.sum()) if len(values) else 0.0
 
 
-def mean_where(frame: pd.DataFrame, name: str, module_pattern: str | None = None) -> float:
-    selected = frame["name"] == name
-    if module_pattern:
-        selected &= frame["module"].str.contains(module_pattern, regex=True)
-    values = frame.loc[selected, "value"].dropna()
-    values = values[values.apply(math.isfinite)]
-    return float(values.mean()) if len(values) else math.nan
-
-
-def pooled_statistic_mean(frame: pd.DataFrame, base_name: str,
-                          module_pattern: str | None = None) -> float:
-    """Pool a signal by sample count, never by averaging module means."""
-    total = sum_where(frame, f"{base_name}:sum", module_pattern)
-    count = sum_where(frame, f"{base_name}:count", module_pattern)
-    return ratio(total, count) if count else math.nan
-
-
-def received_power_mean_dbm(frame: pd.DataFrame) -> float:
-    """Average received power in mW, then convert that physical mean to dBm."""
-    mean_milliwatt = pooled_statistic_mean(
-        frame, "positionUpdatePowerMilliwatt")
-    if math.isfinite(mean_milliwatt) and mean_milliwatt > 0:
-        return 10 * math.log10(mean_milliwatt)
-    # Compatibility for result files generated before linear power was recorded.
-    return mean_where(frame, "positionUpdateRssi:mean")
-
-
-def extreme_where(frame: pd.DataFrame, name: str, lowest: bool) -> float:
-    values = frame.loc[frame["name"] == name, "value"].dropna()
-    values = values[values.apply(math.isfinite)]
-    if not len(values):
-        return math.nan
-    return float(values.min() if lowest else values.max())
-
-
 def ratio(numerator: float, denominator: float, scale: float = 1.0) -> float:
     return scale * numerator / denominator if denominator else math.nan
-
-
-def global_or_legacy(frame: pd.DataFrame, global_name: str,
-                     legacy_name: str, legacy_pattern: str = APP) -> float:
-    """Read a global ExperimentMetrics scalar, falling back for old result files."""
-    global_rows = (frame["name"] == global_name) & frame["module"].str.contains(
-        METRICS, regex=True)
-    if global_rows.any():
-        return float(frame.loc[global_rows, "value"].sum())
-    return sum_where(frame, legacy_name, legacy_pattern)
-
-
-def global_scalar(frame: pd.DataFrame, name: str) -> float:
-    selected = (frame["name"] == name) & frame["module"].str.contains(
-        METRICS, regex=True)
-    values = frame.loc[selected, "value"]
-    return float(values.sum()) if len(values) else math.nan
 
 
 def collect(path: str) -> dict:
@@ -118,13 +65,13 @@ def collect(path: str) -> dict:
     udp_sent = sum_where(frame, "packetSent:count", UDP)
     udp_received = sum_where(frame, "packetReceived:count", UDP)
 
-    generated = global_or_legacy(frame, "alertsGenerated", "uniqueAlertsGenerated")
-    delivered = global_or_legacy(frame, "alertsDelivered", "uniqueAlertsReceived")
-    acked = global_or_legacy(frame, "alertsConfirmed", "uniqueAlertsAcked")
-    attempts = global_or_legacy(frame, "alertAttemptsSent", "alertAttemptsSent")
-    retries = global_scalar(frame, "applicationRetries")
-    delivery_delay_sum = global_scalar(frame, "deliveryDelaySum")
-    delivery_delay_count = global_scalar(frame, "deliveryDelayCount")
+    generated = central_scalar(frame, "alertsGenerated")
+    delivered = central_scalar(frame, "alertsDelivered")
+    acked = central_scalar(frame, "alertsConfirmed")
+    attempts = central_scalar(frame, "alertAttemptsSent")
+    retries = central_scalar(frame, "applicationRetries")
+    delivery_delay_sum = central_scalar(frame, "deliveryDelaySum")
+    delivery_delay_count = central_scalar(frame, "deliveryDelayCount")
 
     return {
         "config": attrs["configname"],
@@ -156,13 +103,12 @@ def collect(path: str) -> dict:
         "udp_drop_wrong_port": sum_where(frame, "droppedPkWrongPort:count", UDP),
 
         # ── Exposição à política de reposicionamento ──────────────────────
-        "reposition_triggers": global_scalar(frame, "repositionTriggers"),
-        "obstacles_detected": global_scalar(frame, "obstaclesDetected"),
-        "ba_activations": global_or_legacy(
-            frame, "baActivations", "baActivations"),
-        "repositions_started": global_scalar(frame, "repositionsStarted"),
-        "repositions_completed": global_scalar(frame, "repositionsCompleted"),
-        "reposition_distance_sum_m": global_scalar(frame, "repositionDistanceSum"),
+        "reposition_triggers": central_scalar(frame, "repositionTriggers"),
+        "obstacles_detected": central_scalar(frame, "obstaclesDetected"),
+        "ba_activations": central_scalar(frame, "baActivations"),
+        "repositions_started": central_scalar(frame, "repositionsStarted"),
+        "repositions_completed": central_scalar(frame, "repositionsCompleted"),
+        "reposition_distance_sum_m": central_scalar(frame, "repositionDistanceSum"),
 
         # ── Aplicação ─────────────────────────────────────────────────────
         "alert_pdr_pct": ratio(delivered, generated, 100),
@@ -246,8 +192,8 @@ def main() -> None:
     runs.to_csv(os.path.join(OUTPUT, "network_metrics_runs.csv"), index=False)
     summary.to_csv(os.path.join(OUTPUT, "network_metrics_summary.csv"), index=False)
     report(summary)
-    print("\nMétricas diagnósticas — descrevem o comportamento da rede, não são "
-          "\nevidência sobre a hipótese. Intervalos são IC95% entre seeds.")
+    print("\nMétricas diagnósticas descrevem o comportamento da rede; não são "
+          "evidência sobre a hipótese. Intervalos são IC95% entre seeds.")
 
 
 if __name__ == "__main__":

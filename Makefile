@@ -8,19 +8,15 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/pcap/pcap_batch_to_spreadsheet.py \
 	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
 	analysis/reports/report_main_experiment.py \
-	analysis/reports/report_professor_scaling_test.py \
 	analysis/validation/validate_ba_smoke_test.py \
-	analysis/validation/validate_network_discovery.py \
-	analysis/plots/plot_scenario1_line1.py \
-	analysis/pcap/compare_sca_pcap_scenario1.py
+	analysis/validation/validate_network_discovery.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests \
 	experiment main-experiment robustness-experiment optional-multihop \
-	optional-pcap optional-scaling \
-	analyze network-metrics reproduce professor-scenarios professor-pcap \
-	ba-smoke-test professor-scaling-test manifest
+	optional-pcap analyze network-metrics reproduce professor-pcap \
+	ba-smoke-test manifest
 
-.PHONY: scenario1-line1-900 network-discovery-validation
+.PHONY: network-discovery-validation
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -53,7 +49,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.validation.validate_ba_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -64,18 +60,6 @@ analysis-tests: check
 ba-smoke-test:
 	./run.sh -c BA_SmokeTest -r 0
 	python3 analysis/validation/validate_ba_smoke_test.py
-
-# Sonda 2x2: 1/40 vítimas x 1/20 obstáculos, 3 seeds, BA desligado.
-professor-scaling-test:
-	./run.sh -c ProfessorScaling_Obs01 -r 3,4,5,15,16,17
-	./run.sh -c ProfessorScaling_Obs20 -r 3,4,5,15,16,17
-	./run.sh -c ProfessorScaling_Obs20_BaOn -r 15,16,17
-	python3 analysis/reports/report_professor_scaling_test.py
-
-scenario1-line1-900:
-	./run.sh -c Scenario1_Line1_900s10_BaOn
-	python3 analysis/reports/report_professor_scenarios.py
-	python3 analysis/plots/plot_scenario1_line1.py
 
 network-discovery-validation:
 	./run.sh -c DiscoveryValidation_Direct -r 0
@@ -105,16 +89,6 @@ optional-multihop:
 	python3 analysis/reports/report_professor_scenarios.py --configs \
 		Scenario1_OneVictim_Multihop Scenario1_TwoVictims_Multihop
 
-# Compatibilidade: lote amplo anterior à separação do escopo.
-professor-scenarios:
-	./run.sh -c Scenario1_OneVictim_BaOff
-	./run.sh -c Scenario1_OneVictim_BaOn
-	./run.sh -c Scenario1_OneVictim_Multihop
-	./run.sh -c Scenario1_TwoVictims_BaOff
-	./run.sh -c Scenario1_TwoVictims_BaOn
-	./run.sh -c Scenario1_TwoVictims_Multihop
-	python3 analysis/reports/report_professor_scenarios.py
-
 # Captura todos os nós em todas as seeds preliminares.
 professor-pcap:
 	./run.sh -c Scenario1_OneVictim_BaOff --pcap
@@ -127,8 +101,6 @@ professor-pcap:
 		-o simulations/results/spreadsheets/professor-all-seeds.xlsx
 
 optional-pcap: professor-pcap
-
-optional-scaling: professor-scaling-test
 
 experiment: main-experiment
 
@@ -146,7 +118,7 @@ network-metrics:
 			Scenario1_OneVictim_Multihop Scenario1_TwoVictims_BaOff \
 			Scenario1_TwoVictims_BaOn Scenario1_TwoVictims_Multihop
 
-# Reprodução confirmatória. PCAP e escalabilidade possuem alvos próprios.
+# Reprodução confirmatória. PCAP e robustez possuem alvos próprios.
 reproduce:
 	./run.sh --build -c MainExperiment_BaOff -r 0
 	$(MAKE) analysis-tests

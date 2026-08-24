@@ -25,8 +25,8 @@ e de protocolo são herdados das configurações-base. Robustez e diagnósticos
 permanecem separados. A arquitetura, as fórmulas, as hipóteses e as validações
 estão organizadas no [índice da documentação técnica](docs/README.md). Os valores
 dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
-Multihop, PCAP, escala e robustez possuem alvos `optional-*` ou
-`robustness-experiment`, fora do fluxo confirmatório.
+Multihop, PCAP e robustez possuem alvos próprios, fora do fluxo confirmatório.
+A antiga sonda de escala permanece apenas como configuração histórica.
 
 ## Organização
 
