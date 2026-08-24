@@ -23,12 +23,13 @@ double sampleUniform(omnetpp::cRNG *rng, double a, double b)
 
 Coord randomInSphere(omnetpp::cRNG *rng, double radius)
 {
-    // cbrt corrige o raio para amostrar uniformemente o volume da esfera.
+    // A rejeição do cubo já produz distribuição uniforme no volume da esfera.
+    // Aplicar outro fator radial concentraria candidatos artificialmente no centro.
     Coord p;
     do {
         p = Coord(sampleUniform(rng, -1, 1), sampleUniform(rng, -1, 1), sampleUniform(rng, -1, 1));
     } while (p.length() > 1 || p.length() == 0);
-    return p * (radius * std::cbrt(rng->doubleRand()));
+    return p * radius;
 }
 }
 
