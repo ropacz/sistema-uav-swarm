@@ -110,6 +110,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int teamEntriesExpired = 0;
 
     omnetpp::simsignal_t rssiSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t receivedPowerSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t pdrSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t repositionDistanceSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t recoveryTimeSignal = SIMSIGNAL_NULL;

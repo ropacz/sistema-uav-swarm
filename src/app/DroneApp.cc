@@ -150,6 +150,7 @@ void DroneApp::initialize(int stage)
         batParameters.localSearchScale = par("batLocalSearchScale");
         validateParameters();
         rssiSignal = registerSignal("positionUpdateRssi");
+        receivedPowerSignal = registerSignal("positionUpdatePowerMilliwatt");
         pdrSignal = registerSignal("linkWindowPdr");
         repositionDistanceSignal = registerSignal("repositionDistance");
         recoveryTimeSignal = registerSignal("recoveryTime");
@@ -199,7 +200,8 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         for (auto& [id, alert] : pendingAlerts)
             if (reposition.owns(id)) {
                 recordActualRepositionDistance(alert);
-                AlertMetricEvent completedEvent(alert.alertId, "", simTime(),
+                AlertMetricEvent completedEvent(alert.alertId,
+                                                alert.activeRepositionCycleId, simTime(),
                                                 SimTime::ZERO, "completed");
                 emit(repositionEventSignal, &completedEvent);
                 break;
@@ -264,8 +266,10 @@ void DroneApp::handlePositionUpdate(Packet *packet)
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     auto [teamIt, discovered] = discoveredTeams.try_emplace(senderId);
     auto& team = teamIt->second;
-    if (discovered)
+    if (discovered) {
         teamEntriesDiscovered++;
+        team.observationStart = simTime();
+    }
     team.ipAddress = sourceAddress.str();
     Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
     simtime_t sourceTime = update->getTimestamp();
@@ -292,8 +296,12 @@ void DroneApp::handlePositionUpdate(Packet *packet)
     }
     double rssi = NAN;
     if (auto power = packet->findTag<SignalPowerInd>()) {
-        rssi = 10 * std::log10(power->getPower().get() / 0.001);
+        const double powerMilliwatt = power->getPower().get() / 0.001;
+        rssi = 10 * std::log10(powerMilliwatt);
         emit(rssiSignal, rssi);
+        // Potências devem ser agregadas em escala linear. A conversão da média
+        // global para dBm é feita apenas no pós-processamento.
+        emit(receivedPowerSignal, powerMilliwatt);
     }
     if (team.samples.empty() || update->getSequenceNumber() > team.samples.back().sequence) {
         team.samples.push_back({update->getSequenceNumber(), simTime(), rssi});
@@ -303,7 +311,9 @@ void DroneApp::handlePositionUpdate(Packet *packet)
             rssiSamplesAvailable++;
     }
     // Mantém somente amostras pertencentes à janela deslizante configurada.
-    while (!team.samples.empty() && simTime() - team.samples.front().receptionTime > linkWindow)
+    // A janela é (agora-linkWindow, agora]. Remover também a fronteira esquerda
+    // faz uma janela de 10 s com período de 1 s conter no máximo 10 beacons.
+    while (!team.samples.empty() && simTime() - team.samples.front().receptionTime >= linkWindow)
         team.samples.pop_front();
     delete packet;
 }
@@ -342,9 +352,13 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     alert.attempts++;
     alert.sequence++;
     std::string messageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
-    if (reposition.awaitingValidationOf(alert.alertId))
+    if (reposition.awaitingValidationOf(alert.alertId)) {
         alert.validationMessageId = messageId;
+        alert.validationCycleId = alert.activeRepositionCycleId;
+    }
     alert.attemptSentTimes[messageId] = simTime();
+    alert.attemptTeamIds[messageId] = alert.targetTeamId;
+    alert.attemptTeamAddresses[messageId] = team.ipAddress;
     auto message = makeShared<VictimAlertChunk>();
     message->setChunkLength(B(victimAlertPayloadBytes));
     message->setAlertId(alert.alertId.c_str());
@@ -397,12 +411,29 @@ bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, d
 
 double DroneApp::calculatePositionUpdatePdr(const TeamLinkState& team) const
 {
-    // A contagem temporal detecta inclusive beacons perdidos antes do primeiro
-    // e depois do último pacote recebido. O cálculo antigo baseado apenas na
-    // diferença entre sequências observadas não enxergava essas perdas.
-    double expected = std::ceil(linkWindow.dbl() / positionUpdateInterval.dbl());
-    if (expected <= 0)
+    if (team.samples.empty())
         return 0;
+
+    // O denominador temporal cresce desde a primeira observação até preencher a
+    // janela. Assim, uma equipe recém-descoberta começa em 1/1, não em 1/N.
+    const double observedAge = std::min(
+        linkWindow.dbl(),
+        std::max(0.0, (simTime() - team.observationStart).dbl()));
+    const int windowCapacity = std::max(
+        1, static_cast<int>(std::ceil(linkWindow.dbl() /
+                                     positionUpdateInterval.dbl() - 1e-12)));
+    const int expectedByTime = std::min(
+        windowCapacity,
+        1 + static_cast<int>(std::floor(observedAge /
+                                       positionUpdateInterval.dbl() + 1e-12)));
+
+    // A sequência preserva perdas internas mesmo quando os pacotes nas bordas da
+    // janela já expiraram. O maior dos dois estimadores é o denominador honesto:
+    // tempo detecta silêncio final; sequência detecta lacunas entre recepções.
+    const int64_t sequenceSpan = team.samples.back().sequence -
+        team.samples.front().sequence + 1;
+    const int expected = std::max(expectedByTime,
+                                  static_cast<int>(std::max<int64_t>(1, sequenceSpan)));
     return std::clamp(static_cast<double>(team.samples.size()) / expected, 0.0, 1.0);
 }
 
@@ -423,7 +454,7 @@ void DroneApp::performMaintenance()
 {
     for (auto it = discoveredTeams.begin(); it != discoveredTeams.end(); ) {
         auto& team = it->second;
-        while (!team.samples.empty() && simTime() - team.samples.front().receptionTime > linkWindow)
+        while (!team.samples.empty() && simTime() - team.samples.front().receptionTime >= linkWindow)
             team.samples.pop_front();
         if (team.lastSeen >= SIMTIME_ZERO &&
             simTime() - team.lastSeen >= teamEntryLifetime) {
@@ -447,7 +478,8 @@ void DroneApp::performMaintenance()
                 failedRepositions++;
                 repositionExpiredBeforeAck++;
                 AlertMetricEvent repositionExpiredEvent(
-                    alert.alertId, "", alert.repositionStart,
+                    alert.alertId, alert.activeRepositionCycleId,
+                    alert.repositionStart,
                     SimTime::ZERO, "expired");
                 emit(repositionEventSignal, &repositionExpiredEvent);
             }
@@ -535,11 +567,6 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     AlertMetricEvent baEvent(alert.alertId);
     emit(baActivationSignal, &baEvent);
     alert.baCycles++;
-    alert.repositionStart = simTime();
-    alert.repositionOrigin = current;
-    alert.repositionDistanceRecorded = false;
-    alert.preRepositionPdr = prePdr;
-    alert.preRepositionRssi = preRssi;
     RepositionFitness fitness(fitnessParameters, sensor, current,
                               teamPosition, observation.nearestSurfacePoint, simTime(),
                               requireObstacleConfirmation);
@@ -589,13 +616,27 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         emit(repositionEventSignal, &failedEvent);
         return;
     }
+    // O ciclo só nasce depois que há candidato e mobilidade utilizáveis. Uma
+    // execução do otimizador que falha não pode substituir a identidade do
+    // movimento anterior que ainda aguarda validação.
+    alert.repositionCycle++;
+    alert.activeRepositionCycleId = alert.alertId + "-reposition-" +
+        std::to_string(alert.repositionCycle);
+    alert.validationMessageId.clear();
+    alert.validationCycleId.clear();
+    alert.repositionStart = simTime();
+    alert.repositionOrigin = current;
+    alert.repositionDistanceRecorded = false;
+    alert.preRepositionPdr = prePdr;
+    alert.preRepositionRssi = preRssi;
     commandedBaDistance += distance;
     double travelTime = fitness.travelTime(current, result.position);
     // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
     controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
                        fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
     reposition.begin(alert.alertId);
-    AlertMetricEvent startedEvent(alert.alertId, "", alert.repositionStart,
+    AlertMetricEvent startedEvent(alert.alertId, alert.activeRepositionCycleId,
+                                  alert.repositionStart,
                                   SimTime::ZERO, "started", distance);
     emit(repositionEventSignal, &startedEvent);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
@@ -609,7 +650,8 @@ void DroneApp::recordActualRepositionDistance(PendingVictimAlert& alert)
     double distance = alert.repositionOrigin.distance(mobility->getCurrentPosition());
     baDistance += distance;
     emit(repositionDistanceSignal, distance);
-    AlertMetricEvent distanceEvent(alert.alertId, "", simTime(),
+    AlertMetricEvent distanceEvent(alert.alertId, alert.activeRepositionCycleId,
+                                   simTime(),
                                    SimTime::ZERO, "distance", distance);
     emit(repositionEventSignal, &distanceEvent);
     alert.repositionDistanceRecorded = true;
@@ -622,10 +664,18 @@ void DroneApp::handleVictimAck(Packet *packet)
     if (it != pendingAlerts.end()) {
         auto& alert = it->second;
         auto sentIt = alert.attemptSentTimes.find(ack->getReceivedMessageId());
+        auto teamIt = alert.attemptTeamIds.find(ack->getReceivedMessageId());
+        auto addressIt = alert.attemptTeamAddresses.find(ack->getReceivedMessageId());
+        auto source = packet->findTag<L3AddressInd>();
         bool valid = ack->getOriginDroneId() == droneId && ack->getVictimId() == alert.victimId &&
-            discoveredTeams.count(ack->getTeamId()) &&
-            sentIt != alert.attemptSentTimes.end();
-        // Aceita somente ACK de equipe conhecida para uma tentativa realmente enviada.
+            sentIt != alert.attemptSentTimes.end() &&
+            teamIt != alert.attemptTeamIds.end() &&
+            addressIt != alert.attemptTeamAddresses.end() && source &&
+            ack->getTeamId() == teamIt->second &&
+            source->getSrcAddress().str() == addressIt->second;
+        // A identidade vem do destino histórico da tentativa. Assim, um ACK
+        // legítimo continua válido após expirar a descoberta da equipe, enquanto
+        // um teamId que não corresponde ao endereço de origem é rejeitado.
         if (!valid) {
             delete packet;
             return;
@@ -638,30 +688,33 @@ void DroneApp::handleVictimAck(Packet *packet)
         emit(alertConfirmedSignal, &confirmedEvent);
         bool ownsReposition = reposition.owns(it->first);
         bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
-            alert.validationMessageId == ack->getReceivedMessageId();
+            alert.validationMessageId == ack->getReceivedMessageId() &&
+            alert.validationCycleId == alert.activeRepositionCycleId;
         if (ownsReposition) {
             recordActualRepositionDistance(alert);
-            // Separa a entrega do alerta da validação específica do reposicionamento.
-            repositionValidationSamples++;
-            double postPdr, postRssi;
-            detectDegradation(alert, postPdr, postRssi);
-            preRepositionPdrSum += alert.preRepositionPdr;
-            postRepositionPdrSum += postPdr;
-            if (!std::isnan(alert.preRepositionRssi)) {
-                preRepositionRssiSum += alert.preRepositionRssi;
-                preRepositionRssiSamples++;
-            }
-            if (!std::isnan(postRssi)) {
-                postRepositionRssiSum += postRssi;
-                postRepositionRssiSamples++;
-            }
             if (validatedReposition) {
+                // Comparações pré/pós só são causais quando o ACK corresponde à
+                // tentativa transmitida na posição final deste mesmo ciclo.
+                repositionValidationSamples++;
+                double postPdr, postRssi;
+                detectDegradation(alert, postPdr, postRssi);
+                preRepositionPdrSum += alert.preRepositionPdr;
+                postRepositionPdrSum += postPdr;
+                if (!std::isnan(alert.preRepositionRssi)) {
+                    preRepositionRssiSum += alert.preRepositionRssi;
+                    preRepositionRssiSamples++;
+                }
+                if (!std::isnan(postRssi)) {
+                    postRepositionRssiSum += postRssi;
+                    postRepositionRssiSamples++;
+                }
                 successfulRepositions++;
                 simtime_t recovery = simTime() - alert.repositionStart;
                 totalRecoveryTime += recovery;
                 recoverySamples++;
                 emit(recoveryTimeSignal, recovery);
-                AlertMetricEvent repositionEvent(alert.alertId, "",
+                AlertMetricEvent repositionEvent(alert.alertId,
+                                                 alert.activeRepositionCycleId,
                                                  alert.repositionStart,
                                                  SimTime::ZERO, "validated");
                 emit(repositionEventSignal, &repositionEvent);
@@ -674,7 +727,8 @@ void DroneApp::handleVictimAck(Packet *packet)
                 const char *recoveryCategory = reposition.moving()
                     ? "recoveredDuringMovement" : "recoveredAfterArrival";
                 AlertMetricEvent repositionEvent(
-                    alert.alertId, "", alert.repositionStart,
+                    alert.alertId, alert.activeRepositionCycleId,
+                    alert.repositionStart,
                     SimTime::ZERO, recoveryCategory);
                 emit(repositionEventSignal, &repositionEvent);
             }

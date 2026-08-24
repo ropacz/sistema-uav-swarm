@@ -4,18 +4,34 @@ O diretório mantém a rede NED, a configuração global e os dados de ambiente 
 mesmo local para que os caminhos de `include` e `xmldoc()` permaneçam simples e
 reproduzíveis.
 
-## Cenários científicos
+## Experimento principal
 
-- `professor-common.ini`: parâmetros comuns do protocolo experimental;
-- `scenario-1-one-victim.ini`: cenário com uma vítima;
+- `main-experiment.ini`: contraste pareado mínimo entre BA desligado e ligado;
+- `professor-common.ini`: parâmetros físicos e de protocolo compartilhados;
+- `scenario-1-one-victim.ini`: cenário-base herdado pelo experimento principal.
+
+`make experiment` executa somente os dois braços principais. Eles usam comunicação
+direta e devem diferir exclusivamente por `baEnabled`.
+
+## Robustez
+
 - `scenario-1-two-victims.ini`: cenário com duas vítimas;
-- `professor-scaling-test.ini`: sonda preliminar de vítimas e obstáculos;
-- `professor-scenario-obstacles.xml` e `professor-scaling-obstacles-*.xml`:
-  ambientes físicos usados nesses cenários.
+- variações de `numTeams` nos cenários `Scenario1_*`.
 
-As configurações científicas comparam os braços `BaOff`, `BaOn` e `Multihop`.
-O arquivo `omnetpp.ini` é o ponto único de entrada e inclui todos os arquivos de
-configuração.
+Esses casos verificam se a conclusão principal resiste à mudança de carga, mas
+não ampliam a hipótese confirmatória.
+
+## Extensões opcionais
+
+- configurações `Multihop`: referência de roteamento AODV, não terceiro braço da
+  pergunta principal;
+- `professor-scaling-test.ini`: sonda exploratória de vítimas e obstáculos;
+- PCAPNG: auditoria de pacotes habilitada sob demanda;
+- `professor-scenario-obstacles.xml` e `professor-scaling-obstacles-*.xml`:
+  ambientes físicos usados nos cenários.
+
+O arquivo `omnetpp.ini` continua sendo o ponto único de entrada e inclui os
+arquivos de configuração por domínio.
 
 ## Validações técnicas
 

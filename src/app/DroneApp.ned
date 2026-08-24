@@ -116,7 +116,9 @@ simple DroneApp like IApp
 
         // Sinais exportados para vetores e escalares de resultados.
         @signal[positionUpdateRssi](type=double; unit=dBm);
-        @statistic[positionUpdateRssi](source=positionUpdateRssi; record=vector,mean,min,max);
+        @statistic[positionUpdateRssi](source=positionUpdateRssi; record=vector,count,sum,mean,min,max);
+        @signal[positionUpdatePowerMilliwatt](type=double; unit=mW);
+        @statistic[positionUpdatePowerMilliwatt](source=positionUpdatePowerMilliwatt; record=count,sum,mean);
         @signal[linkWindowPdr](type=double);
         @statistic[linkWindowPdr](source=linkWindowPdr; record=vector,mean);
         @signal[repositionDistance](type=double; unit=m);

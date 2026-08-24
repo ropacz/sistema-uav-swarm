@@ -10,6 +10,11 @@ Os arquivos são organizados pelo domínio que atendem:
 - `tests/`: testes unitários da análise e da auditoria PCAP;
 - `figures/`: saída gerada, ignorada pelo Git.
 
-Use `make professor-scenarios`, `make professor-scaling-test` e
-`make professor-pcap`. Três seeds são somente validação preliminar; o protocolo
-final exige 30.
+Use `make experiment` para o relatório confirmatório pareado. Use
+`make robustness-experiment`, `make optional-scaling` e `make optional-pcap`
+somente para extensões. Os relatórios são gravados em `analysis/figures/`.
+
+`reports/report_main_experiment.py` é a entrada principal. Ele falha se as seeds
+não estiverem pareadas ou se os braços diferirem por parâmetros além de
+`baEnabled`. Os relatórios antigos e os diagnósticos por camada permanecem como
+análises complementares.

@@ -11,9 +11,20 @@ Algorithm aumenta o atendimento sem depender de encaminhamento multihop?**
 - Hipótese auxiliar: o multihop também recupera alertas, mas por mecanismo
   diferente e identificável pelo número de saltos.
 
-Os três braços isolam as causas: `BaOff` usa enlace direto (TTL 1), `BaOn` muda
-somente `baEnabled`, e `Multihop` mantém BA desligado com TTL 32. Assim,
-`BaOn−BaOff` estima o efeito do movimento e `Multihop−BaOff` o do roteamento.
+O experimento confirmatório possui apenas dois braços: `MainExperiment_BaOff`
+usa enlace direto sem reposicionamento e `MainExperiment_BaOn` muda somente
+`baEnabled`. Assim, a diferença pareada `BaOn−BaOff` estima o efeito do mecanismo
+de movimento. O cenário `Multihop` é uma referência opcional para outra pergunta
+— o efeito do roteamento — e não integra o teste principal.
+
+## Hierarquia do escopo
+
+1. **Confirmatório:** uma vítima, carga fixa e BA Off/On pareados.
+2. **Robustez:** variação de equipes e vítimas, preservando BA Off/On.
+3. **Complementar:** multihop, escala, PCAP e diagnósticos MAC/IP.
+
+As conclusões sobre a hipótese vêm do primeiro nível. Os demais explicam limites
+e mecanismos, sem aumentar retrospectivamente a pergunta principal.
 
 ## Desenho solicitado
 
@@ -82,11 +93,13 @@ garante ativação em toda seed porque os nós se movem.
 
 Atualizações da equipe alimentam uma janela de enlace e sua posição futura é
 estimada pelas últimas posições, velocidades e direções. O PDR desses beacons
-é calculado contra a quantidade temporalmente esperada na janela,
-`ceil(linkWindow / expectedPositionUpdateInterval)`, e não apenas entre a
-primeira e a última sequência recebidas. Assim, perdas nas extremidades da
-janela também são observáveis. Há indicação de degradação quando esse PDR ou o
-RSSI cruza os limiares configurados. O BA só inicia se:
+combina o tempo durante o qual a equipe foi efetivamente observável com a
+amplitude das sequências recebidas. O denominador cresce até completar a janela:
+uma equipe recém-descoberta não é penalizada por beacons anteriores à descoberta,
+enquanto lacunas internas de sequência e silêncio no fim da janela continuam
+contando como perdas. A janela temporal é semiaberta, evitando contar as duas
+extremidades. Há indicação de degradação quando esse PDR ou o RSSI cruza os
+limiares configurados. O BA só inicia se:
 
 Os drones começam sem diretório de equipes. Cada entrada temporária é criada
 somente quando um `PositionUpdate` broadcast é recebido: o identificador e a
@@ -112,6 +125,12 @@ A aptidão minimizada é
 J(x)=0{,}60J_{link}(x)+0{,}25J_{obstáculo}(x)+0{,}15J_{movimento}(x).
 \]
 
+`J_link` é uma aproximação geométrica baseada na distância prevista até a equipe;
+o otimizador não conhece RSSI, SNIR, PDR ou interferência futuros. Portanto, o BA
+escolhe uma posição geometricamente promissora. Qualquer melhoria de rede é um
+resultado experimental posterior ao movimento, não uma propriedade assumida da
+função de aptidão.
+
 O BA gera candidatos dentro de 120 m e entre 6–20 m, atualiza frequência,
 velocidade, posição, amplitude e pulso por 20 indivíduos e 50 iterações. O
 drone voa gradualmente ao melhor candidato, com eixos simultâneos; não há
@@ -134,16 +153,34 @@ As tentativas são deduplicadas globalmente por `messageId`; portanto,
 por equipes diferentes. O ciclo de reposicionamento distingue ativação do BA,
 movimento iniciado, chegada à posição, validação final, recuperação durante o
 trajeto, recuperação após a chegada por uma tentativa anterior e expiração.
-`repositionSuccessRate` usa movimentos iniciados como denominador e considera
-como sucesso operacional a validação final ou qualquer recuperação posterior
-ao início do movimento; `repositionsValidated` permanece
-disponível para avaliar isoladamente a posição escolhida pelo BA.
+Cada movimento iniciado possui um identificador de ciclo. Uma tentativa enviada
+na posição final só pode validar o ciclo e a posição em que foi transmitida; ACK
+tardio de ciclo anterior não valida o ciclo atual. `repositionValidationRate`
+mede exclusivamente `repositionsValidated/repositionsStarted` e é a medida
+conservadora da posição escolhida pelo BA. `operationalRepositionRecoveryRate`
+também inclui recuperação durante o movimento ou por pacote anterior e responde
+a uma pergunta operacional, não causal. Os nomes históricos `successfulRepositions`
+e `repositionSuccessRate` permanecem apenas como aliases dessa segunda definição.
+Pelo mesmo motivo, `validatedRecoveryTime*` mede somente ciclos validados, enquanto
+`operationalRecoveryTime*` inclui todas as recuperações posteriores ao início do
+movimento. Comparações pré/pós de PDR e RSSI são registradas apenas na validação
+causal; pacotes antigos não entram nessas somas.
+
+Razões sem denominador — por exemplo, execução sem alerta, tentativa ou movimento
+— são registradas como indefinidas (`NaN`), nunca como sucesso ou perda de 0%/100%.
+RSSI médio global é calculado agregando potência em escala linear por amostra e
+só depois convertendo para dBm. Saltos usam soma/contagem global por execução, e
+não média não ponderada das médias de cada módulo.
 Diagnósticos incluem RSSI, quantidade de tags RSSI presentes/ausentes, PDR,
 roteadores intermediários, ativações do BA, distância de reposicionamento,
 confirmações do sensor e descartes MAC/IP. `hopCount=0` significa entrega
 direta. Valores positivos só existem depois que o originador conhece o IP e o
 AODV constrói uma rota; o broadcast local, sozinho, não fornece descoberta
 multihop. Deve valer a conservação `gerados = atendidos + expirados`.
+
+O sensor de obstáculos é abstrato: consulta a geometria exata na linha de visada
+orientada para a equipe. Campo de visão, atitude da aeronave, iluminação, falsos
+positivos e falsos negativos não são modelados e limitam a validade externa.
 
 PCAPNG é auditoria de rede, não substitui os escalares de aplicação: habilite
 com `--pcap`; `make professor-pcap` captura todos os nós de todas as seeds.
@@ -156,11 +193,18 @@ distribuição; não selecione seeds após observar resultados.
 ```bash
 make ba-smoke-test             # teste determinístico da integração, não evidência
 make network-discovery-validation # descoberta direta e limite do relay
-make professor-scenarios        # 72 runs preliminares e resumo CSV
-make professor-pcap             # repete os 72 runs com PCAPNG
-./run.sh -c Scenario1_TwoVictims_BaOn -r 0 --pcap
-python3 analysis/reports/report_professor_scenarios.py
+make experiment                 # contraste confirmatório BA Off/On
+make robustness-experiment      # variações de equipes e vítimas
+make optional-multihop          # referência de roteamento
+make optional-pcap              # auditoria de pacotes
+make optional-scaling           # sonda exploratória
 ```
+
+O relatório confirmatório gera uma linha por seed, calcula `BaOn−BaOff` e recusa
+execuções não pareadas ou com deriva de parâmetros além de `baEnabled`. Ele também
+interrompe a análise se o tratamento não contiver degradação, confirmação do
+sensor, ativação do BA e movimento. Ausência de exposição ao mecanismo exige
+revisão prospectiva do cenário, não interpretação como “BA sem efeito”.
 
 `BA_SmokeTest` usa uma parede com `IdealObstacleLoss` somente para verificar a
 cadeia degradação → sensor → BA → voo → ACK. A equipe começa visível e cruza a

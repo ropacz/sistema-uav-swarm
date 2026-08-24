@@ -1,6 +1,7 @@
 #include "ExperimentMetrics.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "AlertMetricEvent.h"
 
@@ -101,24 +102,46 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
         baActivations++;
     else if (signalId == repositionSignal) {
         if (event->category == "started") {
-            repositionsStarted++;
-            commandedRepositionDistanceSum += event->value;
+            if (event->messageId.empty())
+                throw cRuntimeError("Started reposition requires a cycle id");
+            if (startedRepositionCycleIds.insert(event->messageId).second) {
+                repositionsStarted++;
+                commandedRepositionDistanceSum += event->value;
+            }
         }
-        else if (event->category == "completed")
-            repositionsCompleted++;
+        else if (event->category == "completed") {
+            if (!startedRepositionCycleIds.count(event->messageId))
+                throw cRuntimeError("Completed unknown reposition cycle '%s'",
+                                    event->messageId.c_str());
+            if (completedRepositionCycleIds.insert(event->messageId).second)
+                repositionsCompleted++;
+        }
         else if (event->category == "validated" ||
                  event->category == "recoveredDuringMovement" ||
                  event->category == "recoveredAfterArrival") {
-            if (event->category == "validated")
-                repositionsValidated++;
-            else if (event->category == "recoveredDuringMovement")
-                repositionsRecoveredDuringMovement++;
-            else
-                repositionsRecoveredAfterArrival++;
-            recoveryTimeSum += simTime() - event->referenceTime;
+            if (!startedRepositionCycleIds.count(event->messageId))
+                throw cRuntimeError("Recovery of unknown reposition cycle '%s'",
+                                    event->messageId.c_str());
+            if (terminalRepositionCycleIds.insert(event->messageId).second) {
+                if (event->category == "validated") {
+                    repositionsValidated++;
+                    validatedRecoveryTimeSum += simTime() - event->referenceTime;
+                    validatedRecoveryTimeCount++;
+                }
+                else if (event->category == "recoveredDuringMovement")
+                    repositionsRecoveredDuringMovement++;
+                else
+                    repositionsRecoveredAfterArrival++;
+                recoveryTimeSum += simTime() - event->referenceTime;
+            }
         }
-        else if (event->category == "expired")
-            repositionsExpired++;
+        else if (event->category == "expired") {
+            if (!startedRepositionCycleIds.count(event->messageId))
+                throw cRuntimeError("Expiration of unknown reposition cycle '%s'",
+                                    event->messageId.c_str());
+            if (terminalRepositionCycleIds.insert(event->messageId).second)
+                repositionsExpired++;
+        }
         else if (event->category == "noFeasibleSolution" ||
                  event->category == "redundantCandidate") {
             repositionsFailedBeforeMovement++;
@@ -128,8 +151,13 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
                 baRedundantCandidate++;
         }
         else if (event->category == "distance") {
-            repositionDistanceSum += event->value;
-            repositionDistanceCount++;
+            if (!startedRepositionCycleIds.count(event->messageId))
+                throw cRuntimeError("Distance of unknown reposition cycle '%s'",
+                                    event->messageId.c_str());
+            if (measuredRepositionCycleIds.insert(event->messageId).second) {
+                repositionDistanceSum += event->value;
+                repositionDistanceCount++;
+            }
         }
     }
 }
@@ -140,16 +168,19 @@ void ExperimentMetrics::finish()
     for (const auto& [alertId, attempts] : attemptsByAlert)
         applicationRetries += std::max(0, attempts - 1);
 
+    const double undefined = std::numeric_limits<double>::quiet_NaN();
     double generated = generatedAlertIds.size();
-    double pdr = generated > 0 ? deliveredAlertIds.size() / generated : 0;
-    double confirmationRate = generated > 0 ? confirmedAlertIds.size() / generated : 0;
+    double pdr = generated > 0 ? deliveredAlertIds.size() / generated : undefined;
+    double confirmationRate = generated > 0 ? confirmedAlertIds.size() / generated : undefined;
     double attemptDeliveryRate = alertAttemptsSent > 0
-        ? static_cast<double>(deliveredMessageIds.size()) / alertAttemptsSent : 0;
+        ? static_cast<double>(deliveredMessageIds.size()) / alertAttemptsSent : undefined;
     int recoveredWithoutValidation = repositionsRecoveredDuringMovement +
         repositionsRecoveredAfterArrival;
     int successfulRepositions = repositionsValidated + recoveredWithoutValidation;
     double repositionSuccessRate = repositionsStarted > 0
-        ? static_cast<double>(successfulRepositions) / repositionsStarted : 0;
+        ? static_cast<double>(successfulRepositions) / repositionsStarted : undefined;
+    double repositionValidationRate = repositionsStarted > 0
+        ? static_cast<double>(repositionsValidated) / repositionsStarted : undefined;
 
     if (deliveredAlertIds.size() > generatedAlertIds.size() ||
         confirmedAlertIds.size() > deliveredAlertIds.size() ||
@@ -180,10 +211,10 @@ void ExperimentMetrics::finish()
     recordScalar("rttSum", rttSum.dbl());
     recordScalar("rttCount", rttCount);
     recordScalar("pdr", pdr);
-    recordScalar("packetLossRate", 1 - pdr);
+    recordScalar("packetLossRate", generated > 0 ? 1 - pdr : undefined);
     recordScalar("confirmationRate", confirmationRate);
     recordScalar("attemptDeliveryRate", attemptDeliveryRate);
-    recordScalar("attemptLossRate", 1 - attemptDeliveryRate);
+    recordScalar("attemptLossRate", alertAttemptsSent > 0 ? 1 - attemptDeliveryRate : undefined);
     recordScalar("degradationIndications", degradationIndications);
     recordScalar("sensorConfirmations", sensorConfirmations);
     recordScalar("sensorRejections", sensorRejections);
@@ -201,10 +232,20 @@ void ExperimentMetrics::finish()
     recordScalar("repositionsFailedBeforeMovement", repositionsFailedBeforeMovement);
     recordScalar("baNoFeasibleSolution", baNoFeasibleSolution);
     recordScalar("baRedundantCandidate", baRedundantCandidate);
+    // Alias histórico mantido para arquivos e scripts antigos. A semântica é
+    // operacional: inclui recuperações sem validar a posição final escolhida.
     recordScalar("successfulRepositions", successfulRepositions);
+    recordScalar("operationallySuccessfulRepositions", successfulRepositions);
     recordScalar("repositionSuccessRate", repositionSuccessRate);
+    recordScalar("operationalRepositionRecoveryRate", repositionSuccessRate);
+    recordScalar("repositionValidationRate", repositionValidationRate);
+    // recoveryTime* é mantido como alias operacional para resultados antigos.
     recordScalar("recoveryTimeSum", recoveryTimeSum.dbl());
     recordScalar("recoveryTimeCount", successfulRepositions);
+    recordScalar("operationalRecoveryTimeSum", recoveryTimeSum.dbl());
+    recordScalar("operationalRecoveryTimeCount", successfulRepositions);
+    recordScalar("validatedRecoveryTimeSum", validatedRecoveryTimeSum.dbl());
+    recordScalar("validatedRecoveryTimeCount", validatedRecoveryTimeCount);
     recordScalar("repositionDistanceSum", repositionDistanceSum);
     recordScalar("repositionDistanceCount", repositionDistanceCount);
     recordScalar("commandedRepositionDistanceSum", commandedRepositionDistanceSum);

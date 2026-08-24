@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import glob
 import os
 import re
@@ -14,7 +15,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from analysis.core.network_metrics import (  # noqa: E402
-    APP, collect, global_or_legacy, sum_where,
+    APP, collect, global_or_legacy, global_scalar, sum_where,
 )
 from analysis.core.process_results import parse_sca  # noqa: E402
 
@@ -59,8 +60,13 @@ def run_record(path: str) -> dict:
         "sensor_obstacle_confirmed": global_or_legacy(
             frame, "sensorConfirmations", "sensorConfirmations"),
         "ba_activations": global_or_legacy(frame, "baActivations", "baActivations"),
-        "successful_repositions": global_or_legacy(
-            frame, "successfulRepositions", "successfulRepositions"),
+        "repositions_validated": global_scalar(frame, "repositionsValidated"),
+        "operationally_successful_repositions": global_or_legacy(
+            frame, "operationallySuccessfulRepositions", "successfulRepositions"),
+        "reposition_validation_pct": 100 * global_scalar(
+            frame, "repositionValidationRate"),
+        "operational_reposition_recovery_pct": 100 * global_scalar(
+            frame, "operationalRepositionRecoveryRate"),
     })
     if generated != acked + expired:
         raise ValueError(f"Conservação violada em {path}: {generated} != {acked}+{expired}")
@@ -68,15 +74,27 @@ def run_record(path: str) -> dict:
 
 
 def main() -> None:
-    paths = sorted(glob.glob(os.path.join(RESULTS, f"{PREFIX}*.sca")))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--configs", nargs="*",
+                        help="analyze only these explicitly named configurations")
+    arguments = parser.parse_args()
+    if arguments.configs:
+        paths = sorted(
+            path
+            for config in arguments.configs
+            for path in glob.glob(os.path.join(RESULTS, f"{config}-*.sca"))
+        )
+    else:
+        paths = sorted(glob.glob(os.path.join(RESULTS, f"{PREFIX}*.sca")))
     if not paths:
-        raise SystemExit(f"Nenhum resultado {PREFIX} em {RESULTS}")
+        raise SystemExit(f"Nenhum resultado solicitado em {RESULTS}")
     runs = pd.DataFrame(run_record(path) for path in paths)
     metrics = ["pdr_pct", "confirmation_pct", "attendance_pct",
                "attempt_loss_pct", "hop_count_mean",
                "delivery_delay_mean_s", "degradation_indications",
                "sensor_obstacle_confirmed", "ba_activations",
-               "successful_repositions"]
+               "repositions_validated", "operationally_successful_repositions",
+               "reposition_validation_pct", "operational_reposition_recovery_pct"]
     summary = runs.groupby(["config", "teams"])[metrics].agg(["count", "mean", "std"])
     os.makedirs(OUTPUT, exist_ok=True)
     runs.to_csv(os.path.join(OUTPUT, "professor_runs.csv"), index=False)

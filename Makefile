@@ -5,6 +5,7 @@ INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
 ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/network_metrics.py analysis/pcap/pcap_batch_to_spreadsheet.py \
 	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
+	analysis/reports/report_main_experiment.py \
 	analysis/reports/report_professor_scaling_test.py \
 	analysis/validation/validate_ba_smoke_test.py \
 	analysis/validation/validate_network_discovery.py \
@@ -12,7 +13,9 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/pcap/compare_sca_pcap_scenario1.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests \
-	experiment analyze network-metrics reproduce professor-scenarios professor-pcap \
+	experiment main-experiment robustness-experiment optional-multihop \
+	optional-pcap optional-scaling \
+	analyze network-metrics reproduce professor-scenarios professor-pcap \
 	ba-smoke-test professor-scaling-test
 
 .PHONY: scenario1-line1-900 network-discovery-validation
@@ -48,7 +51,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
+	python3 -c "import analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -77,7 +80,30 @@ network-discovery-validation:
 	./run.sh -c DiscoveryValidation_RemoteViaRelay -r 0
 	python3 analysis/validation/validate_network_discovery.py
 
-# 2 casos x 3 braços x 4 quantidades de equipes x 3 seeds = 72 runs.
+# Experimento confirmatório: um único contraste pareado e uma pergunta central.
+main-experiment:
+	./run.sh -c MainExperiment_BaOff
+	./run.sh -c MainExperiment_BaOn
+	python3 analysis/reports/report_main_experiment.py
+
+# Robustez: varia equipes e vítimas, mas preserva o contraste BA Off/On.
+robustness-experiment:
+	./run.sh -c Scenario1_OneVictim_BaOff
+	./run.sh -c Scenario1_OneVictim_BaOn
+	./run.sh -c Scenario1_TwoVictims_BaOff
+	./run.sh -c Scenario1_TwoVictims_BaOn
+	python3 analysis/reports/report_professor_scenarios.py --configs \
+		Scenario1_OneVictim_BaOff Scenario1_OneVictim_BaOn \
+		Scenario1_TwoVictims_BaOff Scenario1_TwoVictims_BaOn
+
+# Referência opcional: roteamento multihop responde a uma pergunta diferente.
+optional-multihop:
+	./run.sh -c Scenario1_OneVictim_Multihop
+	./run.sh -c Scenario1_TwoVictims_Multihop
+	python3 analysis/reports/report_professor_scenarios.py --configs \
+		Scenario1_OneVictim_Multihop Scenario1_TwoVictims_Multihop
+
+# Compatibilidade: lote amplo anterior à separação do escopo.
 professor-scenarios:
 	./run.sh -c Scenario1_OneVictim_BaOff
 	./run.sh -c Scenario1_OneVictim_BaOn
@@ -98,10 +124,14 @@ professor-pcap:
 	python3 analysis/pcap/pcap_batch_to_spreadsheet.py simulations/results/pcap \
 		-o simulations/results/spreadsheets/professor-all-seeds.xlsx
 
-experiment: professor-scenarios
+optional-pcap: professor-pcap
+
+optional-scaling: professor-scaling-test
+
+experiment: main-experiment
 
 analyze:
-	python3 analysis/reports/report_professor_scenarios.py
+	python3 analysis/reports/report_main_experiment.py
 
 network-metrics:
 	python3 analysis/core/network_metrics.py simulations/results/omnetpp \
@@ -109,10 +139,8 @@ network-metrics:
 			Scenario1_OneVictim_Multihop Scenario1_TwoVictims_BaOff \
 			Scenario1_TwoVictims_BaOn Scenario1_TwoVictims_Multihop
 
-# Caminho completo do código-fonte aos cenários e à auditoria de rede.
+# Reprodução confirmatória. PCAP e escalabilidade possuem alvos próprios.
 reproduce:
-	./run.sh --build -c Scenario1_OneVictim_BaOff -r 0
+	./run.sh --build -c MainExperiment_BaOff -r 0
 	$(MAKE) analysis-tests
-	$(MAKE) professor-scenarios
-	$(MAKE) professor-pcap
-	$(MAKE) network-metrics
+	$(MAKE) main-experiment

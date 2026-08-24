@@ -29,6 +29,9 @@ struct TeamLinkState {
     omnetpp::simtime_t lastSeen = -1;
     int64_t lastSequence = -1;
     bool velocityValid = false;
+    // Início da observação local. Antes deste instante, beacons ausentes não são
+    // perdas observáveis e não devem reduzir o PDR de uma equipe recém-descoberta.
+    omnetpp::simtime_t observationStart = -1;
     std::deque<LinkSample> samples;
 };
 

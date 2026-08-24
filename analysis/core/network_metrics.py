@@ -58,6 +58,24 @@ def mean_where(frame: pd.DataFrame, name: str, module_pattern: str | None = None
     return float(values.mean()) if len(values) else math.nan
 
 
+def pooled_statistic_mean(frame: pd.DataFrame, base_name: str,
+                          module_pattern: str | None = None) -> float:
+    """Pool a signal by sample count, never by averaging module means."""
+    total = sum_where(frame, f"{base_name}:sum", module_pattern)
+    count = sum_where(frame, f"{base_name}:count", module_pattern)
+    return ratio(total, count) if count else math.nan
+
+
+def received_power_mean_dbm(frame: pd.DataFrame) -> float:
+    """Average received power in mW, then convert that physical mean to dBm."""
+    mean_milliwatt = pooled_statistic_mean(
+        frame, "positionUpdatePowerMilliwatt")
+    if math.isfinite(mean_milliwatt) and mean_milliwatt > 0:
+        return 10 * math.log10(mean_milliwatt)
+    # Compatibility for result files generated before linear power was recorded.
+    return mean_where(frame, "positionUpdateRssi:mean")
+
+
 def extreme_where(frame: pd.DataFrame, name: str, lowest: bool) -> float:
     values = frame.loc[frame["name"] == name, "value"].dropna()
     values = values[values.apply(math.isfinite)]
@@ -112,6 +130,8 @@ def collect(path: str) -> dict:
     attempt_delay_count = global_scalar(frame, "attemptDeliveryDelayCount")
     recovery_sum = global_scalar(frame, "recoveryTimeSum")
     recovery_count = global_scalar(frame, "recoveryTimeCount")
+    validated_recovery_sum = global_scalar(frame, "validatedRecoveryTimeSum")
+    validated_recovery_count = global_scalar(frame, "validatedRecoveryTimeCount")
 
     return {
         "config": attrs["configname"],
@@ -136,7 +156,11 @@ def collect(path: str) -> dict:
         "ip_drop_hop_limit": sum_where(frame, "packetDropHopLimitReached:count", IP),
         "ip_drop_address_resolution": sum_where(
             frame, "packetDropAddressResolutionFailed:count", IP),
-        "hop_count_mean": mean_where(frame, "hopCount:mean"),
+        "hop_count_mean": (
+            pooled_statistic_mean(frame, "hopCount")
+            if sum_where(frame, "hopCount:count")
+            else mean_where(frame, "hopCount:mean")
+        ),
 
         # ── Transporte ────────────────────────────────────────────────────
         "udp_packets_sent": udp_sent,
@@ -158,11 +182,16 @@ def collect(path: str) -> dict:
         "ba_activations": global_or_legacy(
             frame, "baActivations", "baActivations"),
         "repositions_started": global_scalar(frame, "repositionsStarted"),
-        "successful_repositions": global_or_legacy(
-            frame, "successfulRepositions", "successfulRepositions"),
-        "reposition_success_pct": 100 * global_scalar(
-            frame, "repositionSuccessRate"),
-        "recovery_time_mean_s": ratio(recovery_sum, recovery_count),
+        "repositions_validated": global_scalar(frame, "repositionsValidated"),
+        "operationally_successful_repositions": global_or_legacy(
+            frame, "operationallySuccessfulRepositions", "successfulRepositions"),
+        "reposition_validation_pct": 100 * global_scalar(
+            frame, "repositionValidationRate"),
+        "operational_reposition_recovery_pct": 100 * global_scalar(
+            frame, "operationalRepositionRecoveryRate"),
+        "validated_recovery_time_mean_s": ratio(
+            validated_recovery_sum, validated_recovery_count),
+        "operational_recovery_time_mean_s": ratio(recovery_sum, recovery_count),
         "reposition_distance_sum_m": global_scalar(frame, "repositionDistanceSum"),
         "commanded_reposition_distance_sum_m": global_scalar(
             frame, "commandedRepositionDistanceSum"),
@@ -176,7 +205,7 @@ def collect(path: str) -> dict:
         "application_acks_sent": sum_where(frame, "applicationAcksSent", APP),
 
         # ── Rádio ─────────────────────────────────────────────────────────
-        "rssi_mean_dbm": mean_where(frame, "positionUpdateRssi:mean"),
+        "rssi_mean_dbm": received_power_mean_dbm(frame),
         "rssi_min_dbm": extreme_where(frame, "positionUpdateRssi:min", lowest=True),
         "rssi_max_dbm": extreme_where(frame, "positionUpdateRssi:max", lowest=False),
         "rssi_samples_available": sum_where(frame, "rssiSamplesAvailable", APP),
@@ -235,8 +264,10 @@ HIGHLIGHT = [
     ("attempt_delivery_delay_mean_s", "Atraso médio por tentativa (s)", "{:.4f}"),
     ("sensor_outside_range", "Rejeições por obstáculo fora de alcance", "{:.1f}"),
     ("sensor_clear_line_of_sight", "Rejeições por visada livre", "{:.1f}"),
-    ("reposition_success_pct", "Sucesso operacional do reposicionamento (%)", "{:.1f}"),
-    ("recovery_time_mean_s", "Tempo médio de recuperação (s)", "{:.4f}"),
+    ("reposition_validation_pct", "Posições do BA validadas por tentativa (%)", "{:.1f}"),
+    ("operational_reposition_recovery_pct", "Recuperação operacional após movimento (%)", "{:.1f}"),
+    ("validated_recovery_time_mean_s", "Tempo até validação causal (s)", "{:.4f}"),
+    ("operational_recovery_time_mean_s", "Tempo até recuperação operacional (s)", "{:.4f}"),
     ("attempt_delivery_pct", "Entrega por tentativa (%)", "{:.1f}"),
     ("alert_pdr_pct", "PDR global de alertas (%)", "{:.1f}"),
     ("alert_loss_pct", "Perda global de alertas (%)", "{:.1f}"),

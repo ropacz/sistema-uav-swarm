@@ -1,6 +1,7 @@
 """Falha se o teste mínimo não percorrer toda a cadeia de recuperação do BA."""
 
 from pathlib import Path
+import math
 import sys
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -78,8 +79,15 @@ def main():
         "repositionsRecoveredAfterArrival": 1,
         "repositionsRecoveredWithoutValidation": 1,
         "successfulRepositions": 1,
+        "operationallySuccessfulRepositions": 1,
         "repositionSuccessRate": 1,
+        "operationalRepositionRecoveryRate": 1,
+        # O ACK pertence à tentativa anterior ao movimento. Recuperação
+        # operacional não pode ser promovida a validação causal da posição BA.
+        "repositionValidationRate": 0,
         "recoveryTimeCount": 1,
+        "operationalRecoveryTimeCount": 1,
+        "validatedRecoveryTimeCount": 0,
         "repositionDistanceCount": 1,
     }
     for name, expected in global_expected.items():
@@ -88,6 +96,48 @@ def main():
             failures.append(
                 f"ExperimentMetrics.{name}: esperado {expected}, obtido {value}"
             )
+
+    central_distance = total(frame, "repositionDistanceSum", ".experimentMetrics")
+    commanded_distance = total(
+        frame, "commandedRepositionDistanceSum", ".experimentMetrics")
+    if not math.isclose(central_distance, distance, rel_tol=1e-9):
+        failures.append(
+            "distância central deve reproduzir a soma do sinal local; "
+            f"obtido central={central_distance}, local={distance}")
+    if commanded_distance + 1e-9 < central_distance:
+        failures.append(
+            "distância comandada não pode ser menor que a efetivamente percorrida; "
+            f"obtido comandada={commanded_distance}, real={central_distance}")
+
+    operational_time = total(
+        frame, "operationalRecoveryTimeSum", ".experimentMetrics")
+    validated_time = total(
+        frame, "validatedRecoveryTimeSum", ".experimentMetrics")
+    if operational_time <= 0 or validated_time != 0:
+        failures.append(
+            "recuperação por tentativa antiga deve ter tempo operacional positivo "
+            f"e tempo causal zero; obtido {operational_time} e {validated_time}")
+
+    local_validation_samples = total(
+        frame, "repositionValidationSamples", ".drone[0].app[0]")
+    pre_pdr_sum = total(frame, "preRepositionPdrSum", ".drone[0].app[0]")
+    post_pdr_sum = total(frame, "postRepositionPdrSum", ".drone[0].app[0]")
+    if local_validation_samples != 0 or pre_pdr_sum != 0 or post_pdr_sum != 0:
+        failures.append(
+            "ACK não causal não pode alimentar comparação pré/pós; obtido "
+            f"amostras={local_validation_samples}, pré={pre_pdr_sum}, pós={post_pdr_sum}")
+
+    power_samples = total(frame, "positionUpdatePowerMilliwatt:count")
+    hop_samples = total(frame, "hopCount:count")
+    hop_sum = total(frame, "hopCount:sum")
+    if power_samples != rssi_available:
+        failures.append(
+            "cada RSSI disponível deve possuir uma amostra de potência linear; "
+            f"obtido potência={power_samples}, RSSI={rssi_available}")
+    if hop_samples != 1 or hop_sum != 0:
+        failures.append(
+            "entrega direta deve registrar uma amostra com zero intermediários; "
+            f"obtido count={hop_samples}, sum={hop_sum}")
     if failures:
         raise SystemExit("BA smoke test FALHOU:\n- " + "\n- ".join(failures))
     print("BA smoke test OK")

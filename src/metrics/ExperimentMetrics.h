@@ -20,6 +20,12 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     std::set<std::string> confirmedAlertIds;
     std::set<std::string> expiredAlertIds;
     std::set<std::string> deliveredMessageIds;
+    // Identidades de ciclo tornam os eventos de movimento idempotentes e
+    // permitem rejeitar uma conclusão atribuída a um ciclo inexistente.
+    std::set<std::string> startedRepositionCycleIds;
+    std::set<std::string> completedRepositionCycleIds;
+    std::set<std::string> terminalRepositionCycleIds;
+    std::set<std::string> measuredRepositionCycleIds;
     std::map<std::string, int> attemptsByAlert;
     std::map<std::string, omnetpp::simtime_t> generationTimes;
     std::map<std::string, omnetpp::simtime_t> attemptSentTimes;
@@ -28,6 +34,8 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     omnetpp::simtime_t attemptDeliveryDelaySum = 0;
     omnetpp::simtime_t rttSum = 0;
     omnetpp::simtime_t recoveryTimeSum = 0;
+    omnetpp::simtime_t validatedRecoveryTimeSum = 0;
+    int validatedRecoveryTimeCount = 0;
     int deliveryDelayCount = 0;
     int rttCount = 0;
     int alertAttemptsSent = 0;
