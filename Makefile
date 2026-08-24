@@ -6,7 +6,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/experiment_metrics.py analysis/core/network_metrics.py \
 	analysis/core/write_manifest.py \
 	analysis/pcap/pcap_batch_to_spreadsheet.py \
-	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
+	analysis/pcap/pcap_core.py analysis/reports/report_robustness.py \
 	analysis/reports/report_main_experiment.py \
 	analysis/validation/validate_ba_smoke_test.py \
 	analysis/validation/validate_network_discovery.py
@@ -49,7 +49,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_professor_scenarios, analysis.validation.validate_ba_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_main_experiment, analysis.reports.report_robustness, analysis.validation.validate_ba_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -78,7 +78,7 @@ robustness-experiment:
 	./run.sh -c Scenario1_OneVictim_BaOn
 	./run.sh -c Scenario1_TwoVictims_BaOff
 	./run.sh -c Scenario1_TwoVictims_BaOn
-	python3 analysis/reports/report_professor_scenarios.py --configs \
+	python3 analysis/reports/report_robustness.py --configs \
 		Scenario1_OneVictim_BaOff Scenario1_OneVictim_BaOn \
 		Scenario1_TwoVictims_BaOff Scenario1_TwoVictims_BaOn
 
@@ -86,7 +86,7 @@ robustness-experiment:
 optional-multihop:
 	./run.sh -c Scenario1_OneVictim_Multihop
 	./run.sh -c Scenario1_TwoVictims_Multihop
-	python3 analysis/reports/report_professor_scenarios.py --configs \
+	python3 analysis/reports/report_robustness.py --configs \
 		Scenario1_OneVictim_Multihop Scenario1_TwoVictims_Multihop
 
 # Captura todos os nós em todas as seeds preliminares.

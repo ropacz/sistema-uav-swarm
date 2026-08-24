@@ -1635,11 +1635,11 @@
     {
       "label": "configured_teams()",
       "file_type": "code",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L24",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_report_professor_scenarios_configured_teams",
+      "id": "analysis_reports_report_robustness_configured_teams",
       "community": 5,
       "community_name": "collect",
       "norm_label": "configured_teams()"
@@ -1647,11 +1647,11 @@
     {
       "label": "main()",
       "file_type": "code",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L43",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_report_professor_scenarios_main",
+      "id": "analysis_reports_report_robustness_main",
       "community": 5,
       "community_name": "collect",
       "norm_label": "main()"
@@ -1659,11 +1659,11 @@
     {
       "label": "run_record()",
       "file_type": "code",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L33",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_report_professor_scenarios_run_record",
+      "id": "analysis_reports_report_robustness_run_record",
       "community": 5,
       "community_name": "collect",
       "norm_label": "run_record()"
@@ -6082,15 +6082,15 @@
       "norm_label": "path"
     },
     {
-      "label": "report_professor_scenarios.py",
+      "label": "report_robustness.py",
       "file_type": "code",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "analysis_reports_report_professor_scenarios",
+      "id": "analysis_reports_report_robustness",
       "community": 5,
       "community_name": "collect",
-      "norm_label": "report_professor_scenarios.py"
+      "norm_label": "report_robustness.py"
     },
     {
       "label": "test_experiment_metrics.py",
@@ -6293,10 +6293,10 @@
     {
       "label": "Descriptive report for the single optional robustness experiment.",
       "file_type": "rationale",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "analysis_reports_report_professor_scenarios_rationale_1",
+      "id": "analysis_reports_report_robustness_rationale_1",
       "community": 5,
       "community_name": "collect",
       "norm_label": "descriptive report for the single optional robustness experiment."
@@ -7537,23 +7537,23 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L55",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios_main",
-      "target": "analysis_reports_report_professor_scenarios_run_record",
+      "source": "analysis_reports_report_robustness_main",
+      "target": "analysis_reports_report_robustness_run_record",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios_run_record",
+      "source": "analysis_reports_report_robustness_run_record",
       "target": "analysis_core_process_results_parse_sca",
       "confidence_score": 1.0
     },
@@ -7561,11 +7561,11 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L35",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios_run_record",
+      "source": "analysis_reports_report_robustness_run_record",
       "target": "analysis_core_experiment_metrics_collect",
       "confidence_score": 1.0
     },
@@ -7573,12 +7573,12 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L37",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios_run_record",
-      "target": "analysis_reports_report_professor_scenarios_configured_teams",
+      "source": "analysis_reports_report_robustness_run_record",
+      "target": "analysis_reports_report_robustness_configured_teams",
       "confidence_score": 1.0
     },
     {
@@ -11581,11 +11581,11 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
+      "source": "analysis_reports_report_robustness",
       "target": "analysis_core_experiment_metrics_collect",
       "confidence_score": 1.0
     },
@@ -11593,11 +11593,11 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L18",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
+      "source": "analysis_reports_report_robustness",
       "target": "analysis_core_process_results_parse_sca",
       "confidence_score": 1.0
     },
@@ -12493,11 +12493,11 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
+      "source": "analysis_reports_report_robustness",
       "target": "analysis_core_experiment_metrics",
       "confidence_score": 1.0
     },
@@ -12505,11 +12505,11 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L18",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
+      "source": "analysis_reports_report_robustness",
       "target": "analysis_core_process_results",
       "confidence_score": 1.0
     },
@@ -14398,34 +14398,34 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L24",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
-      "target": "analysis_reports_report_professor_scenarios_configured_teams",
+      "source": "analysis_reports_report_robustness",
+      "target": "analysis_reports_report_robustness_configured_teams",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
-      "target": "analysis_reports_report_professor_scenarios_run_record",
+      "source": "analysis_reports_report_robustness",
+      "target": "analysis_reports_report_robustness_run_record",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L43",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios",
-      "target": "analysis_reports_report_professor_scenarios_main",
+      "source": "analysis_reports_report_robustness",
+      "target": "analysis_reports_report_robustness_main",
       "confidence_score": 1.0
     },
     {
@@ -17181,12 +17181,12 @@
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/report_professor_scenarios.py",
+      "source_file": "analysis/reports/report_robustness.py",
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "analysis_reports_report_professor_scenarios_rationale_1",
-      "target": "analysis_reports_report_professor_scenarios",
+      "source": "analysis_reports_report_robustness_rationale_1",
+      "target": "analysis_reports_report_robustness",
       "confidence_score": 1.0
     },
     {
@@ -17646,5 +17646,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "adb5d977967866996a6382d2ca673ce03b02b912"
+  "built_at_commit": "d9c2fa3cf285834adc0bfa2464a8566fa9c94c3d"
 }
