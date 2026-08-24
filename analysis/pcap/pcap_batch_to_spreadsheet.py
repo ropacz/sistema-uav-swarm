@@ -14,7 +14,7 @@ receptor.
 
 Exemplo::
 
-    python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+    python3 analysis/pcap/pcap_batch_to_spreadsheet.py simulations/results/pcap \
       -o simulations/results/spreadsheets/metricas-rede.xlsx
 
 As mensagens atuais são identificadas pela assinatura ``ECHO`` e pelo código
@@ -28,13 +28,17 @@ import argparse
 import math
 import re
 import struct
+import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
-from pcap_core import (
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from analysis.pcap.pcap_core import (  # noqa: E402
     format_workbook,
     is_group_destination,
     load_capture,

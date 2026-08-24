@@ -1,10 +1,14 @@
 """Falha se o teste mínimo não percorrer toda a cadeia de recuperação do BA."""
 
 from pathlib import Path
+import sys
 
-from process_results import parse_sca
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
-ROOT = Path(__file__).resolve().parents[1]
+from analysis.core.process_results import parse_sca  # noqa: E402
+
+ROOT = REPOSITORY_ROOT
 SCA = ROOT / "simulations/results/omnetpp/BA_SmokeTest-0.sca"
 
 

@@ -2,11 +2,14 @@
 WORKSPACE ?= $(abspath ..)
 INET_VERSION ?= inet-4.5.4
 INET_ROOT := $(WORKSPACE)/$(INET_VERSION)
-ANALYSIS_SCRIPTS := analysis/process_results.py \
-	analysis/network_metrics.py analysis/pcap_batch_to_spreadsheet.py analysis/pcap_core.py \
-	analysis/report_professor_scenarios.py analysis/report_professor_scaling_test.py \
-	analysis/validate_ba_smoke_test.py analysis/plot_scenario1_line1.py \
-	analysis/compare_sca_pcap_scenario1.py analysis/validate_network_discovery.py
+ANALYSIS_SCRIPTS := analysis/core/process_results.py \
+	analysis/core/network_metrics.py analysis/pcap/pcap_batch_to_spreadsheet.py \
+	analysis/pcap/pcap_core.py analysis/reports/report_professor_scenarios.py \
+	analysis/reports/report_professor_scaling_test.py \
+	analysis/validation/validate_ba_smoke_test.py \
+	analysis/validation/validate_network_discovery.py \
+	analysis/plots/plot_scenario1_line1.py \
+	analysis/pcap/compare_sca_pcap_scenario1.py
 
 .PHONY: all clean cleanall makefiles checkmakefiles check analysis-tests \
 	experiment analyze network-metrics reproduce professor-scenarios professor-pcap \
@@ -45,7 +48,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	PYTHONPATH=analysis python3 -c "import network_metrics, pcap_batch_to_spreadsheet, process_results, report_professor_scenarios, report_professor_scaling_test, validate_ba_smoke_test"
+	python3 -c "import analysis.core.network_metrics, analysis.core.process_results, analysis.pcap.pcap_batch_to_spreadsheet, analysis.reports.report_professor_scenarios, analysis.reports.report_professor_scaling_test, analysis.validation.validate_ba_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -55,24 +58,24 @@ analysis-tests: check
 # Verifica integração do gatilho e BA; não produz evidência científica.
 ba-smoke-test:
 	./run.sh -c BA_SmokeTest -r 0
-	python3 analysis/validate_ba_smoke_test.py
+	python3 analysis/validation/validate_ba_smoke_test.py
 
 # Sonda 2x2: 1/40 vítimas x 1/20 obstáculos, 3 seeds, BA desligado.
 professor-scaling-test:
 	./run.sh -c ProfessorScaling_Obs01 -r 3,4,5,15,16,17
 	./run.sh -c ProfessorScaling_Obs20 -r 3,4,5,15,16,17
 	./run.sh -c ProfessorScaling_Obs20_BaOn -r 15,16,17
-	python3 analysis/report_professor_scaling_test.py
+	python3 analysis/reports/report_professor_scaling_test.py
 
 scenario1-line1-900:
 	./run.sh -c Scenario1_Line1_900s10_BaOn
-	python3 analysis/report_professor_scenarios.py
-	python3 analysis/plot_scenario1_line1.py
+	python3 analysis/reports/report_professor_scenarios.py
+	python3 analysis/plots/plot_scenario1_line1.py
 
 network-discovery-validation:
 	./run.sh -c DiscoveryValidation_Direct -r 0
 	./run.sh -c DiscoveryValidation_RemoteViaRelay -r 0
-	python3 analysis/validate_network_discovery.py
+	python3 analysis/validation/validate_network_discovery.py
 
 # 2 casos x 3 braços x 4 quantidades de equipes x 3 seeds = 72 runs.
 professor-scenarios:
@@ -82,7 +85,7 @@ professor-scenarios:
 	./run.sh -c Scenario1_TwoVictims_BaOff
 	./run.sh -c Scenario1_TwoVictims_BaOn
 	./run.sh -c Scenario1_TwoVictims_Multihop
-	python3 analysis/report_professor_scenarios.py
+	python3 analysis/reports/report_professor_scenarios.py
 
 # Captura todos os nós em todas as seeds preliminares.
 professor-pcap:
@@ -92,16 +95,16 @@ professor-pcap:
 	./run.sh -c Scenario1_TwoVictims_BaOff --pcap
 	./run.sh -c Scenario1_TwoVictims_BaOn --pcap
 	./run.sh -c Scenario1_TwoVictims_Multihop --pcap
-	python3 analysis/pcap_batch_to_spreadsheet.py simulations/results/pcap \
+	python3 analysis/pcap/pcap_batch_to_spreadsheet.py simulations/results/pcap \
 		-o simulations/results/spreadsheets/professor-all-seeds.xlsx
 
 experiment: professor-scenarios
 
 analyze:
-	python3 analysis/process_results.py
+	python3 analysis/reports/report_professor_scenarios.py
 
 network-metrics:
-	python3 analysis/network_metrics.py simulations/results/omnetpp \
+	python3 analysis/core/network_metrics.py simulations/results/omnetpp \
 		--configs Scenario1_OneVictim_BaOff Scenario1_OneVictim_BaOn \
 			Scenario1_OneVictim_Multihop Scenario1_TwoVictims_BaOff \
 			Scenario1_TwoVictims_BaOn Scenario1_TwoVictims_Multihop

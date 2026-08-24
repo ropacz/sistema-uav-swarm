@@ -49,7 +49,7 @@ For Python, follow PEP 8, use four spaces, and prefer `snake_case`. Preserve con
 
 ## Testing Guidelines
 
-There is no standalone unit-test framework. Validate changes by rebuilding and running deterministic seeds with Cmdenv. Check the exit status, simulation logs, and generated scalars under `simulations/results/`. For metric changes, run `analysis/process_results.py` and inspect outputs in `analysis/figures/`. Test more than one seed when behavior is stochastic.
+There is no standalone unit-test framework. Validate changes by rebuilding and running deterministic seeds with Cmdenv. Check the exit status, simulation logs, and generated scalars under `simulations/results/`. For metric changes, run `analysis/reports/report_professor_scenarios.py` and inspect outputs in `analysis/figures/`. Test more than one seed when behavior is stochastic.
 
 ## Commit & Pull Request Guidelines
 

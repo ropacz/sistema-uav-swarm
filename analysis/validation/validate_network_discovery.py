@@ -2,12 +2,15 @@
 """Valida entrega direta e o limite da descoberta local por broadcast."""
 
 from pathlib import Path
+import sys
 
-from network_metrics import APP, mean_where, sum_where
-from process_results import parse_sca
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
+from analysis.core.network_metrics import APP, mean_where, sum_where  # noqa: E402
+from analysis.core.process_results import parse_sca  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = REPOSITORY_ROOT
 RESULTS = ROOT / "simulations/results/omnetpp"
 
 

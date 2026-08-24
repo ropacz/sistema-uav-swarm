@@ -2,13 +2,19 @@
 
 from pathlib import Path
 import re
+import sys
 
 import pandas as pd
 
-from network_metrics import APP, collect, global_or_legacy, sum_where
-from process_results import parse_sca
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
-ROOT = Path(__file__).resolve().parents[1]
+from analysis.core.network_metrics import (  # noqa: E402
+    APP, collect, global_or_legacy, sum_where,
+)
+from analysis.core.process_results import parse_sca  # noqa: E402
+
+ROOT = REPOSITORY_ROOT
 RESULTS = ROOT / "simulations/results/omnetpp"
 OUTPUT = ROOT / "analysis/figures"
 

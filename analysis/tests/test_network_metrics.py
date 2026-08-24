@@ -4,9 +4,11 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from network_metrics import global_or_legacy, global_scalar  # noqa: E402
+from analysis.core.network_metrics import (  # noqa: E402
+    global_or_legacy, global_scalar,
+)
 
 
 class GlobalMetricsTests(unittest.TestCase):

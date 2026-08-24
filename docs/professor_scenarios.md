@@ -159,7 +159,7 @@ make network-discovery-validation # descoberta direta e limite do relay
 make professor-scenarios        # 72 runs preliminares e resumo CSV
 make professor-pcap             # repete os 72 runs com PCAPNG
 ./run.sh -c Scenario1_TwoVictims_BaOn -r 0 --pcap
-python3 analysis/report_professor_scenarios.py
+python3 analysis/reports/report_professor_scenarios.py
 ```
 
 `BA_SmokeTest` usa uma parede com `IdealObstacleLoss` somente para verificar a

@@ -1,7 +1,7 @@
 """Extract INET network-layer metrics per run and aggregate them across seeds.
 
 Usage:
-    python3 analysis/network_metrics.py [results-directory] [--configs A B ...]
+    python3 analysis/core/network_metrics.py [results-directory] [--configs A B ...]
 
 These metrics are **diagnostic**. They describe how the network behaved —
 frames, drops, routing and signal — and are not the primary evidence about the
@@ -19,12 +19,16 @@ import glob
 import math
 import os
 import sys
+from pathlib import Path
 
 import pandas as pd
 
-from process_results import ci95, parse_sca
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from analysis.core.process_results import ci95, parse_sca  # noqa: E402
+
+ROOT = str(REPOSITORY_ROOT)
 OUTPUT = os.path.join(ROOT, "analysis", "figures")
 
 # Sufixos de módulo. O MAC publica os mesmos nomes de contador em `.mac` e em

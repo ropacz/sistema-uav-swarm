@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from pcap_batch_to_spreadsheet import (  # noqa: E402
+from analysis.pcap.pcap_batch_to_spreadsheet import (  # noqa: E402
     Capture,
     compare_group,
     summarize_multiseed,

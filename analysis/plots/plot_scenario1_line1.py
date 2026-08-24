@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 INPUT = ROOT / "analysis/figures/professor_runs.csv"
 OUTPUT = ROOT / "analysis/figures/scenario1_line1_atendimento_perdas.png"
 CONFIG = "Scenario1_Line1_900s10_BaOn"

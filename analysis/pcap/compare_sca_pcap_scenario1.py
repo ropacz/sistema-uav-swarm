@@ -8,14 +8,19 @@ aplicação sem confundir quadros de PositionUpdate ou AODV.
 """
 
 from pathlib import Path
+import sys
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from pcap_batch_to_spreadsheet import compare_group, discover_captures
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
+from analysis.pcap.pcap_batch_to_spreadsheet import (  # noqa: E402
+    compare_group, discover_captures,
+)
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = REPOSITORY_ROOT
 CONFIG = "Scenario1_Line1_900s10_BaOn"
 PCAP_DIR = ROOT / "simulations/results/pcap"
 SCALAR_CSV = ROOT / "analysis/figures/professor_runs.csv"

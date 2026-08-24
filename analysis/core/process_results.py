@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared scalar helpers and entry point for the hypothesis pilot."""
+"""Funções compartilhadas para leitura e estatística de escalares OMNeT++."""
 
 import math
 import re
@@ -48,12 +48,3 @@ def ci95(values: pd.Series) -> float:
     critical = z + (z**3 + z) / (4 * degrees) + \
         (5 * z**5 + 16 * z**3 + 3 * z) / (96 * degrees**2)
     return critical * clean.std(ddof=1) / math.sqrt(len(clean))
-
-
-def main() -> None:
-    from report_hypothesis_pilot import main as report_main
-    report_main()
-
-
-if __name__ == "__main__":
-    main()
