@@ -329,6 +329,19 @@
       "norm_label": "staticvictim"
     },
     {
+      "label": "ManifestTests",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L12",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "analysis_tests_test_manifest_manifesttests",
+      "community": 42,
+      "community_name": "write_manifest.py",
+      "norm_label": "manifesttests"
+    },
+    {
       "label": "ExperimentMetricsReaderTests",
       "file_type": "code",
       "source_file": "analysis/tests/test_experiment_metrics.py",
@@ -1438,6 +1451,18 @@
       "community": 42,
       "community_name": "write_manifest.py",
       "norm_label": "sha256()"
+    },
+    {
+      "label": ".test_empty_git_status_means_clean_tree()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L14",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree",
+      "community": 42,
+      "community_name": "write_manifest.py",
+      "norm_label": ".test_empty_git_status_means_clean_tree()"
     },
     {
       "label": "central_scalar()",
@@ -4393,78 +4418,6 @@
       "norm_label": "string"
     },
     {
-      "label": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L39",
-      "_origin": "ast",
-      "id": "docs_traceability_3_n\u00edveis_de_valida\u00e7\u00e3o",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "3. niveis de validacao"
-    },
-    {
-      "label": "Build C++/NED",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L50",
-      "_origin": "ast",
-      "id": "docs_traceability_build_c_ned",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "build c++/ned"
-    },
-    {
-      "label": "Descoberta direta",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L75",
-      "_origin": "ast",
-      "id": "docs_traceability_descoberta_direta",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "descoberta direta"
-    },
-    {
-      "label": "Est\u00e1tica e unit\u00e1ria",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L41",
-      "_origin": "ast",
-      "id": "docs_traceability_est\u00e1tica_e_unit\u00e1ria",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "estatica e unitaria"
-    },
-    {
-      "label": "Experimento confirmat\u00f3rio",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L84",
-      "_origin": "ast",
-      "id": "docs_traceability_experimento_confirmat\u00f3rio",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "experimento confirmatorio"
-    },
-    {
-      "label": "Smoke do mecanismo",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/traceability.md",
-      "source_location": "L59",
-      "_origin": "ast",
-      "id": "docs_traceability_smoke_do_mecanismo",
-      "community": 22,
-      "community_name": "3. N\u00edveis de valida\u00e7\u00e3o",
-      "norm_label": "smoke do mecanismo"
-    },
-    {
       "label": "cComponent",
       "file_type": "code",
       "source_file": "",
@@ -5744,6 +5697,18 @@
       "norm_label": "2. contrato dos sinais"
     },
     {
+      "label": "3. N\u00edveis de valida\u00e7\u00e3o",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "docs_traceability_3_n\u00edveis_de_valida\u00e7\u00e3o",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "3. niveis de validacao"
+    },
+    {
       "label": "4. Artefatos e proveni\u00eancia",
       "file_type": "document",
       "node_kind": "heading",
@@ -5780,6 +5745,54 @@
       "norm_label": "6. limitacoes conhecidas"
     },
     {
+      "label": "Build C++/NED",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L50",
+      "_origin": "ast",
+      "id": "docs_traceability_build_c_ned",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "build c++/ned"
+    },
+    {
+      "label": "Descoberta direta",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "docs_traceability_descoberta_direta",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "descoberta direta"
+    },
+    {
+      "label": "Est\u00e1tica e unit\u00e1ria",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L41",
+      "_origin": "ast",
+      "id": "docs_traceability_est\u00e1tica_e_unit\u00e1ria",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "estatica e unitaria"
+    },
+    {
+      "label": "Experimento confirmat\u00f3rio",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "docs_traceability_experimento_confirmat\u00f3rio",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "experimento confirmatorio"
+    },
+    {
       "label": "Rastreabilidade e valida\u00e7\u00f5es",
       "file_type": "document",
       "node_kind": "heading",
@@ -5790,6 +5803,18 @@
       "community": 37,
       "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
       "norm_label": "rastreabilidade e validacoes"
+    },
+    {
+      "label": "Smoke do mecanismo",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/traceability.md",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "docs_traceability_smoke_do_mecanismo",
+      "community": 37,
+      "community_name": "Rastreabilidade e valida\u00e7\u00f5es",
+      "norm_label": "smoke do mecanismo"
     },
     {
       "label": "1. Fronteira do modelo",
@@ -6241,6 +6266,28 @@
       "community": 42,
       "community_name": "write_manifest.py",
       "norm_label": "path"
+    },
+    {
+      "label": "test_manifest.py",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "analysis_tests_test_manifest",
+      "community": 42,
+      "community_name": "write_manifest.py",
+      "norm_label": "test_manifest.py"
+    },
+    {
+      "label": "patch",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "patch",
+      "community": 42,
+      "community_name": "write_manifest.py",
+      "norm_label": "patch"
     },
     {
       "label": "Write reproducibility metadata beside generated simulation results.",
@@ -8164,6 +8211,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L16",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree",
+      "target": "analysis_core_write_manifest_command_output"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "analysis/tests/test_network_metrics.py",
       "source_location": "L62",
       "weight": 1.0,
@@ -8853,6 +8912,18 @@
       "_origin": "ast",
       "source": "src_optimization_batalgorithm_randominsphere",
       "target": "src_optimization_batalgorithm_sampleuniform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L13",
+      "weight": 1.0,
+      "context": "decorator",
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree",
+      "target": "patch",
       "confidence_score": 1.0
     },
     {
@@ -12147,6 +12218,18 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest",
+      "target": "analysis_core_write_manifest_command_output",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "analysis/tests/test_network_metrics.py",
       "source_location": "L10",
       "weight": 1.0,
@@ -13089,6 +13172,18 @@
       "_origin": "ast",
       "source": "analysis_tests_test_main_experiment_report",
       "target": "analysis_reports_report_main_experiment",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest",
+      "target": "analysis_core_write_manifest",
       "confidence_score": 1.0
     },
     {
@@ -15245,6 +15340,17 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L12",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest",
+      "target": "analysis_tests_test_manifest_manifesttests",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "analysis/tests/test_network_metrics.py",
       "source_location": "L16",
       "weight": 1.0,
@@ -17049,6 +17155,17 @@
     {
       "relation": "method",
       "confidence": "EXTRACTED",
+      "source_file": "analysis/tests/test_manifest.py",
+      "source_location": "L14",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_tests_test_manifest_manifesttests",
+      "target": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
       "source_file": "analysis/tests/test_network_metrics.py",
       "source_location": "L17",
       "weight": 1.0,
@@ -18493,5 +18610,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "0b1fd90bbd0d5323c703a7807b9148f14503435a"
+  "built_at_commit": "206f6927cb0b957818977ff7956082fa8b1c48dd"
 }

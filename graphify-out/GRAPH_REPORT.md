@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-24)
 
 ## Corpus Check
-- 57 files · ~21,273 words
+- 58 files · ~21,320 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 631 nodes · 967 edges · 39 communities (30 shown, 9 thin omitted)
+- 635 nodes · 973 edges · 38 communities (29 shown, 9 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 27 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0b1fd90b`
+- Built from commit: `206f6927`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,7 +37,6 @@
 - pcap_batch_to_spreadsheet.py
 - string
 - AlertMetricEvent
-- 3. Níveis de validação
 - ExperimentMetrics
 - core/__init__.py
 - analysis/__init__.py
@@ -82,7 +81,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (39 total, 9 thin omitted)
+## Communities (38 total, 9 thin omitted)
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.05
@@ -164,10 +163,6 @@ Nodes (3): map, string, Coord
 Cohesion: 0.22
 Nodes (8): AlertMetricEvent, alertId, category, referenceTime, value, cObject, simtime_t, string
 
-### Community 22 - "3. Níveis de validação"
-Cohesion: 0.33
-Nodes (6): 3. Níveis de validação, Build C++/NED, Descoberta direta, Estática e unitária, Experimento confirmatório, Smoke do mecanismo
-
 ### Community 23 - "ExperimentMetrics"
 Cohesion: 0.05
 Nodes (45): cComponent, cListener, cMessage, cMessage, cObject, simsignal_t, ExperimentMetrics, alertAttemptsSent (+37 more)
@@ -181,8 +176,8 @@ Cohesion: 0.22
 Nodes (9): 1. Unidade de contagem, 2. Contadores centrais, 3. Desfecho primário, 4. Desfechos secundários, 5. Diagnóstico de exposição, 6. Invariantes fim a fim, 7. Agregação entre execuções, 8. Diagnósticos opcionais (+1 more)
 
 ### Community 37 - "Rastreabilidade e validações"
-Cohesion: 0.29
-Nodes (6): 1. Matriz funcional, 2. Contrato dos sinais, 4. Artefatos e proveniência, 5. Checklist de publicação, 6. Limitações conhecidas, Rastreabilidade e validações
+Cohesion: 0.15
+Nodes (12): 1. Matriz funcional, 2. Contrato dos sinais, 3. Níveis de validação, 4. Artefatos e proveniência, 5. Checklist de publicação, 6. Limitações conhecidas, Build C++/NED, Descoberta direta (+4 more)
 
 ### Community 38 - "Modelo, funcionamento e premissas"
 Cohesion: 0.25
@@ -201,8 +196,8 @@ Cohesion: 0.29
 Nodes (7): 1. Pergunta e objetivo, 2. Desenho experimental, 3. Métricas, 4. Procedimento, 5. Análise estatística, 6. Interpretação e limitações, Protocolo científico
 
 ### Community 42 - "write_manifest.py"
-Cohesion: 0.43
-Nodes (6): command_output(), main(), omnetpp_version(), Path, Write reproducibility metadata beside generated simulation results., sha256()
+Cohesion: 0.27
+Nodes (8): command_output(), main(), omnetpp_version(), Path, Write reproducibility metadata beside generated simulation results., sha256(), ManifestTests, patch
 
 ## Knowledge Gaps
 - **210 isolated node(s):** `run.sh script`, `socket`, `maintenanceTimer`, `movementCompleteTimer`, `droneId` (+205 more)
@@ -213,7 +208,7 @@ Nodes (6): command_output(), main(), omnetpp_version(), Path, Write reproducibil
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DroneApp` connect `DroneApp` to `BatParameters`, `FitnessParameters`, `PendingVictimAlert`, `RepositionController`, `TeamApp.h`, `TeamLinkState`, `string`, `ExperimentMetrics`?**
-  _High betweenness centrality (0.176) - this node is a cross-community bridge._
+  _High betweenness centrality (0.174) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `TeamApp.h`?**
   _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **What connects `run.sh script`, `socket`, `maintenanceTimer` to the rest of the system?**
