@@ -5467,7 +5467,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/traceability.md",
-      "source_location": "L111",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "docs_traceability_5_checklist_de_publica\u00e7\u00e3o",
       "community": 37,
@@ -5479,7 +5479,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/traceability.md",
-      "source_location": "L124",
+      "source_location": "L126",
       "_origin": "ast",
       "id": "docs_traceability_6_limita\u00e7\u00f5es_conhecidas",
       "community": 37,
@@ -15081,7 +15081,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/traceability.md",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_traceability_rastreabilidade_e_valida\u00e7\u00f5es",
@@ -15092,7 +15092,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/traceability.md",
-      "source_location": "L124",
+      "source_location": "L126",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_traceability_rastreabilidade_e_valida\u00e7\u00f5es",
@@ -17646,5 +17646,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d9c2fa3cf285834adc0bfa2464a8566fa9c94c3d"
+  "built_at_commit": "80c82160cfff71fc8ef466a42f45be49fe475fad"
 }

@@ -97,11 +97,13 @@ exposição, nunca exclusão.
 | --- | --- |
 | `simulations/*.ini` | valores e configurações executáveis |
 | `simulations/results/omnetpp/*.sca` | fonte bruta normativa |
-| `analysis/figures/main_experiment_runs.csv` | uma linha por run |
-| `analysis/figures/main_experiment_paired_effects.csv` | efeitos por seed |
-| `analysis/figures/main_experiment_summary.csv` | estimativas e IC95% |
-| `analysis/figures/main_experiment_ba_exposure.csv` | exposição por seed |
-| `analysis/figures/main_experiment_exposure_summary.csv` | exposição agregada |
+| `analysis/figures/main_experiment/runs.csv` | uma linha por run |
+| `analysis/figures/main_experiment/paired_effects.csv` | efeitos por seed |
+| `analysis/figures/main_experiment/summary.csv` | estimativas e IC95% |
+| `analysis/figures/main_experiment/ba_exposure.csv` | exposição por seed |
+| `analysis/figures/main_experiment/exposure_summary.csv` | exposição agregada |
+| `analysis/figures/diagnostics/` | diagnóstico opcional MAC/IP/UDP |
+| `analysis/figures/robustness/` | resultados da extensão de robustez |
 | `simulations/results/pcap/` | auditoria opcional |
 
 Antes da campanha final, devem ser preservados commit, estado da árvore, hashes

@@ -1,20 +1,29 @@
 # Análise
 
-Os arquivos são organizados pelo domínio que atendem:
+Os arquivos Python são organizados pelo domínio que atendem:
 
-- `core/`: leitura de `.sca`, estatística e métricas compartilhadas;
-- `reports/`: tabelas dos cenários científicos e da sonda de escala;
-- `pcap/`: decodificação, planilhas e comparação SCA versus PCAPNG;
+- `core/`: leitura de `.sca`, métricas centrais, estatística e manifesto;
+- `reports/`: experimento confirmatório e robustez opcional;
+- `pcap/`: auditoria opcional de capturas e exportação para planilha;
 - `validation/`: contratos automáticos dos cenários técnicos;
-- `plots/`: gráficos específicos derivados dos relatórios;
-- `tests/`: testes unitários da análise e da auditoria PCAP;
-- `figures/`: saída gerada, ignorada pelo Git.
+- `tests/`: testes unitários da análise e do PCAP;
+- `figures/`: artefatos derivados e ignorados pelo Git.
 
-Use `make experiment` para o relatório confirmatório pareado. Use
-`make robustness-experiment`, `make optional-scaling` e `make optional-pcap`
-somente para extensões. Os relatórios são gravados em `analysis/figures/`.
+As saídas também são separadas por domínio:
 
-`reports/report_main_experiment.py` é a entrada principal. Ele falha se as seeds
-não estiverem pareadas ou se os braços diferirem por parâmetros além de
-`baEnabled`. Os relatórios antigos e os diagnósticos por camada permanecem como
-análises complementares.
+```text
+figures/
+  main_experiment/  # runs, efeitos pareados, resumo e exposição
+  diagnostics/      # métricas opcionais de MAC, IP e UDP
+  robustness/       # extensão não confirmatória
+```
+
+`reports/report_main_experiment.py` é a entrada científica principal. Ele exige
+seeds pareadas, igualdade de parâmetros exceto `baEnabled` e todos os escalares
+centrais. `core/network_metrics.py` e `pcap/` são ferramentas diagnósticas e não
+alimentam a inferência confirmatória.
+
+Atualmente não há gerador de PNG: o plot histórico foi removido porque dependia
+de métricas extintas. Um novo gráfico só deve ser implementado quando representar
+um resultado científico definido, sem converter ausência de exposição ao BA em
+uma visualização enganosa.

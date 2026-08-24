@@ -30,7 +30,7 @@ from analysis.core.experiment_metrics import central_scalar  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 
 ROOT = str(REPOSITORY_ROOT)
-OUTPUT = os.path.join(ROOT, "analysis", "figures")
+OUTPUT = os.path.join(ROOT, "analysis", "figures", "diagnostics")
 
 # Sufixos de módulo. O MAC publica os mesmos nomes de contador em `.mac` e em
 # `.mac.dcf`; somar por nome sem filtrar o módulo contaria cada quadro duas
@@ -189,8 +189,8 @@ def main() -> None:
             sys.exit(1)
 
     summary = aggregate(runs)
-    runs.to_csv(os.path.join(OUTPUT, "network_metrics_runs.csv"), index=False)
-    summary.to_csv(os.path.join(OUTPUT, "network_metrics_summary.csv"), index=False)
+    runs.to_csv(os.path.join(OUTPUT, "runs.csv"), index=False)
+    summary.to_csv(os.path.join(OUTPUT, "summary.csv"), index=False)
     report(summary)
     print("\nMétricas diagnósticas descrevem o comportamento da rede; não são "
           "evidência sobre a hipótese. Intervalos são IC95% entre seeds.")

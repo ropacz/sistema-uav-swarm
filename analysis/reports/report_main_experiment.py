@@ -21,7 +21,7 @@ from analysis.core.experiment_metrics import collect  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
-OUTPUT = REPOSITORY_ROOT / "analysis/figures"
+OUTPUT = REPOSITORY_ROOT / "analysis/figures/main_experiment"
 CONTROL = "MainExperiment_BaOff"
 TREATMENT = "MainExperiment_BaOn"
 METRIC_SPECS = {
@@ -141,15 +141,15 @@ def main() -> None:
     summary = summarize(control, treatment, paired)
     exposure = summarize_exposure(treatment)
 
-    OUTPUT.mkdir(exist_ok=True)
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     pd.concat([control, treatment], ignore_index=True).to_csv(
-        OUTPUT / "main_experiment_runs.csv", index=False)
+        OUTPUT / "runs.csv", index=False)
     paired.drop(columns=["result_path_off", "result_path_on"]).to_csv(
-        OUTPUT / "main_experiment_paired_effects.csv", index=False)
-    summary.to_csv(OUTPUT / "main_experiment_summary.csv", index=False)
+        OUTPUT / "paired_effects.csv", index=False)
+    summary.to_csv(OUTPUT / "summary.csv", index=False)
     treatment[["seed", *EXPOSURE_METRICS]].to_csv(
-        OUTPUT / "main_experiment_ba_exposure.csv", index=False)
-    exposure.to_csv(OUTPUT / "main_experiment_exposure_summary.csv", index=False)
+        OUTPUT / "ba_exposure.csv", index=False)
+    exposure.to_csv(OUTPUT / "exposure_summary.csv", index=False)
 
     print(summary.to_string(index=False, float_format=lambda value: f"{value:.4f}"))
     print("\nEfeito = BA On - BA Off; unidade experimental = seed pareada.")

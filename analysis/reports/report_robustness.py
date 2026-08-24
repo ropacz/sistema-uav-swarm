@@ -18,7 +18,7 @@ from analysis.core.experiment_metrics import collect  # noqa: E402
 from analysis.core.process_results import parse_sca  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
-OUTPUT = REPOSITORY_ROOT / "analysis/figures"
+OUTPUT = REPOSITORY_ROOT / "analysis/figures/robustness"
 
 
 def configured_teams(path: str) -> int:
@@ -62,9 +62,9 @@ def main() -> None:
     summary = runs.groupby(["config", "teams"])[metrics].agg(
         ["count", "mean", "std"]
     )
-    OUTPUT.mkdir(exist_ok=True)
-    runs.to_csv(OUTPUT / "robustness_runs.csv", index=False)
-    summary.to_csv(OUTPUT / "robustness_summary.csv")
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    runs.to_csv(OUTPUT / "runs.csv", index=False)
+    summary.to_csv(OUTPUT / "summary.csv")
     print(summary.to_string())
     print("\nRelatório descritivo opcional; a unidade experimental é a seed.")
 
