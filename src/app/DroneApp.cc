@@ -13,6 +13,7 @@
 #include "inet/networklayer/ipv4/Ipv4InterfaceData.h"
 #include "inet/physicallayer/wireless/common/contract/packetlevel/SignalTag_m.h"
 #include "mobility/BaGaussMarkovMobility.h"
+#include "metrics/AlertMetricEvent.h"
 #include "sensing/AbstractObstacleSensor.h"
 
 using namespace omnetpp;
@@ -152,6 +153,14 @@ void DroneApp::initialize(int stage)
         pdrSignal = registerSignal("linkWindowPdr");
         repositionDistanceSignal = registerSignal("repositionDistance");
         recoveryTimeSignal = registerSignal("recoveryTime");
+        alertGeneratedSignal = registerSignal("victimAlertGenerated");
+        alertAttemptSentSignal = registerSignal("victimAlertAttemptSent");
+        alertConfirmedSignal = registerSignal("victimAlertConfirmed");
+        alertExpiredSignal = registerSignal("victimAlertExpired");
+        degradationSignal = registerSignal("victimDegradationIndicated");
+        sensorEvaluationSignal = registerSignal("victimSensorEvaluated");
+        baActivationSignal = registerSignal("victimBaActivated");
+        repositionEventSignal = registerSignal("victimRepositionEvent");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
         // O endereço só está disponível após a configuração da camada de rede.
@@ -190,6 +199,9 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         for (auto& [id, alert] : pendingAlerts)
             if (reposition.owns(id)) {
                 recordActualRepositionDistance(alert);
+                AlertMetricEvent completedEvent(alert.alertId, "", simTime(),
+                                                SimTime::ZERO, "completed");
+                emit(repositionEventSignal, &completedEvent);
                 break;
             }
         // A próxima tentativa passa a validar a posição escolhida pelo BA.
@@ -231,6 +243,8 @@ void DroneApp::handleAssignment(VictimAssignment *assignment)
     alert.nextAttempt = simTime();
     pendingAlerts[alertId] = alert;
     uniqueAlertsGenerated++;
+    AlertMetricEvent generatedEvent(alertId, "", alert.generationTime);
+    emit(alertGeneratedSignal, &generatedEvent);
     delete assignment;
     sendAttempt(pendingAlerts.at(alertId));
 }
@@ -357,6 +371,8 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     alert.nextAttempt = simTime() + retryInterval;
     alert.degradationEvaluated = false;
     alertAttemptsSent++;
+    AlertMetricEvent attemptEvent(alert.alertId, messageId, simTime());
+    emit(alertAttemptSentSignal, &attemptEvent);
 }
 
 bool DroneApp::detectDegradation(const PendingVictimAlert& alert, double& pdr, double& rssi) const
@@ -424,10 +440,16 @@ void DroneApp::performMaintenance()
         if (simTime() - alert.generationTime >= alertTtl ||
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             alertsExpired++;
+            AlertMetricEvent expiredEvent(alert.alertId);
+            emit(alertExpiredSignal, &expiredEvent);
             if (reposition.owns(alert.alertId) && !reposition.idle()) {
                 recordActualRepositionDistance(alert);
                 failedRepositions++;
                 repositionExpiredBeforeAck++;
+                AlertMetricEvent repositionExpiredEvent(
+                    alert.alertId, "", alert.repositionStart,
+                    SimTime::ZERO, "expired");
+                emit(repositionEventSignal, &repositionExpiredEvent);
             }
             if (reposition.owns(alert.alertId)) {
                 reposition.release();
@@ -445,6 +467,8 @@ void DroneApp::performMaintenance()
             alert.degradationEvaluated = true;
             if (degraded) {
                 degradationIndications++;
+                AlertMetricEvent degradationEvent(alert.alertId);
+                emit(degradationSignal, &degradationEvent);
                 tryReposition(alert, pdr, rssi);
             }
         }
@@ -461,6 +485,9 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
         // Sem posição conhecida da equipe não há linha de visada a consultar.
         // Isto não é uma rejeição do sensor: a consulta nem chegou a ocorrer.
         teamUnknownForReposition++;
+        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "teamUnknown");
+        emit(sensorEvaluationSignal, &sensorEvent);
         return;
     }
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
@@ -489,15 +516,24 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
             sensorClearLineOfSight++;
         else if (observation.reason == "outsideVisualRange")
             sensorOutsideRange++;
+        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, observation.reason);
+        emit(sensorEvaluationSignal, &sensorEvent);
         return;
     }
-    if (observation.confirmed)
+    if (observation.confirmed) {
         sensorConfirmations++;
+        AlertMetricEvent sensorEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "confirmed");
+        emit(sensorEvaluationSignal, &sensorEvent);
+    }
     if (!baEnabled || alert.baCycles >= maxBaCycles || reposition.moving() ||
         reposition.busyWithOther(alert.alertId))
         return;
 
     baActivations++;
+    AlertMetricEvent baEvent(alert.alertId);
+    emit(baActivationSignal, &baEvent);
     alert.baCycles++;
     alert.repositionStart = simTime();
     alert.repositionOrigin = current;
@@ -517,6 +553,9 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     if (!result.valid) {
         failedRepositions++;
         baNoFeasibleSolution++;
+        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "noFeasibleSolution");
+        emit(repositionEventSignal, &failedEvent);
         return;
     }
     std::ostringstream key;
@@ -527,18 +566,27 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     if (!alert.testedPositions.insert(key.str()).second) {
         failedRepositions++;
         baRedundantCandidate++;
+        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "redundantCandidate");
+        emit(repositionEventSignal, &failedEvent);
         return;
     }
     auto controlled = dynamic_cast<BaGaussMarkovMobility *>(mobility);
     if (!controlled) {
         failedRepositions++;
         baNoFeasibleSolution++;
+        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "noFeasibleSolution");
+        emit(repositionEventSignal, &failedEvent);
         return;
     }
     double distance = current.distance(result.position);
     if (distance <= 1e-6) {
         failedRepositions++;
         baRedundantCandidate++;
+        AlertMetricEvent failedEvent(alert.alertId, "", simTime(),
+                                     SimTime::ZERO, "redundantCandidate");
+        emit(repositionEventSignal, &failedEvent);
         return;
     }
     commandedBaDistance += distance;
@@ -547,6 +595,9 @@ void DroneApp::tryReposition(PendingVictimAlert& alert, double prePdr, double pr
     controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
                        fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
     reposition.begin(alert.alertId);
+    AlertMetricEvent startedEvent(alert.alertId, "", alert.repositionStart,
+                                  SimTime::ZERO, "started", distance);
+    emit(repositionEventSignal, &startedEvent);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
 }
 
@@ -558,6 +609,9 @@ void DroneApp::recordActualRepositionDistance(PendingVictimAlert& alert)
     double distance = alert.repositionOrigin.distance(mobility->getCurrentPosition());
     baDistance += distance;
     emit(repositionDistanceSignal, distance);
+    AlertMetricEvent distanceEvent(alert.alertId, "", simTime(),
+                                   SimTime::ZERO, "distance", distance);
+    emit(repositionEventSignal, &distanceEvent);
     alert.repositionDistanceRecorded = true;
 }
 
@@ -578,6 +632,10 @@ void DroneApp::handleVictimAck(Packet *packet)
         }
         uniqueAlertsAcked++;
         totalRtt += simTime() - sentIt->second;
+        AlertMetricEvent confirmedEvent(alert.alertId,
+                                        ack->getReceivedMessageId(),
+                                        sentIt->second);
+        emit(alertConfirmedSignal, &confirmedEvent);
         bool ownsReposition = reposition.owns(it->first);
         bool validatedReposition = ownsReposition && !alert.validationMessageId.empty() &&
             alert.validationMessageId == ack->getReceivedMessageId();
@@ -603,12 +661,22 @@ void DroneApp::handleVictimAck(Packet *packet)
                 totalRecoveryTime += recovery;
                 recoverySamples++;
                 emit(recoveryTimeSignal, recovery);
+                AlertMetricEvent repositionEvent(alert.alertId, "",
+                                                 alert.repositionStart,
+                                                 SimTime::ZERO, "validated");
+                emit(repositionEventSignal, &repositionEvent);
             }
             else {
                 // O alerta foi entregue, mas por uma tentativa anterior à
-                // chegada: houve recuperação durante o movimento, porém a
-                // posição final escolhida pelo BA não chegou a ser testada.
+                // validação: a recuperação ocorreu durante o trajeto ou por
+                // pacote antigo após a chegada; a posição final não foi testada.
                 repositionAckedBeforeValidation++;
+                const char *recoveryCategory = reposition.moving()
+                    ? "recoveredDuringMovement" : "recoveredAfterArrival";
+                AlertMetricEvent repositionEvent(
+                    alert.alertId, "", alert.repositionStart,
+                    SimTime::ZERO, recoveryCategory);
+                emit(repositionEventSignal, &repositionEvent);
             }
         }
         if (ownsReposition) {

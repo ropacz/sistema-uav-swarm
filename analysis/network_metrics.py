@@ -34,6 +34,7 @@ MAC = r"\.wlan\[\d+\]\.mac$"
 IP = r"\.ipv4\.ip$"
 UDP = r"\.udp$"
 APP = r"\.app\[0\]$"
+METRICS = r"\.experimentMetrics$"
 
 
 def sum_where(frame: pd.DataFrame, name: str, module_pattern: str | None = None) -> float:
@@ -65,6 +66,23 @@ def ratio(numerator: float, denominator: float, scale: float = 1.0) -> float:
     return scale * numerator / denominator if denominator else math.nan
 
 
+def global_or_legacy(frame: pd.DataFrame, global_name: str,
+                     legacy_name: str, legacy_pattern: str = APP) -> float:
+    """Read a global ExperimentMetrics scalar, falling back for old result files."""
+    global_rows = (frame["name"] == global_name) & frame["module"].str.contains(
+        METRICS, regex=True)
+    if global_rows.any():
+        return float(frame.loc[global_rows, "value"].sum())
+    return sum_where(frame, legacy_name, legacy_pattern)
+
+
+def global_scalar(frame: pd.DataFrame, name: str) -> float:
+    selected = (frame["name"] == name) & frame["module"].str.contains(
+        METRICS, regex=True)
+    values = frame.loc[selected, "value"]
+    return float(values.sum()) if len(values) else math.nan
+
+
 def collect(path: str) -> dict:
     attrs, frame, _ = parse_sca(path)
 
@@ -78,10 +96,18 @@ def collect(path: str) -> dict:
     udp_sent = sum_where(frame, "packetSent:count", UDP)
     udp_received = sum_where(frame, "packetReceived:count", UDP)
 
-    generated = sum_where(frame, "uniqueAlertsGenerated", APP)
-    acked = sum_where(frame, "uniqueAlertsAcked", APP)
-    attempts = sum_where(frame, "alertAttemptsSent", APP)
-    attempts_received = sum_where(frame, "attemptsReceived", APP)
+    generated = global_or_legacy(frame, "alertsGenerated", "uniqueAlertsGenerated")
+    delivered = global_or_legacy(frame, "alertsDelivered", "uniqueAlertsReceived")
+    acked = global_or_legacy(frame, "alertsConfirmed", "uniqueAlertsAcked")
+    attempts = global_or_legacy(frame, "alertAttemptsSent", "alertAttemptsSent")
+    attempts_received = global_or_legacy(
+        frame, "alertAttemptsDelivered", "attemptsReceived")
+    delivery_delay_sum = global_scalar(frame, "deliveryDelaySum")
+    delivery_delay_count = global_scalar(frame, "deliveryDelayCount")
+    attempt_delay_sum = global_scalar(frame, "attemptDeliveryDelaySum")
+    attempt_delay_count = global_scalar(frame, "attemptDeliveryDelayCount")
+    recovery_sum = global_scalar(frame, "recoveryTimeSum")
+    recovery_count = global_scalar(frame, "recoveryTimeCount")
 
     return {
         "config": attrs["configname"],
@@ -117,8 +143,25 @@ def collect(path: str) -> dict:
         # ── Decisão do reposicionamento ───────────────────────────────────
         # Separam causas opostas de rejeição: não havia obstáculo na visada,
         # ou havia e estava fora do alcance do sensor.
-        "sensor_clear_line_of_sight": sum_where(frame, "sensorClearLineOfSight", APP),
-        "sensor_outside_range": sum_where(frame, "sensorOutsideRange", APP),
+        "degradation_indications": global_or_legacy(
+            frame, "degradationIndications", "degradationIndications"),
+        "sensor_confirmations": global_or_legacy(
+            frame, "sensorConfirmations", "sensorConfirmations"),
+        "sensor_clear_line_of_sight": global_or_legacy(
+            frame, "sensorClearLineOfSight", "sensorClearLineOfSight"),
+        "sensor_outside_range": global_or_legacy(
+            frame, "sensorOutsideRange", "sensorOutsideRange"),
+        "ba_activations": global_or_legacy(
+            frame, "baActivations", "baActivations"),
+        "repositions_started": global_scalar(frame, "repositionsStarted"),
+        "successful_repositions": global_or_legacy(
+            frame, "successfulRepositions", "successfulRepositions"),
+        "reposition_success_pct": 100 * global_scalar(
+            frame, "repositionSuccessRate"),
+        "recovery_time_mean_s": ratio(recovery_sum, recovery_count),
+        "reposition_distance_sum_m": global_scalar(frame, "repositionDistanceSum"),
+        "commanded_reposition_distance_sum_m": global_scalar(
+            frame, "commandedRepositionDistanceSum"),
         # Soma de conjuntos locais: pode contar o mesmo alertId em equipes
         # distintas e, portanto, não é uma cardinalidade global.
         "team_local_unique_alert_receptions": sum_where(
@@ -138,9 +181,19 @@ def collect(path: str) -> dict:
         "team_entries_expired": sum_where(frame, "teamEntriesExpired", APP),
 
         # ── Aplicação ─────────────────────────────────────────────────────
+        "alert_pdr_pct": ratio(delivered, generated, 100),
+        "alert_loss_pct": ratio(generated - delivered, generated, 100),
         "appack_pct": ratio(acked, generated, 100),
         "attempt_delivery_pct": ratio(attempts_received, attempts, 100),
-        "delivery_delay_mean_s": mean_where(frame, "deliveryDelay:mean"),
+        "delivery_delay_mean_s": (
+            ratio(delivery_delay_sum, delivery_delay_count)
+            if math.isfinite(delivery_delay_sum)
+            else mean_where(frame, "deliveryDelay:mean")
+        ),
+        "attempt_delivery_delay_mean_s": (
+            ratio(attempt_delay_sum, attempt_delay_count)
+            if math.isfinite(attempt_delay_sum) else math.nan
+        ),
         "position_updates_sent": sum_where(frame, "positionUpdatesSent", APP),
         "duplicate_packets": sum_where(frame, "duplicatePackets", APP),
     }
@@ -175,9 +228,14 @@ HIGHLIGHT = [
     ("team_entries_discovered", "Entradas de equipe descobertas", "{:.0f}"),
     ("team_entries_expired", "Entradas de equipe expiradas", "{:.0f}"),
     ("delivery_delay_mean_s", "Atraso unidirecional médio (s)", "{:.4f}"),
+    ("attempt_delivery_delay_mean_s", "Atraso médio por tentativa (s)", "{:.4f}"),
     ("sensor_outside_range", "Rejeições por obstáculo fora de alcance", "{:.1f}"),
     ("sensor_clear_line_of_sight", "Rejeições por visada livre", "{:.1f}"),
+    ("reposition_success_pct", "Sucesso operacional do reposicionamento (%)", "{:.1f}"),
+    ("recovery_time_mean_s", "Tempo médio de recuperação (s)", "{:.4f}"),
     ("attempt_delivery_pct", "Entrega por tentativa (%)", "{:.1f}"),
+    ("alert_pdr_pct", "PDR global de alertas (%)", "{:.1f}"),
+    ("alert_loss_pct", "Perda global de alertas (%)", "{:.1f}"),
     ("appack_pct", "AppACK (%)", "{:.1f}"),
 ]
 

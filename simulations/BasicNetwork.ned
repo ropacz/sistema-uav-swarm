@@ -6,6 +6,7 @@ import inet.physicallayer.wireless.ieee80211.packetlevel.Ieee80211ScalarRadioMed
 import inet.node.aodv.AodvRouter;
 import inet.visualizer.canvas.integrated.IntegratedCanvasVisualizer;
 import echosar.node.SarDrone;
+import echosar.metrics.ExperimentMetrics;
 import echosar.scenario.SarScenarioManager;
 import echosar.scenario.StaticVictim;
 
@@ -37,6 +38,9 @@ network BasicNetwork
         }
         scenarioManager: SarScenarioManager {
             @display("p=880,1080;i=block/control;is=vs");
+        }
+        experimentMetrics: ExperimentMetrics {
+            @display("p=970,1080");
         }
         // ── Drones: AodvRouter (FANET ad-hoc com roteamento AODV multi-hop) ───
         drone[numDrones]: SarDrone {

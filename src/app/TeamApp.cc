@@ -9,6 +9,7 @@
 #include "inet/networklayer/contract/IInterfaceTable.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
 #include "inet/networklayer/ipv4/Ipv4InterfaceData.h"
+#include "metrics/AlertMetricEvent.h"
 
 using namespace omnetpp;
 using namespace inet;
@@ -38,6 +39,7 @@ void TeamApp::initialize(int stage)
             throw cRuntimeError("Invalid team identity, timing, or IP TTL parameter");
         deliveryDelaySignal = registerSignal("deliveryDelay");
         hopCountSignal = registerSignal("hopCount");
+        alertDeliveredSignal = registerSignal("victimAlertDelivered");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
         auto ift = L3AddressResolver().findInterfaceTableOf(getParentModule());
@@ -137,6 +139,12 @@ void TeamApp::handleVictimAlert(Packet *packet)
     }
     if (newAlert)
         uniqueAlertsReceived++;
+    if (newAttempt) {
+        AlertMetricEvent deliveredEvent(alertId, messageId,
+                                        alert->getGenerationTimestamp(),
+                                        alert->getTransmissionTimestamp());
+        emit(alertDeliveredSignal, &deliveredEvent);
+    }
     if (!newAttempt)
         // Mesmo messageId indica duplicação do pacote/tentativa, não novo retry.
         duplicatePackets++;

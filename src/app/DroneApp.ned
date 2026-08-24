@@ -123,6 +123,14 @@ simple DroneApp like IApp
         @statistic[repositionDistance](source=repositionDistance; record=vector,sum,mean);
         @signal[recoveryTime](type="simtime_t");
         @statistic[recoveryTime](source=recoveryTime; record=vector,mean; unit=s);
+        @signal[victimAlertGenerated](type=echosar::AlertMetricEvent);
+        @signal[victimAlertAttemptSent](type=echosar::AlertMetricEvent);
+        @signal[victimAlertConfirmed](type=echosar::AlertMetricEvent);
+        @signal[victimAlertExpired](type=echosar::AlertMetricEvent);
+        @signal[victimDegradationIndicated](type=echosar::AlertMetricEvent);
+        @signal[victimSensorEvaluated](type=echosar::AlertMetricEvent);
+        @signal[victimBaActivated](type=echosar::AlertMetricEvent);
+        @signal[victimRepositionEvent](type=echosar::AlertMetricEvent);
         @display("i=misc/drone");
     gates:
         input socketIn @labels(UdpControlInfo/up);

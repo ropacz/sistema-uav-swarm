@@ -28,6 +28,7 @@ gatilho do BA e ameaças à validade estão em
 ## Organização
 
 - `src/app`: protocolo da aplicação e seus estados de enlace/alerta;
+- `src/metrics`: coleta global e deduplicada das métricas fim a fim;
 - `src/messages`: mensagens OMNeT++ e serialização em rede;
 - `src/mobility`: Gauss–Markov 3D comandável pelo reposicionamento;
 - `src/optimization`: Bat Algorithm e função de aptidão;

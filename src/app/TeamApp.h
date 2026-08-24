@@ -38,6 +38,7 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t totalAlertAgeAtReception = 0;
     omnetpp::simsignal_t deliveryDelaySignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t hopCountSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t alertDeliveredSignal = SIMSIGNAL_NULL;
 
     /// Cancela o timer periódico e encerra o socket da aplicação.
     virtual ~TeamApp();

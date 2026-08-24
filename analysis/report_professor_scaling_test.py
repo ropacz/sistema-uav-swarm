@@ -5,7 +5,7 @@ import re
 
 import pandas as pd
 
-from network_metrics import APP, collect, sum_where
+from network_metrics import APP, collect, global_or_legacy, sum_where
 from process_results import parse_sca
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,22 +24,30 @@ def configured_victims(path):
 def record(path):
     base = collect(str(path))
     _, frame, _ = parse_sca(str(path))
-    attempts = sum_where(frame, "alertAttemptsSent", APP)
-    received = sum_where(frame, "attemptsReceived", APP)
+    attempts = global_or_legacy(frame, "alertAttemptsSent", "alertAttemptsSent")
+    received = global_or_legacy(frame, "alertAttemptsDelivered", "attemptsReceived")
     base.update({
         "victims": configured_victims(path),
         "obstacles": 1 if "Obs01" in base["config"] else 20,
         "ba_enabled": "BaOn" in base["config"],
-        "alerts_generated": sum_where(frame, "uniqueAlertsGenerated", APP),
-        "alerts_acked": sum_where(frame, "uniqueAlertsAcked", APP),
-        "alerts_expired": sum_where(frame, "alertsExpired", APP),
+        "alerts_generated": global_or_legacy(
+            frame, "alertsGenerated", "uniqueAlertsGenerated"),
+        "alerts_delivered": global_or_legacy(
+            frame, "alertsDelivered", "uniqueAlertsReceived"),
+        "alerts_acked": global_or_legacy(frame, "alertsConfirmed", "uniqueAlertsAcked"),
+        "alerts_expired": global_or_legacy(frame, "alertsExpired", "alertsExpired"),
         "attempts": attempts,
         "attempt_loss_pct": 100 * (1 - received / attempts) if attempts else float("nan"),
-        "degradation_indications": sum_where(frame, "degradationIndications", APP),
-        "sensor_confirmations": sum_where(frame, "sensorConfirmations", APP),
-        "ba_activations": sum_where(frame, "baActivations", APP),
-        "successful_repositions": sum_where(frame, "successfulRepositions", APP),
-        "recovered_during_movement": sum_where(frame, "repositionAckedBeforeValidation", APP),
+        "degradation_indications": global_or_legacy(
+            frame, "degradationIndications", "degradationIndications"),
+        "sensor_confirmations": global_or_legacy(
+            frame, "sensorConfirmations", "sensorConfirmations"),
+        "ba_activations": global_or_legacy(frame, "baActivations", "baActivations"),
+        "successful_repositions": global_or_legacy(
+            frame, "successfulRepositions", "successfulRepositions"),
+        "recovered_without_validation": global_or_legacy(
+            frame, "repositionsRecoveredWithoutValidation",
+            "repositionAckedBeforeValidation"),
         "obstacle_intersections": sum_where(frame, "Obstacle loss intersection count"),
     })
     return base
@@ -53,7 +61,7 @@ def main():
     metrics = ["appack_pct", "attempt_loss_pct", "delivery_delay_mean_s",
                "mac_frames_received", "mac_retry_limit_pct", "rssi_mean_dbm",
                "degradation_indications", "sensor_confirmations",
-               "ba_activations", "successful_repositions", "recovered_during_movement",
+               "ba_activations", "successful_repositions", "recovered_without_validation",
                "obstacle_intersections"]
     summary = runs.groupby(["victims", "obstacles", "ba_enabled"])[metrics].agg(["count", "mean", "std"])
     OUTPUT.mkdir(exist_ok=True)

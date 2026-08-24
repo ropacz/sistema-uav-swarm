@@ -35,6 +35,7 @@ OBJS = \
     $O/app/DroneApp.o \
     $O/app/TeamApp.o \
     $O/messages/SarMessageSerializers.o \
+    $O/metrics/ExperimentMetrics.o \
     $O/mobility/BaGaussMarkovMobility.o \
     $O/optimization/BatAlgorithm.o \
     $O/optimization/RepositionFitness.o \

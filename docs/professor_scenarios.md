@@ -121,12 +121,23 @@ câmera e enlace, mas seu impacto visual não é modelado.
 
 ## Métricas e validade
 
-Unidade experimental é a seed, nunca cada pacote. As métricas primárias são
-atendimento (`ACKs únicos/alertas únicos`), perda por tentativa, atraso e
-expiração. O PDR de PositionUpdate usado no gatilho, a entrega das tentativas e
-o atendimento global são métricas distintas. A soma de `uniqueAlertsReceived`
+Unidade experimental é a seed, nunca cada pacote. O `ExperimentMetrics`
+deduplica os eventos globais por `alertId` e registra separadamente alertas
+gerados, entregues a alguma equipe, confirmados por ACK e expirados. Assim,
+`pdr` mede `alertsDelivered/alertsGenerated`, enquanto `confirmationRate` mede
+`alertsConfirmed/alertsGenerated`. O PDR de PositionUpdate usado no gatilho e a
+entrega por tentativa são métricas distintas. A soma de `uniqueAlertsReceived`
 das equipes representa recepções únicas **locais** e pode repetir um `alertId`;
-o total global confirmado vem de `uniqueAlertsAcked` no drone originador.
+esses contadores locais permanecem apenas para auditoria.
+As tentativas são deduplicadas globalmente por `messageId`; portanto,
+`alertAttemptsDelivered/alertAttemptsSent` não soma a mesma tentativa recebida
+por equipes diferentes. O ciclo de reposicionamento distingue ativação do BA,
+movimento iniciado, chegada à posição, validação final, recuperação durante o
+trajeto, recuperação após a chegada por uma tentativa anterior e expiração.
+`repositionSuccessRate` usa movimentos iniciados como denominador e considera
+como sucesso operacional a validação final ou qualquer recuperação posterior
+ao início do movimento; `repositionsValidated` permanece
+disponível para avaliar isoladamente a posição escolhida pelo BA.
 Diagnósticos incluem RSSI, quantidade de tags RSSI presentes/ausentes, PDR,
 roteadores intermediários, ativações do BA, distância de reposicionamento,
 confirmações do sensor e descartes MAC/IP. `hopCount=0` significa entrega

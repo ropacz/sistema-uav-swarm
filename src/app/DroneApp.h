@@ -113,6 +113,14 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simsignal_t pdrSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t repositionDistanceSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t recoveryTimeSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t alertGeneratedSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t alertAttemptSentSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t alertConfirmedSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t alertExpiredSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t degradationSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t sensorEvaluationSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t baActivationSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t repositionEventSignal = SIMSIGNAL_NULL;
 
     /// Libera timers e encerra o socket sem deixar mensagens pendentes.
     virtual ~DroneApp();

@@ -8,7 +8,7 @@ import re
 
 import pandas as pd
 
-from network_metrics import APP, collect, sum_where
+from network_metrics import APP, collect, global_or_legacy, sum_where
 from process_results import parse_sca
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,23 +29,31 @@ def configured_teams(path: str) -> int:
 def run_record(path: str) -> dict:
     attrs, frame, _ = parse_sca(path)
     row = collect(path)
-    generated = sum_where(frame, "uniqueAlertsGenerated", APP)
-    acked = sum_where(frame, "uniqueAlertsAcked", APP)
-    expired = sum_where(frame, "alertsExpired", APP)
-    attempts = sum_where(frame, "alertAttemptsSent", APP)
-    received = sum_where(frame, "attemptsReceived", APP)
+    generated = global_or_legacy(frame, "alertsGenerated", "uniqueAlertsGenerated")
+    delivered = global_or_legacy(frame, "alertsDelivered", "uniqueAlertsReceived")
+    acked = global_or_legacy(frame, "alertsConfirmed", "uniqueAlertsAcked")
+    expired = global_or_legacy(frame, "alertsExpired", "alertsExpired")
+    attempts = global_or_legacy(frame, "alertAttemptsSent", "alertAttemptsSent")
+    received = global_or_legacy(frame, "alertAttemptsDelivered", "attemptsReceived")
     row.update({
         "repetition": int(float(attrs.get("repetition", row["seed"]))),
         "teams": configured_teams(path),
         "alerts_generated": generated,
+        "alerts_delivered": delivered,
         "alerts_acked": acked,
         "alerts_expired": expired,
+        "pdr_pct": 100 * delivered / generated if generated else float("nan"),
+        "confirmation_pct": 100 * acked / generated if generated else float("nan"),
+        # Alias histórico: os gráficos existentes chamam confirmação de atendimento.
         "attendance_pct": 100 * acked / generated if generated else float("nan"),
         "attempt_loss_pct": 100 * (1 - received / attempts) if attempts else float("nan"),
-        "degradation_indications": sum_where(frame, "degradationIndications", APP),
-        "sensor_obstacle_confirmed": sum_where(frame, "sensorConfirmations", APP),
-        "ba_activations": sum_where(frame, "baActivations", APP),
-        "successful_repositions": sum_where(frame, "successfulRepositions", APP),
+        "degradation_indications": global_or_legacy(
+            frame, "degradationIndications", "degradationIndications"),
+        "sensor_obstacle_confirmed": global_or_legacy(
+            frame, "sensorConfirmations", "sensorConfirmations"),
+        "ba_activations": global_or_legacy(frame, "baActivations", "baActivations"),
+        "successful_repositions": global_or_legacy(
+            frame, "successfulRepositions", "successfulRepositions"),
     })
     if generated != acked + expired:
         raise ValueError(f"Conservação violada em {path}: {generated} != {acked}+{expired}")
@@ -57,7 +65,8 @@ def main() -> None:
     if not paths:
         raise SystemExit(f"Nenhum resultado {PREFIX} em {RESULTS}")
     runs = pd.DataFrame(run_record(path) for path in paths)
-    metrics = ["attendance_pct", "attempt_loss_pct", "hop_count_mean",
+    metrics = ["pdr_pct", "confirmation_pct", "attendance_pct",
+               "attempt_loss_pct", "hop_count_mean",
                "delivery_delay_mean_s", "degradation_indications",
                "sensor_obstacle_confirmed", "ba_activations",
                "successful_repositions"]

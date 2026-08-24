@@ -19,6 +19,7 @@ simple TeamApp like IApp
         @statistic[deliveryDelay](source="deliveryDelay"; record=vector,histogram,mean; unit="s");
         @signal[hopCount](type=long);
         @statistic[hopCount](source="hopCount"; record=vector,histogram,mean);
+        @signal[victimAlertDelivered](type=echosar::AlertMetricEvent);
         @display("i=block/user,green,50");
     gates:
         input socketIn @labels(UdpControlInfo/up);
