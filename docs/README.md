@@ -31,6 +31,12 @@ divergência, prevalecem, nesta ordem:
 3. estes documentos;
 4. material histórico ou externo.
 
+## Material de revisão
+
+[`resumo_para_revisao.md`](resumo_para_revisao.md) reúne o funcionamento e as
+regras em formato de anotações e lista de verificação. Ele é um auxílio de estudo
+e não cria um quinto documento normativo.
+
 ## Material complementar
 
 - [`references/cenarios_solicitados.pdf`](references/cenarios_solicitados.pdf)
