@@ -5,11 +5,8 @@
 #include <cstring>
 
 #include "inet/mobility/contract/IMobility.h"
-#include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
-#include "inet/networklayer/contract/IInterfaceTable.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
-#include "inet/networklayer/ipv4/Ipv4InterfaceData.h"
 #include "mobility/BaGaussMarkovMobility.h"
 #include "metrics/AlertMetricEvent.h"
 #include "sensing/AbstractObstacleSensor.h"
@@ -144,18 +141,6 @@ void DroneApp::initialize(int stage)
         repositionEventSignal = registerSignal("victimRepositionEvent");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
-        // O endereço só está disponível após a configuração da camada de rede.
-        auto ift = L3AddressResolver().findInterfaceTableOf(getParentModule());
-        for (int i = 0; i < ift->getNumInterfaces(); ++i) {
-            auto interface = ift->getInterface(i);
-            auto data = interface->findProtocolData<Ipv4InterfaceData>();
-            if (!interface->isLoopback() && data && !data->getIPAddress().isUnspecified()) {
-                ipAddress = data->getIPAddress().str();
-                break;
-            }
-        }
-        if (ipAddress.empty())
-            throw cRuntimeError("Drone '%s' has no configured IPv4 address", droneId.c_str());
         // A tabela de equipes começa vazia. IP, posição e presença são
         // aprendidos exclusivamente de PositionUpdates recebidos por broadcast.
         socket.setOutputGate(gate("socketOut"));
@@ -241,10 +226,6 @@ void DroneApp::handleAssignment(VictimAssignment *assignment)
 void DroneApp::handlePositionUpdate(Packet *packet)
 {
     auto update = packet->peekAtFront<PositionUpdateChunk>();
-    if (std::string(update->getSenderType()) != "team") {
-        delete packet;
-        return;
-    }
     std::string senderId = update->getSenderId();
     if (senderId.empty()) {
         delete packet;
@@ -294,8 +275,6 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
         return;
     }
     auto& team = discoveredTeams.at(alert.targetTeamId);
-    auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
-    Coord position = mobility->getCurrentPosition();
     alert.attempts++;
     std::string messageId = alert.alertId + "-attempt-" + std::to_string(alert.attempts);
     alert.attemptTeamIds[messageId] = alert.targetTeamId;
@@ -306,19 +285,11 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     message->setMessageId(messageId.c_str());
     message->setVictimId(alert.victimId.c_str());
     message->setOriginDroneId(droneId.c_str());
-    message->setOriginDroneAddress(ipAddress.c_str());
     message->setVictimPositionX(alert.victimPosition.x);
     message->setVictimPositionY(alert.victimPosition.y);
     message->setVictimPositionZ(alert.victimPosition.z);
-    message->setDronePositionX(position.x);
-    message->setDronePositionY(position.y);
-    message->setDronePositionZ(position.z);
-    auto controlledMobility = dynamic_cast<BaGaussMarkovMobility *>(mobility);
-    message->setWaypointId(controlledMobility ? controlledMobility->getWaypointId() : -1);
-    message->setSequenceNumber(alert.attempts);
     message->setAttemptNumber(alert.attempts);
     message->setGenerationTimestamp(alert.generationTime);
-    message->setTransmissionTimestamp(simTime());
     message->setTimeToLive(alertTtl);
     socket.sendTo(new Packet("VictimAlert", message),
                   Ipv4Address(team.ipAddress.c_str()), appPort);

@@ -131,5 +131,4 @@ do obstáculo, linha de visada e tempo de voo restante.
 - o BA pode ser ativado e não iniciar movimento se não houver candidato viável;
 - o efeito científico é atribuído à política BA On/Off, não a uma classificação
   causal de cada ACK individual;
-- smoke test, PCAP, multihop e métricas de camada validam mecanismos, não o
-  desfecho confirmatório.
+- o smoke test valida o mecanismo, mas não constitui evidência confirmatória.

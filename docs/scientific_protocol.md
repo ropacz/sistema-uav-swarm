@@ -43,8 +43,8 @@ O analisador exige:
 - igualdade dos parâmetros registrados, exceto `baEnabled`;
 - presença única de cada escalar central obrigatório.
 
-Multihop, escala, PCAP e diagnósticos por camada são extensões opcionais e não
-integram a conclusão confirmatória.
+O experimento principal usa comunicação direta. Variações de vítimas e equipes
+pertencem à robustez e não integram a conclusão confirmatória.
 
 ## 3. Métricas
 
@@ -53,6 +53,8 @@ equipe, (C) confirmados e (R) retransmissões da aplicação:
 
 \[
 PDR=\frac{D}{G},
+\qquad
+LossRate=1-PDR,
 \qquad
 ConfirmationRate=\frac{C}{G},
 \qquad
@@ -113,6 +115,4 @@ Também não se deve inferir causalidade de um movimento individual: a evidênci
 principal é o contraste global BA On menos BA Off.
 
 Limites de validade externa incluem sensor geométrico abstrato, última posição
-recebida da equipe, comunicação direta no estudo principal e função de aptidão
-baseada em geometria. PCAP e métricas MAC/IP podem explicar casos, mas não
-substituem os desfechos fim a fim da aplicação.
+recebida da equipe, comunicação direta e função de aptidão baseada em geometria.

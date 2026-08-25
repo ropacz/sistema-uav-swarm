@@ -17,16 +17,14 @@ cp .env.example .env
 make experiment                 # experimento confirmatório BA Off/On
 make analysis-tests             # contratos do analisador
 make ba-smoke-test              # integração do BA, não experimento científico
-make network-discovery-validation # descoberta local por broadcast
+make clean-results              # remove resultados e tabelas regeneráveis
 ```
 
 O escopo principal está em `simulations/main-experiment.ini`; parâmetros físicos
-e de protocolo são herdados das configurações-base. Robustez e diagnósticos
-permanecem separados. A arquitetura, as fórmulas, as hipóteses e as validações
+e de protocolo são herdados das configurações-base. A robustez permanece
+separada. A arquitetura, as fórmulas, as hipóteses e as validações
 estão organizadas no [índice da documentação técnica](docs/README.md). Os valores
 dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
-Multihop, PCAP e robustez possuem alvos próprios, fora do fluxo confirmatório.
-A antiga sonda de escala permanece apenas como configuração histórica.
 
 ## Organização
 
@@ -37,7 +35,7 @@ A antiga sonda de escala permanece apenas como configuração histórica.
 - `src/optimization`: Bat Algorithm e função de aptidão;
 - `src/scenario`, `src/node` e `src/sensing`: cenário, composição e percepção;
 - `simulations`: rede, configurações e ambientes físicos;
-- `analysis`: relatório principal, robustez, auditoria opcional e testes;
+- `analysis`: relatório principal, robustez e testes;
 - `docs`: protocolo científico e fontes de parâmetros.
 
 Consulte [simulations/README.md](simulations/README.md) para distinguir cenários

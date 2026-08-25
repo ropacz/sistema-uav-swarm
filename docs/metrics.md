@@ -7,8 +7,7 @@ Um `alertId` representa um alerta lógico. Um alerta pode originar vários
 por `alertId`; portanto retransmissões e recepções por equipes diferentes não
 inflam o PDR.
 
-Os arquivos `.sca` são a fonte normativa. O PCAP e os escalares do INET por
-camada servem apenas a diagnóstico.
+Os arquivos `.sca` produzidos pelo coletor central são a fonte normativa.
 
 ## 2. Contadores centrais
 
@@ -46,8 +45,14 @@ entregue:
 PDR=\frac{|D|}{|G|}.
 \]
 
+A taxa de perda é apresentada como medida derivada, sem criar outro contador:
+
+\[
+LossRate=1-PDR.
+\]
+
 Esse PDR responde se o alerta chegou a alguma equipe. Ele não é calculado a
-partir de descartes MAC, linhas de PCAP ou ACKs.
+partir de descartes das camadas inferiores ou ACKs.
 
 ## 4. Desfechos secundários
 
@@ -116,12 +121,8 @@ O relatório fornece média, desvio-padrão e IC95% de (d_i) com t de Student.
 Não se agrupam todos os alertas de todas as seeds em uma única proporção, pois
 isso daria pesos diferentes às execuções.
 
-## 8. Diagnósticos opcionais
+## 8. Registro dos resultados
 
-`analysis/core/network_metrics.py` pode resumir quadros, descartes MAC/IP e UDP
-para investigar mecanismos. `analysis/pcap/` audita pacotes específicos. Esses
-artefatos respondem “por que ocorreu?”; os escalares centrais respondem “a
-política melhorou a entrega?”.
-
-Vetores ficam desabilitados por padrão. Devem ser habilitados somente para uma
-pergunta temporal explícita, evitando arquivos grandes sem uso analítico.
+Vetores ficam desabilitados. O protocolo científico utiliza somente escalares
+centrais por execução, evitando arquivos grandes e diagnósticos sem uso no
+contraste BA Off/On.

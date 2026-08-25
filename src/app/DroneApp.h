@@ -26,7 +26,6 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::cMessage *maintenanceTimer = nullptr;
     omnetpp::cMessage *movementCompleteTimer = nullptr;
     std::string droneId;
-    std::string ipAddress;
     std::map<std::string, TeamLinkState> discoveredTeams;
     std::map<std::string, PendingVictimAlert> pendingAlerts;
     RepositionController reposition;
@@ -58,7 +57,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual ~DroneApp();
     /// Informa ao OMNeT++ quantos estágios de inicialização do INET serão usados.
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-    /// Lê parâmetros, registra métricas e configura endereço, socket e timers.
+    /// Lê parâmetros, registra métricas e configura socket e timers.
     virtual void initialize(int stage) override;
     /// Verifica cada parâmetro isoladamente, nomeando o que estiver inválido.
     void validateParameters() const;

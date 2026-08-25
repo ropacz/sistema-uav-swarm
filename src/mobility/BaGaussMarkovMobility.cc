@@ -1,7 +1,5 @@
 #include "BaGaussMarkovMobility.h"
 
-#include <algorithm>
-
 using namespace omnetpp;
 using namespace inet;
 
@@ -25,15 +23,6 @@ void BaGaussMarkovMobility::move()
     LineSegmentsMobilityBase::move();
     // A sobrecarga com elevação reflete também nos limites verticais.
     handleIfOutside(REFLECT, lastPosition, lastVelocity, angle, elevation);
-    minimumObservedZ = std::min(minimumObservedZ, lastPosition.z);
-    maximumObservedZ = std::max(maximumObservedZ, lastPosition.z);
-}
-
-void BaGaussMarkovMobility::finish()
-{
-    recordScalar("minimumObservedZ", minimumObservedZ);
-    recordScalar("maximumObservedZ", maximumObservedZ);
-    GaussMarkovMobility::finish();
 }
 
 void BaGaussMarkovMobility::setTargetPosition()
@@ -41,13 +30,11 @@ void BaGaussMarkovMobility::setTargetPosition()
     // Ao terminar a perna do BA, mantém a posição até a aplicação validar o enlace.
     if (baOverride) {
         baOverride = false;
-        holding = true;
         stationary = true;
         nextChange = -1;
         lastVelocity = Coord::ZERO;
         return;
     }
-    waypointId++;
     speed = alpha * speed
         + (1.0 - alpha) * speedMean
         + sqrt(1.0 - alpha * alpha) * normal(0.0, 1.0) * speedStdDev;
@@ -81,17 +68,13 @@ void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSp
     double verticalTime = std::abs(delta.z) / verticalSpeed;
     // Os eixos evoluem simultaneamente; o eixo mais lento determina a chegada.
     double travelTime = std::max(horizontalTime, verticalTime);
-    if (travelTime <= 0) {
-        holding = true;
+    if (travelTime <= 0)
         return;
-    }
     targetPosition = destination;
     nextChange = simTime() + travelTime;
     lastVelocity = delta / travelTime;
     stationary = false;
-    holding = false;
     baOverride = true;
-    waypointId++;
     scheduleUpdate();
 }
 
@@ -103,7 +86,6 @@ void BaGaussMarkovMobility::resumeNormal()
     // posição interpolada, sem deixar um comando do BA pendente.
     getCurrentPosition();
     baOverride = false;
-    holding = false;
     stationary = false;
     setTargetPosition();
     scheduleUpdate();

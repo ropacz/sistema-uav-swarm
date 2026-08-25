@@ -36,7 +36,7 @@ def central_scalar(frame: pd.DataFrame, name: str) -> float:
 
 
 def collect(path: str) -> dict:
-    """Return raw counters and the four outcomes for one experimental run."""
+    """Return raw counters and auditable outcomes for one experimental run."""
     attrs, frame, _ = parse_sca(path)
     raw_names = {
         "alerts_generated": "alertsGenerated",
@@ -66,6 +66,9 @@ def collect(path: str) -> dict:
         "run_file": Path(path).name,
         # Recalculadas a partir dos contadores para manter o relatório auditável.
         "alert_pdr_pct": ratio(values["alerts_delivered"], generated, 100),
+        "alert_loss_pct": ratio(
+            generated - values["alerts_delivered"], generated, 100
+        ),
         "appack_pct": ratio(values["alerts_confirmed"], generated, 100),
         "delivery_delay_mean_s": ratio(
             values["delivery_delay_sum_s"], values["delivery_delay_count"]

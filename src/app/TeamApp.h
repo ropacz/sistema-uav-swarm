@@ -18,7 +18,6 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     inet::UdpSocket socket;
     omnetpp::cMessage *updateTimer = nullptr;
     std::string teamId;
-    std::string ipAddress;
     omnetpp::simtime_t updateInterval;
     omnetpp::simtime_t initialJitter;
     omnetpp::simtime_t ackStartTime;

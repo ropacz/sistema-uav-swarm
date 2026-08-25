@@ -45,7 +45,7 @@ make analysis-tests
 ```
 
 Verifica sintaxe, imports, leitura estrita dos escalares, razões com denominador
-zero, exposição sem exclusão, estatística pareada e ferramentas PCAP opcionais.
+zero, exposição sem exclusão e estatística pareada.
 
 ### Build C++/NED
 
@@ -72,15 +72,6 @@ timeout -> sensor detecta -> BA ativa -> movimento conclui
 
 O validador lê somente o contrato central e exige distância positiva.
 
-### Descoberta direta
-
-```bash
-make network-discovery-validation
-```
-
-Confirma entrega direta e que uma equipe conhecida apenas por outro nó não leva
-o UAV de origem a enviar uma tentativa com broadcasts limitados.
-
 ### Experimento confirmatório
 
 ```bash
@@ -102,9 +93,7 @@ exposição, nunca exclusão.
 | `analysis/figures/main_experiment/summary.csv` | estimativas e IC95% |
 | `analysis/figures/main_experiment/ba_exposure.csv` | exposição por seed |
 | `analysis/figures/main_experiment/exposure_summary.csv` | exposição agregada |
-| `analysis/figures/diagnostics/` | diagnóstico opcional MAC/IP/UDP |
 | `analysis/figures/robustness/` | resultados da extensão de robustez |
-| `simulations/results/pcap/` | auditoria opcional |
 
 Antes da campanha final, devem ser preservados commit, estado da árvore, hashes
 dos `.ini`, versões de OMNeT++/INET, configurações e seeds. Resultados derivados
@@ -121,11 +110,10 @@ podem ser regenerados e não substituem os `.sca`.
 - [ ] confirmação, atraso e retries foram tratados como secundários;
 - [ ] exposição foi relatada sem interpretação causal individual;
 - [ ] valores vieram dos `.ini`, sem cópia divergente na documentação;
-- [ ] MAC/IP/PCAP foram usados apenas como diagnóstico.
 
 ## 6. Limitações conhecidas
 
-- descoberta de equipes é direta; multihop é uma extensão separada;
+- descoberta e comunicação com as equipes são diretas;
 - sensor e obstáculos são abstrações geométricas;
 - o BA usa a última posição recebida, sem previsão de velocidade;
 - o custo de enlace é geométrico e não prevê o canal;

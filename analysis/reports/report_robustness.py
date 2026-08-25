@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import glob
-import os
 import re
 import sys
 from pathlib import Path
@@ -54,7 +53,7 @@ def main() -> None:
 
     runs = pd.DataFrame(run_record(path) for path in paths)
     metrics = [
-        "alert_pdr_pct", "appack_pct", "delivery_delay_mean_s",
+        "alert_pdr_pct", "alert_loss_pct", "appack_pct", "delivery_delay_mean_s",
         "retries_per_alert", "reposition_triggers", "obstacles_detected",
         "ba_activations", "repositions_started", "repositions_completed",
         "reposition_distance_sum_m",

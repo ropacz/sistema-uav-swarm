@@ -26,6 +26,7 @@ CONTROL = "MainExperiment_BaOff"
 TREATMENT = "MainExperiment_BaOn"
 METRIC_SPECS = {
     "alert_pdr_pct": ("primary", "higher"),
+    "alert_loss_pct": ("derived", "lower"),
     "appack_pct": ("secondary", "higher"),
     "delivery_delay_mean_s": ("secondary", "lower"),
     "retries_per_alert": ("secondary", "lower"),

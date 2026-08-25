@@ -12,7 +12,7 @@ namespace echosar {
 
 // Wire format: "ECHO" | version | type | body length | typed fields | padding.
 // Integers and IEEE-754 doubles use network byte order (big endian).
-static constexpr uint8_t WIRE_VERSION = 1;
+static constexpr uint8_t WIRE_VERSION = 2;
 static constexpr uint8_t POSITION_UPDATE_TYPE = 1;
 static constexpr uint8_t VICTIM_ALERT_TYPE = 2;
 static constexpr uint8_t VICTIM_ACK_TYPE = 3;
@@ -73,33 +73,21 @@ struct SarCodec<PositionUpdateChunk>
     static void encode(inet::MemoryOutputStream& stream,
             const inet::Ptr<const PositionUpdateChunk>& chunk)
     {
-        writeString(stream, chunk->getMessageId());
         writeString(stream, chunk->getSenderId());
-        writeString(stream, chunk->getSenderType());
-        writeString(stream, chunk->getIpAddress());
-        stream.writeUint32Be(static_cast<uint32_t>(chunk->getWaypointId()));
         writeDouble(stream, chunk->getPositionX());
         writeDouble(stream, chunk->getPositionY());
         writeDouble(stream, chunk->getPositionZ());
         stream.writeUint64Be(static_cast<uint64_t>(chunk->getSequenceNumber()));
-        writeTime(stream, chunk->getTimestamp());
-        writeString(stream, chunk->getOperationalState());
     }
 
     static void decode(inet::MemoryInputStream& stream,
             const inet::Ptr<PositionUpdateChunk>& chunk)
     {
-        chunk->setMessageId(readString(stream).c_str());
         chunk->setSenderId(readString(stream).c_str());
-        chunk->setSenderType(readString(stream).c_str());
-        chunk->setIpAddress(readString(stream).c_str());
-        chunk->setWaypointId(static_cast<int32_t>(stream.readUint32Be()));
         chunk->setPositionX(readDouble(stream));
         chunk->setPositionY(readDouble(stream));
         chunk->setPositionZ(readDouble(stream));
         chunk->setSequenceNumber(static_cast<int64_t>(stream.readUint64Be()));
-        chunk->setTimestamp(readTime(stream));
-        chunk->setOperationalState(readString(stream).c_str());
     }
 };
 
@@ -115,18 +103,11 @@ struct SarCodec<VictimAlertChunk>
         writeString(stream, chunk->getMessageId());
         writeString(stream, chunk->getVictimId());
         writeString(stream, chunk->getOriginDroneId());
-        writeString(stream, chunk->getOriginDroneAddress());
         writeDouble(stream, chunk->getVictimPositionX());
         writeDouble(stream, chunk->getVictimPositionY());
         writeDouble(stream, chunk->getVictimPositionZ());
-        writeDouble(stream, chunk->getDronePositionX());
-        writeDouble(stream, chunk->getDronePositionY());
-        writeDouble(stream, chunk->getDronePositionZ());
-        stream.writeUint32Be(static_cast<uint32_t>(chunk->getWaypointId()));
-        stream.writeUint64Be(static_cast<uint64_t>(chunk->getSequenceNumber()));
         stream.writeUint32Be(static_cast<uint32_t>(chunk->getAttemptNumber()));
         writeTime(stream, chunk->getGenerationTimestamp());
-        writeTime(stream, chunk->getTransmissionTimestamp());
         writeTime(stream, chunk->getTimeToLive());
     }
 
@@ -137,18 +118,11 @@ struct SarCodec<VictimAlertChunk>
         chunk->setMessageId(readString(stream).c_str());
         chunk->setVictimId(readString(stream).c_str());
         chunk->setOriginDroneId(readString(stream).c_str());
-        chunk->setOriginDroneAddress(readString(stream).c_str());
         chunk->setVictimPositionX(readDouble(stream));
         chunk->setVictimPositionY(readDouble(stream));
         chunk->setVictimPositionZ(readDouble(stream));
-        chunk->setDronePositionX(readDouble(stream));
-        chunk->setDronePositionY(readDouble(stream));
-        chunk->setDronePositionZ(readDouble(stream));
-        chunk->setWaypointId(static_cast<int32_t>(stream.readUint32Be()));
-        chunk->setSequenceNumber(static_cast<int64_t>(stream.readUint64Be()));
         chunk->setAttemptNumber(static_cast<int32_t>(stream.readUint32Be()));
         chunk->setGenerationTimestamp(readTime(stream));
-        chunk->setTransmissionTimestamp(readTime(stream));
         chunk->setTimeToLive(readTime(stream));
     }
 };
@@ -166,8 +140,6 @@ struct SarCodec<VictimAckChunk>
         writeString(stream, chunk->getVictimId());
         writeString(stream, chunk->getTeamId());
         writeString(stream, chunk->getOriginDroneId());
-        writeTime(stream, chunk->getReceptionTimestamp());
-        writeTime(stream, chunk->getAckTimestamp());
     }
 
     static void decode(inet::MemoryInputStream& stream,
@@ -178,8 +150,6 @@ struct SarCodec<VictimAckChunk>
         chunk->setVictimId(readString(stream).c_str());
         chunk->setTeamId(readString(stream).c_str());
         chunk->setOriginDroneId(readString(stream).c_str());
-        chunk->setReceptionTimestamp(readTime(stream));
-        chunk->setAckTimestamp(readTime(stream));
     }
 };
 

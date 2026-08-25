@@ -10,7 +10,7 @@ simulations/results/
 src/messages/*_m.cc
 src/messages/*_m.h
 
-# ── Figuras geradas pelo script de análise ────────────────────────────────────
+# ── Tabelas e figuras derivadas pela análise ──────────────────────────────────
 analysis/figures/
 
 # ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────

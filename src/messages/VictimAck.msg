@@ -9,6 +9,4 @@ class VictimAckChunk extends inet::FieldsChunk
     string victimId;
     string teamId;
     string originDroneId;
-    simtime_t receptionTimestamp;
-    simtime_t ackTimestamp;
 }

@@ -50,6 +50,7 @@ class ExperimentMetricsReaderTests(unittest.TestCase):
             row = collect(str(path))
         self.assertEqual(row["seed"], 7)
         self.assertEqual(row["alert_pdr_pct"], 50)
+        self.assertEqual(row["alert_loss_pct"], 50)
         self.assertEqual(row["appack_pct"], 50)
         self.assertEqual(row["delivery_delay_mean_s"], 4)
         self.assertEqual(row["retries_per_alert"], 1.5)
@@ -60,6 +61,7 @@ class ExperimentMetricsReaderTests(unittest.TestCase):
             write_sca(path, {"alertsGenerated": 0})
             row = collect(str(path))
         self.assertTrue(math.isnan(row["alert_pdr_pct"]))
+        self.assertTrue(math.isnan(row["alert_loss_pct"]))
         self.assertTrue(math.isnan(row["retries_per_alert"]))
 
     def test_missing_central_scalar_is_a_contract_failure(self) -> None:

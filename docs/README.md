@@ -33,10 +33,15 @@ divergência, prevalecem, nesta ordem:
 
 ## Material complementar
 
-- [`professor_scenarios_legacy.md`](references/professor_scenarios_legacy.md)
-  preserva a descrição anterior à simplificação apenas como histórico.
-- [`references/`](references/) contém especificações e material externo. Esses
-  arquivos não alteram o comportamento da simulação.
+- [`references/cenarios_solicitados.pdf`](references/cenarios_solicitados.pdf)
+  contém os cenários indicados para a campanha experimental;
+- [`references/arguicao_banca_qualificacao.pdf`](references/arguicao_banca_qualificacao.pdf)
+  preserva as recomendações da banca de qualificação;
+- [`references/especificacoes_dji_phantom_4_pro_v2.docx`](references/especificacoes_dji_phantom_4_pro_v2.docx)
+  reúne a referência técnica do VANT.
+
+Esses arquivos fundamentam decisões do estudo, mas não alteram diretamente o
+comportamento da simulação.
 
 Resultados de execução são gerados em `simulations/results/`; análises derivadas
 em `analysis/figures/`. Ambos são artefatos reproduzíveis, não documentação

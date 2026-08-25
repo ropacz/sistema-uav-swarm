@@ -3,11 +3,8 @@
 #include <cstring>
 
 #include "inet/mobility/contract/IMobility.h"
-#include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
-#include "inet/networklayer/contract/IInterfaceTable.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
-#include "inet/networklayer/ipv4/Ipv4InterfaceData.h"
 #include "metrics/AlertMetricEvent.h"
 
 using namespace omnetpp;
@@ -39,17 +36,6 @@ void TeamApp::initialize(int stage)
         alertDeliveredSignal = registerSignal("victimAlertDelivered");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
-        auto ift = L3AddressResolver().findInterfaceTableOf(getParentModule());
-        for (int i = 0; i < ift->getNumInterfaces(); ++i) {
-            auto interface = ift->getInterface(i);
-            auto data = interface->findProtocolData<Ipv4InterfaceData>();
-            if (!interface->isLoopback() && data && !data->getIPAddress().isUnspecified()) {
-                ipAddress = data->getIPAddress().str();
-                break;
-            }
-        }
-        if (ipAddress.empty())
-            throw cRuntimeError("Team '%s' has no configured IPv4 address", teamId.c_str());
         socket.setOutputGate(gate("socketOut"));
         socket.setCallback(this);
         socket.setBroadcast(true);
@@ -79,18 +65,11 @@ void TeamApp::sendPositionUpdate()
     Coord position = mobility->getCurrentPosition();
     auto update = makeShared<PositionUpdateChunk>();
     update->setChunkLength(B(positionUpdatePayloadBytes));
-    update->setMessageId((teamId + "-pos-" + std::to_string(++updateSequence)).c_str());
     update->setSenderId(teamId.c_str());
-    update->setSenderType("team");
-    update->setIpAddress(ipAddress.c_str());
-    // A trajetória da equipe não expõe o waypoint interno; -1 significa indisponível.
-    update->setWaypointId(-1);
     update->setPositionX(position.x);
     update->setPositionY(position.y);
     update->setPositionZ(position.z);
-    update->setSequenceNumber(updateSequence);
-    update->setTimestamp(simTime());
-    update->setOperationalState("mobile");
+    update->setSequenceNumber(++updateSequence);
     socket.sendTo(new Packet("PositionUpdate", update),
                   Ipv4Address::ALLONES_ADDRESS, appPort);
 }
@@ -109,11 +88,9 @@ void TeamApp::handleVictimAlert(Packet *packet)
     std::string alertId = alert->getAlertId();
     std::string messageId = alert->getMessageId();
     bool invalid = alertId.empty() || messageId.empty() || std::string(alert->getVictimId()).empty() ||
-        std::string(alert->getOriginDroneId()).empty() || std::string(alert->getOriginDroneAddress()).empty() ||
+        std::string(alert->getOriginDroneId()).empty() ||
         alert->getAttemptNumber() <= 0 ||
-        alert->getTimeToLive() <= SIMTIME_ZERO || alert->getGenerationTimestamp() > simTime() ||
-        alert->getTransmissionTimestamp() < alert->getGenerationTimestamp() ||
-        alert->getTransmissionTimestamp() > simTime();
+        alert->getTimeToLive() <= SIMTIME_ZERO || alert->getGenerationTimestamp() > simTime();
     if (invalid) {
         delete packet;
         return;
@@ -146,8 +123,6 @@ void TeamApp::handleVictimAlert(Packet *packet)
     ack->setVictimId(alert->getVictimId());
     ack->setTeamId(teamId.c_str());
     ack->setOriginDroneId(alert->getOriginDroneId());
-    ack->setReceptionTimestamp(simTime());
-    ack->setAckTimestamp(simTime());
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     socket.sendTo(new Packet("VictimAck", ack), sourceAddress, appPort);
     delete packet;
