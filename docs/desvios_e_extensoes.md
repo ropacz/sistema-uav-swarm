@@ -357,3 +357,49 @@ Implementado conforme a diretriz, sem desvio:
 - **§29** limitações declaradas em [`README.md`](../README.md), incluindo as
   hipóteses de D4 (geometria idealizada) e E2 (posição possivelmente
   desatualizada na recuperação).
+
+---
+
+## Validação metodológica comparativa
+
+Nenhum item aqui é desvio, extensão ou lacuna frente à diretriz — é registro de
+por que duas decisões de rigor do projeto não são acidentais, contrastadas com
+a prática observada em outro projeto FANET/OMNeT++ de código aberto (drones +
+estação terrestre, INET, aplicação UDP) usado como termo de comparação durante
+a revisão dos `.ini`.
+
+### Modelo de rádio: 802.11 realista, não rádio ideal
+
+O projeto comparado usa `IdealWirelessNic`/`IdealRadioMedium`: conectividade
+binária dentro de um raio fixo, sem perda por propagação, sem modelo de
+interferência (`ignoreInterference = true`). É escolha razoável quando o
+objeto de estudo é outra camada — no caso comparado, alocação de recursos por
+teoria dos jogos, não a rede em si.
+
+Aqui o objeto de estudo **é** a rede: a comparação BA ligado/desligado só tem
+sentido se existir degradação de enlace real para o mecanismo reagir a ela.
+Rádio ideal eliminaria exatamente essa degradação — não haveria o que o BA
+corrigisse. `Ieee80211ScalarRadioMedium` + `FreeSpacePathLoss` + sensibilidade
+e SNIR calibrados (E5) preserva perda por distância, colisão e retransmissão;
+a comparação confirma que essa era a escolha correta para o objetivo do
+trabalho, não apenas uma entre opções equivalentes.
+
+### Fluxos de RNG dedicados, não `rand()` da libc
+
+O projeto comparado sorteia parâmetros (valores de armazenamento simulado) com
+`rand()` da biblioteca padrão C, fora do controle de semente do OMNeT++.
+Trocar a seed configurada no `.ini` não afeta esses sorteios: são uma fonte de
+não determinismo que a própria configuração de reprodutibilidade do
+experimento não alcança.
+
+Este projeto já havia sido corrigido de um problema da mesma classe: o
+`BatAlgorithm` sorteava de `getRNG(0)`, o fluxo global também consumido por
+mobilidade, backoff do 802.11, AODV e jitter das aplicações — só o braço
+tratado consumia esses sorteios extras, o que divergia trajetórias e filas
+entre os braços mesmo com a mesma seed (36 escalares divergentes, medido na
+época). A correção — `num-rngs = 25`, um fluxo dedicado por drone, por equipe
+e por aplicação de drone (`omnetpp.ini`, linhas 3–29) — é exatamente a
+disciplina que evita a classe de erro observada no projeto comparado. A
+comparação não motivou a correção (já existia), mas confirma que o cuidado
+era necessário e não excesso de engenharia: é o tipo de falha real que ocorre
+quando esse cuidado não é tomado.
