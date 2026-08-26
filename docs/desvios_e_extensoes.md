@@ -447,3 +447,76 @@ tempo de descoberta de rota do AODV. `ackTimeout = 2s` está retransmitindo em
 resposta a perda de enlace real, que é exatamente a exposição que o
 mecanismo avaliado (BA) precisa para ser testado — não um artefato de
 temporização apertada demais.
+
+## Correção: amostragem inicial do Bat Algorithm ignorava o domínio
+
+Revisão externa do funil de exposição (ver seção anterior) levantou uma
+segunda dúvida ao investigar por que uma ativação do BA (seed 4,
+`MainExperiment_BaOn`) não produzia reposicionamento: seria falta de solução
+viável, ou desperdício de orçamento de amostragem?
+
+Instrumentação temporária em `RepositionFitness::feasible()` (contador por
+motivo de rejeição, removida após uso) confirmou a segunda hipótese como
+causa dominante. `BatAlgorithm::optimize()` sorteava candidatos num raio de
+`maximumRepositionDistance` (120 m) nos três eixos, sem considerar que a
+faixa de altitude válida (`minimumAltitude`–`maximumAltitude`, 6–20 m) tem só
+14 m de largura, ou que o drone podia estar perto da borda do cenário
+(999,6 m de 1000 m no caso investigado). Resultado medido, 2021 avaliações
+de uma ativação sem solução:
+
+| motivo da rejeição | contagem | % |
+| --- | --- | --- |
+| fora da área (0–1000 m) | 967 | 47,8% |
+| fora da altitude (6–20 m) | 984 | 48,7% |
+| linha de visada obstruída até a equipe | 70 | 3,5% |
+| **passou tudo** | **0** | 0% |
+
+96,5% das avaliações eram rejeitadas antes mesmo de testar a restrição
+cientificamente relevante (obstrução geométrica). Apenas 70 candidatos
+chegavam ao teste de linha de visada, e todos permaneciam obstruídos —
+tornando ambíguo se a ausência de solução refletia geometria genuinamente
+inviável ou amostragem malsucedida.
+
+Correção: `BatAlgorithm::optimize()` ganhou um parâmetro `DomainFunction`
+(`RepositionFitness::inDomain()`, só área e altitude, sem raycasting) usado
+para reamostrar por rejeição — até 500 tentativas geométricas baratas — antes
+de cada avaliação cara de `feasible()`/`cost()`. Sem `std::clamp()`: reamostrar
+preserva a distribuição condicionada ao domínio; recortar concentraria
+candidatos artificialmente nas bordas/teto/piso (ver `BatAlgorithm.h`/`.cc`).
+
+Reexecutando a mesma ativação (seed 4) com a correção, mesmas seeds de RNG:
+
+| | pré-fix | pós-fix |
+| --- | --- | --- |
+| avaliações rejeitadas por domínio | 1951 (96,5%) | 0 (0%) |
+| avaliações que testaram linha de visada | 70 | 2021 (100%) |
+| candidatos viáveis encontrados | 0 | 0 |
+
+A conclusão qualitativa não mudou — essa ativação específica genuinamente não
+tem solução viável (equipe a 458 m, nenhum ponto dentro de 120 m livre de
+obstrução) — mas agora é uma afirmação sustentada por 100% do orçamento
+testando a restrição real, não por 3,5%. Uma segunda ativação da mesma seed
+(que já encontrava solução antes da correção) passou a encontrá-la com 930
+avaliações em vez de 2126 — mesmo resultado qualitativo, menos desperdício.
+
+`Calibration_Exposure` (10 seeds reservadas, `seed-set + 100`) não teve
+nenhum escalar de funil alterado pela correção — nenhuma das ativações
+daquele lote era um caso-limite que a ineficiência de amostragem decidia. A
+correção melhora a validade do diagnóstico "sem solução viável" e a
+eficiência computacional; não há evidência, nas seeds testadas, de que altere
+a taxa de reposicionamento da campanha. Verificado com a suíte completa dos 8
+smoke tests obrigatórios (8/8 OK) antes do commit.
+
+## Correção: `minimumRange` do sensor ativo mesmo no modo oráculo idealizado
+
+Revisão externa notou uma inconsistência lógica em `AbstractObstacleSensor`:
+`maximumRange = -1m` (mecanismo científico, D4) desativa o limite de alcance
+físico do sensor, mas `minimumRange = 0.7m` (zona morta da câmera do Phantom
+4 Pro) continuava sendo aplicado incondicionalmente. Um drone geometricamente
+encostado num obstáculo (distância < 0,7 m) deixaria de confirmar a
+obstrução — o oposto do que um oráculo geométrico idealizado deveria fazer.
+
+Corrigido em `AbstractObstacleSensor::inspect()`: `minimumRange` e
+`maximumRange` agora só se aplicam juntos, quando `maximumRange >= 0` (modo
+sensor físico, usado pelos smoke tests). No modo oráculo (`maximumRange` < 0,
+usado pelo mecanismo científico), nenhum dos dois limites se aplica.

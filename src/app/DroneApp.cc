@@ -609,7 +609,8 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
         current, fitnessParameters.maximumRepositionDistance,
         batParameters, getRNG(0),
         [&](const Coord& candidate) { return fitness.cost(candidate); },
-        [&](const Coord& candidate) { return fitness.feasible(candidate); });
+        [&](const Coord& candidate) { return fitness.feasible(candidate); },
+        [&](const Coord& candidate) { return fitness.inDomain(candidate); });
     EV_INFO << "BA result: current=" << current << " target=" << teamPosition
             << " candidate=" << result.position << " fitness=" << result.fitness
             << " valid=" << result.valid << "\n";

@@ -79,11 +79,16 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
     }
     result.nearestSurfacePoint = visitor.closestPoint;
     result.distance = visitor.closestDistance;
-    // O alcance máximo modela um sensor de prevenção de colisões e só se aplica
-    // quando configurado. Um edifício que bloqueia o enlace é identificado pela
-    // geometria do percurso, não pela proximidade do drone.
-    if (result.distance < minimumRange ||
-        (maximumRange >= 0 && result.distance > maximumRange)) {
+    // minimumRange e maximumRange modelam a zona morta e o alcance do sensor
+    // físico de prevenção de colisões; só se aplicam juntos, quando o sensor
+    // está configurado como físico (maximumRange >= 0). Com maximumRange < 0
+    // o módulo age como oráculo geométrico idealizado (mecanismo científico,
+    // ver docs/desvios_e_extensoes.md, D4): um edifício que bloqueia o
+    // enlace é identificado pela geometria do percurso, sem zona morta nem
+    // limite de distância — um drone encostado na parede não deixaria de
+    // confirmar o obstáculo por estar "perto demais".
+    if (maximumRange >= 0 &&
+        (result.distance < minimumRange || result.distance > maximumRange)) {
         result.reason = "outsideVisualRange";
         return result;
     }

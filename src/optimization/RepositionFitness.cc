@@ -57,11 +57,16 @@ double RepositionFitness::cost(const Coord& candidate) const
            parameters.wMove * movementCost;
 }
 
+bool RepositionFitness::inDomain(const Coord& candidate) const
+{
+    return candidate.x >= parameters.areaMinX && candidate.x <= parameters.areaMaxX &&
+           candidate.y >= parameters.areaMinY && candidate.y <= parameters.areaMaxY &&
+           candidate.z >= parameters.minimumAltitude && candidate.z <= parameters.maximumAltitude;
+}
+
 bool RepositionFitness::feasible(const Coord& candidate) const
 {
-    if (candidate.x < parameters.areaMinX || candidate.x > parameters.areaMaxX ||
-        candidate.y < parameters.areaMinY || candidate.y > parameters.areaMaxY ||
-        candidate.z < parameters.minimumAltitude || candidate.z > parameters.maximumAltitude ||
+    if (!inDomain(candidate) ||
         candidate.distance(current) > parameters.maximumRepositionDistance ||
         candidate.distance(obstaclePoint) < parameters.obstacleSafetyMargin)
         return false;

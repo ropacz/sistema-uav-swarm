@@ -54,6 +54,10 @@ class RepositionFitness
     double cost(const inet::Coord& candidate) const;
     /// Limites de área, altitude, alcance, margem, trajeto livre e autonomia.
     bool feasible(const inet::Coord& candidate) const;
+    /// Só área e altitude — sem geometria de obstáculo. Barato o bastante para
+    /// o gerador de candidatos do BA descartar amostras triviais antes de
+    /// gastar uma avaliação completa de feasible() nelas.
+    bool inDomain(const inet::Coord& candidate) const;
     /// Tempo de percurso entre dois pontos, com o eixo mais lento decidindo.
     double travelTime(const inet::Coord& from, const inet::Coord& to) const;
 

@@ -31,22 +31,41 @@ Coord randomInSphere(omnetpp::cRNG *rng, double radius)
     } while (p.length() > 1 || p.length() == 0);
     return p * radius;
 }
+
+// Limite de tentativas só para achar um ponto dentro de área/altitude — checagem
+// geométrica barata (sem raycasting de obstáculo), separada do orçamento de
+// initializationAttempts. Alto o bastante para não ser o gargalo em cenários
+// razoáveis; se esgotar, devolve a última amostra mesmo fora do domínio e deixa
+// feasible() rejeitá-la normalmente — nunca pior que o comportamento anterior.
+constexpr int kDomainSamplingAttempts = 500;
+
+Coord sampleInDomain(omnetpp::cRNG *rng, const Coord& center, double maxDistance,
+                     const BatAlgorithm::DomainFunction& inDomain)
+{
+    Coord candidate = center + randomInSphere(rng, maxDistance);
+    for (int attempt = 1; attempt < kDomainSamplingAttempts && !inDomain(candidate); ++attempt)
+        candidate = center + randomInSphere(rng, maxDistance);
+    return candidate;
+}
 }
 
 BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
                                  const BatParameters& p, omnetpp::cRNG *rng,
                                  const FitnessFunction& fitness,
-                                 const FeasibilityFunction& feasible)
+                                 const FeasibilityFunction& feasible,
+                                 const DomainFunction& inDomain)
 {
     if (p.populationSize <= 0 || p.iterations <= 0 || maxDistance <= 0)
         throw omnetpp::cRuntimeError("Invalid Bat Algorithm parameters");
 
     std::vector<Bat> bats(p.populationSize);
     BatResult best;
-    // Cada morcego inicia em uma posição viável dentro da região de busca.
+    // Cada morcego inicia em uma posição viável dentro da região de busca. A
+    // amostra é pré-filtrada por área/altitude (sampleInDomain) antes de gastar
+    // uma tentativa em feasible(), que também testa obstáculo/conectividade.
     for (auto& bat : bats) {
         for (int tries = 0; tries < p.initializationAttempts; ++tries) {
-            bat.position = center + randomInSphere(rng, maxDistance);
+            bat.position = sampleInDomain(rng, center, maxDistance, inDomain);
             if (feasible(bat.position))
                 break;
         }
