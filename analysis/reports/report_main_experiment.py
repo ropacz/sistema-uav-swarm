@@ -48,7 +48,9 @@ EXPOSURE_METRICS = (
     "reposition_distance_mean_m",
     "reposition_duration_sum_s",
     "reposition_duration_mean_s",
-    "no_known_team_failures",
+    "never_known_team_selection_events",
+    "expired_known_team_selection_events",
+    "known_team_no_ack_timeout_events",
     "alerts_without_known_team",
 )
 
@@ -70,12 +72,33 @@ def parameter_differences(control_path: Path, treatment_path: Path) -> dict:
     return differences
 
 
+def recorded_ba_enabled(path: Path) -> bool:
+    """Read the treatment flag the run actually used, not the one intended."""
+    _, _, parameters = parse_sca(str(path))
+    values = {value.strip().lower()
+              for key, value in parameters.items() if key.endswith(" baEnabled")}
+    if values == {"true"}:
+        return True
+    if values == {"false"}:
+        return False
+    raise ValueError(f"{path}: baEnabled is missing or inconsistent across drones: "
+                     f"{sorted(values)}")
+
+
 def load_arm(config: str, enabled: bool) -> pd.DataFrame:
     paths = result_files(config)
     if not paths:
         raise ValueError(f"{config}: no result files found")
     rows = []
     for path in paths:
+        # O braço precisa ter executado com o tratamento que declara. Uma
+        # configuração que herda baEnabled da base errada roda como controle
+        # sem avisar, e a diferença pareada sai zero por construção.
+        actual = recorded_ba_enabled(path)
+        if actual != enabled:
+            raise ValueError(
+                f"{config}: declared baEnabled={enabled} but the run recorded "
+                f"baEnabled={actual} in {path.name}")
         row = collect(str(path))
         row["ba_enabled"] = enabled
         row["result_path"] = str(path)

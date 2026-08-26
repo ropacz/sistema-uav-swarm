@@ -25,7 +25,8 @@ def main() -> None:
         "hop_count_count": 1,
         "multi_hop_deliveries": 1,
         "intermediate_forwardings": 1,
-        "no_known_team_failures": 0,
+        "never_known_team_selection_events": 0,
+        "expired_known_team_selection_events": 0,
         "confirmation_delay_count": 1,
     }
     failures = [

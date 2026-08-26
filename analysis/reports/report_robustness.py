@@ -17,6 +17,7 @@ from analysis.core.experiment_metrics import collect  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 from analysis.reports.report_main_experiment import (  # noqa: E402
     parameter_differences,
+    recorded_ba_enabled,
 )
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
@@ -26,7 +27,8 @@ METRICS = (
     "delivery_delay_mean_s", "confirmation_delay_mean_s",
     "retries_per_alert", "attempt_pdr_pct", "attempt_loss_pct",
     "mean_hop_count", "multi_hop_delivery_rate_pct",
-    "no_known_team_failures", "alerts_without_known_team",
+    "never_known_team_selection_events", "expired_known_team_selection_events",
+    "known_team_no_ack_timeout_events", "alerts_without_known_team",
     "reposition_triggers", "obstacles_detected", "ba_activations",
     "repositions_started", "repositions_completed",
     "reposition_distance_sum_m", "reposition_distance_mean_m",
@@ -57,6 +59,12 @@ def run_record(path: str) -> dict:
     if len(matches) != 1:
         raise ValueError(f"braço BA não identificável em {row['config']}")
     suffix, enabled = matches[0]
+    # O sufixo do nome declara o braço; o .sca diz o que a execução realmente
+    # usou. Divergência significa configuração herdada da base errada.
+    actual = recorded_ba_enabled(Path(path))
+    if actual != enabled:
+        raise ValueError(f"{row['config']}: sufixo declara baEnabled={enabled}, "
+                         f"mas a execução gravou baEnabled={actual} em {path}")
     row["scenario"] = row["config"][:-len(suffix)]
     row["ba_enabled"] = enabled
     row["result_path"] = path

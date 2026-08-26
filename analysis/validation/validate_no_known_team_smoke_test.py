@@ -25,7 +25,8 @@ def main() -> None:
         "alerts_expired": 2,
         "alert_attempts_sent": 0,
         "attempts_received": 0,
-        "no_known_team_failures": 10,
+        "never_known_team_selection_events": 10,
+        "expired_known_team_selection_events": 0,
         "alerts_without_known_team": 2,
         "confirmation_delay_count": 0,
     }

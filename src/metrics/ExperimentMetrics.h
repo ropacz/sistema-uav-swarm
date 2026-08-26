@@ -39,7 +39,11 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     omnetpp::simtime_t repositionDurationSum = 0;
     int deliveryDelayCount = 0;
     int confirmationDelayCount = 0;
-    int noKnownTeamFailures = 0;
+    // Diagnósticos por evento: contam oportunidades de envio e timeouts, não
+    // alertas. Podem ser maiores que o total de alertas gerados.
+    int neverKnownTeamSelectionEvents = 0;
+    int expiredKnownTeamSelectionEvents = 0;
+    int knownTeamNoAckTimeoutEvents = 0;
     int hopCountSum = 0;
     int hopCountCount = 0;
     int multiHopDeliveries = 0;

@@ -112,11 +112,25 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
         if (!generatedAlertIds.count(event->alertId))
             throw cRuntimeError("Operational failure for unknown alert '%s'",
                                 event->alertId.c_str());
-        if (event->category != "noKnownTeam")
+        // Três diagnósticos operacionais distintos, contados por evento e não
+        // por alerta: um mesmo alerta pode falhar a seleção de destino em várias
+        // oportunidades de envio, e por isso estes contadores podem exceder o
+        // número de alertas gerados. Os dois primeiros indicam que o alerta não
+        // chegou a ser transmitido; o terceiro, que foi transmitido e expirou
+        // sem confirmação.
+        if (event->category == "neverKnownTeam") {
+            neverKnownTeamSelectionEvents++;
+            alertsWithoutKnownTeam.insert(event->alertId);
+        }
+        else if (event->category == "expiredKnownTeam") {
+            expiredKnownTeamSelectionEvents++;
+            alertsWithoutKnownTeam.insert(event->alertId);
+        }
+        else if (event->category == "knownTeamNoAck")
+            knownTeamNoAckTimeoutEvents++;
+        else
             throw cRuntimeError("Unknown operational failure '%s'",
                                 event->category.c_str());
-        noKnownTeamFailures++;
-        alertsWithoutKnownTeam.insert(event->alertId);
     }
     else if (signalId == repositionTriggerSignal)
         repositionTriggers++;
@@ -201,7 +215,8 @@ void ExperimentMetrics::finish()
         confirmationDelayCount != static_cast<int>(confirmedAlertIds.size()) ||
         hopCountCount != static_cast<int>(deliveredAlertIds.size()) ||
         multiHopDeliveries > hopCountCount ||
-        alertsWithoutKnownTeam.size() > generatedAlertIds.size())
+        alertsWithoutKnownTeam.size() > generatedAlertIds.size() ||
+        knownTeamNoAckTimeoutEvents > static_cast<int>(expiredAlertIds.size()))
         throw cRuntimeError("ExperimentMetrics invariant violation: generated=%zu, "
                             "delivered=%zu, confirmed=%zu, expired=%zu, triggers=%d, "
                             "obstacles=%d, BA=%d, started=%d, completed=%d, distances=%zu",
@@ -226,7 +241,9 @@ void ExperimentMetrics::finish()
     recordScalar("hopCountCount", hopCountCount);
     recordScalar("multiHopDeliveries", multiHopDeliveries);
     recordScalar("intermediateForwardings", intermediateForwardings);
-    recordScalar("noKnownTeamFailures", noKnownTeamFailures);
+    recordScalar("neverKnownTeamSelectionEvents", neverKnownTeamSelectionEvents);
+    recordScalar("expiredKnownTeamSelectionEvents", expiredKnownTeamSelectionEvents);
+    recordScalar("knownTeamNoAckTimeoutEvents", knownTeamNoAckTimeoutEvents);
     recordScalar("alertsWithoutKnownTeam", alertsWithoutKnownTeam.size());
     recordScalar("pdr", pdr);
     recordScalar("confirmationRate", confirmationRate);
