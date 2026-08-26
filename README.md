@@ -20,7 +20,7 @@ make ba-smoke-test              # integração do BA, não experimento científi
 make clean-results              # remove resultados e tabelas regeneráveis
 ```
 
-O escopo principal está em `simulations/main-experiment.ini`; parâmetros físicos
+O escopo principal está em `simulations/experiment.ini`; parâmetros físicos
 e de protocolo são herdados das configurações-base. A robustez permanece
 separada. A arquitetura, as fórmulas, as hipóteses e as validações
 estão organizadas no [índice da documentação técnica](docs/README.md). Os valores
@@ -36,7 +36,7 @@ dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
 - `src/scenario`, `src/node` e `src/sensing`: cenário, composição e percepção;
 - `simulations`: rede, configurações e ambientes físicos;
 - `analysis`: relatório principal, robustez e testes;
-- `docs`: protocolo científico e fontes de parâmetros.
+- `docs`: diretriz normativa, índice técnico e referências externas.
 
 Consulte [simulations/README.md](simulations/README.md) para distinguir cenários
 científicos de validações técnicas.
