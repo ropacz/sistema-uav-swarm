@@ -18,7 +18,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import pandas as pd  # noqa: E402
 
-from analysis.reports import alert_sheet, figures  # noqa: E402
+from analysis.reports import alert_sheet, figures, scavetool_figures  # noqa: E402
 
 
 class AlertSheetTests(unittest.TestCase):
@@ -85,6 +85,57 @@ class FigureTests(unittest.TestCase):
                 for teams in levels for enabled in (False, True)])
             for path in figures.attendance_figures(summary):
                 self.assertUsableFigure(path)
+
+
+class ScavetoolFiguresTests(unittest.TestCase):
+    """Segunda via de atendimento/perda: lê o CSV do opp_scavetool, não o .sca."""
+
+    def write_scavetool_csv(self, path: Path) -> None:
+        # Duas execuções (uma por braço), quatro drones cada — mesmo esquema
+        # de módulo que o scavetool real produz: "BasicNetwork.drone[N].app[0]",
+        # não "BasicNetwork.drone[N].app". O sufixo errado já causou um bug
+        # real aqui (o filtro batia zero linhas e "baEnabled" ficava vazio).
+        rows = ["run,type,module,name,attrname,attrvalue,value,count,sumweights,"
+                "mean,stddev,min,max,underflows,overflows,binedges,binvalues"]
+        for run, config, enabled in (("r0", "C_BaOff", "false"), ("r1", "C_BaOn", "true")):
+            rows.append(f'{run},runattr,,,configname,{config},,,,,,,,,,,')
+            for drone in range(2):
+                rows.append(
+                    f'{run},param,BasicNetwork.drone[{drone}].app[0],baEnabled,,,'
+                    f'{enabled},,,,,,,,,,')
+            rows.append(f'{run},param,BasicNetwork,numTeams,,,1,,,,,,,,,,')
+            for name, value in (("alertsGenerated", 10), ("alertsDelivered", 8),
+                                ("alertsConfirmed", 6 if enabled == "false" else 9)):
+                rows.append(
+                    f'{run},scalar,BasicNetwork.experimentMetrics,{name},,,'
+                    f'{value},,,,,,,,,,')
+        path.write_text("\n".join(rows), encoding="utf-8")
+
+    def test_matches_the_official_pipeline_on_a_synthetic_campaign(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_path = Path(directory) / "scavetool.csv"
+            self.write_scavetool_csv(csv_path)
+            runs = scavetool_figures.load_runs(csv_path)
+            summary = scavetool_figures.summarize(runs)
+
+        off = summary[~summary["baEnabled"]].iloc[0]
+        on = summary[summary["baEnabled"]].iloc[0]
+        # Mesma fórmula que alert_sheet.py: confirmados / gerados.
+        self.assertAlmostEqual(off["atendimento_pct"], 60.0)
+        self.assertAlmostEqual(on["atendimento_pct"], 90.0)
+        self.assertAlmostEqual(off["perda_pct"], 20.0)  # (10-8)/10
+
+    def test_module_scoped_params_use_the_real_scavetool_suffix(self):
+        # BasicNetwork.drone[0].app[0], não .app — regressão do bug real desta
+        # sessão: o filtro antigo (".app" sem índice) não batia nada e o
+        # conjunto de baEnabled ficava vazio, abortando com "inconsistente".
+        with tempfile.TemporaryDirectory() as directory:
+            csv_path = Path(directory) / "scavetool.csv"
+            self.write_scavetool_csv(csv_path)
+            runs = scavetool_figures.load_runs(csv_path)
+        for run_values in runs.values():
+            self.assertIn("baEnabled", run_values,
+                          "baEnabled não foi capturado — regex de módulo quebrou")
 
 
 if __name__ == "__main__":

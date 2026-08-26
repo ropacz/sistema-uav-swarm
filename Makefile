@@ -7,6 +7,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/write_manifest.py \
 	analysis/reports/figures.py \
 	analysis/reports/alert_sheet.py \
+	analysis/reports/scavetool_figures.py \
 	analysis/validation/validate_ba_smoke_test.py \
 	analysis/validation/validate_alert_lifecycle_smoke_test.py \
 	analysis/validation/validate_connectivity_smoke_test.py \
@@ -18,7 +19,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 
 .PHONY: all clean cleanall clean-results makefiles checkmakefiles check analysis-tests \
 	experiment main-experiment robustness-experiment reproduce \
-	alert-sheet \
+	alert-sheet scavetool-check \
 	ba-smoke-test alert-lifecycle-smoke-test connectivity-smoke-test \
 	obstacle-smoke-test reposition-interrupted-smoke-test multihop-smoke-test \
 	sensor-range-smoke-test no-known-team-smoke-test manifest
@@ -59,7 +60,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.reports.scavetool_figures, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -133,6 +134,16 @@ manifest:
 # Planilha e figuras de atendimento e perda, uma linha por alerta.
 alert-sheet:
 	python3 analysis/reports/alert_sheet.py
+
+# Segunda via de atendimento/perda: exporta os .sca da campanha oficial com a
+# ferramenta padrão do OMNeT++ (opp_scavetool) e recalcula a partir desse CSV,
+# sem tocar no caminho de leitura que alert-sheet usa. Serve para confirmar,
+# com uma ferramenta de terceiros, que parse_sca() não introduz erro.
+scavetool-check:
+	opp_env run $(INET_VERSION) -w $(WORKSPACE) --no-isolated \
+		-c "cd '$(CURDIR)/simulations' && opp_scavetool x results/omnetpp/MainExperiment_*.sca \
+		    -o results/campanha_scavetool.csv"
+	python3 analysis/reports/scavetool_figures.py simulations/results/campanha_scavetool.csv
 
 # Reprodução confirmatória. A robustez possui alvo próprio.
 reproduce:

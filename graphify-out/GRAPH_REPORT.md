@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-26)
 
 ## Corpus Check
-- 55 files · ~20,777 words
+- 57 files · ~22,740 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 637 nodes · 927 edges · 37 communities (30 shown, 7 thin omitted)
+- 662 nodes · 963 edges · 37 communities (30 shown, 7 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6604b657`
+- Built from commit: `00ea0f44`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -103,8 +103,8 @@ Cohesion: 0.15
 Nodes (12): AlertMetricEvent, alertId, category, droneId, messageId, referenceTime, teamId, value (+4 more)
 
 ### Community 5 - "alert_sheet.py"
-Cohesion: 0.09
-Nodes (23): load(), main(), DataFrame, Path, Lê seed, equipes e política do .sca da mesma execução., Uma linha por célula experimental, com as duas taxas pedidas., run_context(), summarize() (+15 more)
+Cohesion: 0.07
+Nodes (31): load(), main(), DataFrame, Path, Lê seed, equipes e política do .sca da mesma execução., Uma linha por célula experimental, com as duas taxas pedidas., run_context(), summarize() (+23 more)
 
 ### Community 6 - "FitnessParameters"
 Cohesion: 0.06
@@ -191,8 +191,8 @@ Cohesion: 0.33
 Nodes (3): cMessage, cSimpleModule, StaticVictim
 
 ### Community 34 - "Auditoria: atendimento e perda via `.elog`, comparado ao `.sca`"
-Cohesion: 0.14
-Nodes (12): Auditoria: atendimento e perda via `.elog`, comparado ao `.sca`, Como o `alertId` chegou no `.elog` sem tocar no protocolo, Como reproduzir, Execuções auditadas, Leitura, Metodologia da reconstrução (`eventlog_metrics.py`), Quais logs foram usados, e por quê, Resultado (+4 more)
+Cohesion: 0.07
+Nodes (24): 1. Drone → equipe: primeira tentativa, enlace já obstruído, 2. Degradação do enlace, sensor, Bat Algorithm — **invisível ao `.elog`**, 3. Segunda tentativa — na nova posição, 4. Equipe → drone: confirmação, As quatro mensagens do protocolo, Como ler uma linha do `.elog`, Como reproduzir, Exemplos de mensagens capturadas no `.elog` (+16 more)
 
 ### Community 37 - "AlertRecord"
 Cohesion: 0.17
@@ -203,7 +203,7 @@ Cohesion: 0.27
 Nodes (8): command_output(), main(), omnetpp_version(), Path, Write reproducibility metadata beside generated simulation results., sha256(), ManifestTests, patch
 
 ## Knowledge Gaps
-- **246 isolated node(s):** `run_audit.sh script`, `run.sh script`, `victimId`, `position`, `nextAlertTime` (+241 more)
+- **256 isolated node(s):** `run_audit.sh script`, `run.sh script`, `victimId`, `position`, `nextAlertTime` (+251 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -211,13 +211,13 @@ Nodes (8): command_output(), main(), omnetpp_version(), Path, Write reproducibil
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DroneApp` connect `DroneApp` to `BatParameters`, `FitnessParameters`, `DroneApp.cc`, `socketDataArrived`, `LifecycleOperation`, `RepositionController`, `DroneApp.h`, `TeamApp.h`, `PendingVictimAlert`, `ExperimentMetrics.h`, `TeamLinkState`, `ActiveVictim`, `DroneLinkState`?**
-  _High betweenness centrality (0.228) - this node is a cross-community bridge._
+  _High betweenness centrality (0.211) - this node is a cross-community bridge._
 - **Why does `ExperimentMetrics` connect `ExperimentMetrics` to `BatParameters`, `ExperimentMetrics.cc`, `ExperimentMetrics.h`, `AlertRecord`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
+  _High betweenness centrality (0.093) - this node is a cross-community bridge._
 - **Why does `TeamApp` connect `TeamApp` to `TeamApp.h`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
 - **What connects `run_audit.sh script`, `run.sh script`, `victimId` to the rest of the system?**
-  _246 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _256 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
   _Cohesion score 0.038461538461538464 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**

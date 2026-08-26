@@ -56,6 +56,23 @@ embutido, porque na ABNT o título é legenda acima e a fonte vem abaixo:
 \end{figure}
 ```
 
+## Segunda via: opp_scavetool
+
+`make scavetool-check` exporta os `.sca` da campanha oficial com a ferramenta
+padrão do OMNeT++ (`opp_scavetool`, formato longo — uma linha por
+escalar/parâmetro/atributo) e recalcula atendimento/perda a partir *desse*
+CSV, sem passar pelo `parse_sca()` que `alert_sheet.py` usa. Serve como
+confirmação independente, com uma ferramenta de terceiros em vez de código
+deste projeto: verificado que os dois caminhos dão exatamente 80,7 %/84,9 %,
+sem arredondamento — diferença zero.
+
+```text
+simulations/results/campanha_scavetool.csv   # exportado pelo opp_scavetool (gitignored)
+analysis/tables/atendimento_via_scavetool.csv
+analysis/figures/atendimento_via_scavetool.pdf
+analysis/figures/perda_via_scavetool.pdf
+```
+
 ## Como gerar
 
 ```bash
