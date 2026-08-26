@@ -18,7 +18,7 @@ reproduzíveis. São três arquivos de configuração:
 
 `MainExperiment_BaOff` e `MainExperiment_BaOn` formam o contraste pareado mínimo:
 mesmo cenário, mesmas seeds, diferindo só por `baEnabled`. `make experiment`
-executa somente esses dois braços, que usam comunicação direta.
+executa somente esses dois braços. Roteamento AODV multissalto fica habilitado (TTL=32, teamUpdateMaxHops=3); o cenário usa uma equipe, não impõe salto único.
 
 ## Robustez
 

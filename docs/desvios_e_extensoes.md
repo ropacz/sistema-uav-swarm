@@ -403,3 +403,47 @@ disciplina que evita a classe de erro observada no projeto comparado. A
 comparação não motivou a correção (já existia), mas confirma que o cuidado
 era necessário e não excesso de engenharia: é o tipo de falha real que ocorre
 quando esse cuidado não é tomado.
+
+## Verificação empírica: `ackTimeout` não é responsável pela perda
+
+Revisão externa do `.ini` levantou uma dúvida legítima: `ackTimeout = 2s`
+poderia estar provocando retransmissão prematura, competindo com a latência
+de descoberta de rota do AODV (`activeRouteTimeout = 5s`) em vez de refletir
+degradação real de enlace. A hipótese é testável com escalares que já são
+gravados — resolvida com dados de duas seeds reais de `MainExperiment_BaOff`,
+não por inspeção do `.ini`.
+
+Seed 0 e seed 5 divergem fortemente em resultado (mesmo cenário, só a seed
+muda):
+
+| | seed 0 | seed 5 |
+| --- | --- | --- |
+| alertas gerados | 25 | 25 |
+| alertas confirmados | 19 | 24 |
+| tentativas enviadas | 41 | 28 |
+| tentativas recebidas | 21 | 24 |
+| retransmissões | 17 | 3 |
+| `confirmationDelay` médio | ≈1,93 s | ≈0,10 s |
+
+Se o `ackTimeout` fosse curto demais para o AODV, a assinatura esperada seria
+fila de MAC crescendo (mensagens acumulando enquanto a rota ainda não existe)
+e `packetDropQueueOverflow` não-nulo. Os escalares de diagnóstico de MAC do
+`.sca` da seed 0 (a mais castigada) não mostram isso:
+
+- `packetDropQueueOverflow:count = 0` em drone0, drone1, drone2, drone3 e
+  team0 — nenhuma fila jamais encheu.
+- `queueLength:max` entre 1 e 3, muito abaixo da capacidade configurada
+  (`**.wlan[*].mac.queue.packetCapacity = 50`).
+- `packetDropIncorrectlyReceived:count` = 17 / 20 / 12 / 23 / 45 (drone0,
+  drone1, drone2, drone3, team0) — este é o mecanismo de perda dominante, não
+  fila.
+
+`packetDropIncorrectlyReceived` é descarte de PHY (SNIR abaixo do limiar na
+recepção), não backlog de fila. A leitura consistente com os dois seeds e os
+dois diagnósticos: a variação de resultado entre seeds vem de quão perto os
+nós ficam do alcance nominal de 559 m (§E5, `communicationRange`) durante
+cada realização de mobilidade — não de uma corrida entre `ackTimeout` e o
+tempo de descoberta de rota do AODV. `ackTimeout = 2s` está retransmitindo em
+resposta a perda de enlace real, que é exatamente a exposição que o
+mecanismo avaliado (BA) precisa para ser testado — não um artefato de
+temporização apertada demais.
