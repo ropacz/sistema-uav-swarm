@@ -2,11 +2,11 @@
 # Executa a simulação ECHOSAR dentro do ambiente opp_env.
 #
 # Uso:
-#   ./run.sh                       → cenário 1A com BA habilitado
+#   ./run.sh                       → experimento principal, braço tratado
 #   ./run.sh -r 2                  → seed específico
-#   ./run.sh -c Scenario1_OneVictim_BaOff -r 0
-#   ./run.sh -c Scenario1_TwoVictims_BaOn -r 0
-#   ./run.sh --gui                 → cenário 1A com BA ligado no Qtenv
+#   ./run.sh -c MainExperiment_BaOff -r 0        → braço de controle
+#   ./run.sh -c Scenario1_TwoVictims_BaOn -r 0   → matriz de robustez
+#   ./run.sh --gui                 → experimento principal no Qtenv
 #   ./run.sh --info                → log INFO global (MUITO verboso: PHY/MAC/AODV inclusos)
 #   ./run.sh --build               → compila antes de rodar
 #
@@ -25,7 +25,7 @@ if [[ -f "$PROJECT_DIR/.env" ]]; then
 fi
 : "${WORKSPACE:=$(cd "$PROJECT_DIR/.." && pwd)}"
 : "${INET_VERSION:=inet-4.5.4}"
-CONFIG=Scenario1_OneVictim_BaOn
+CONFIG=MainExperiment_BaOn
 CONFIG_EXPLICIT=false
 RUN=""        # vazio = todos os seeds definidos por repeat= no ini
 UI=Cmdenv
@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$UI" == "Qtenv" && "$CONFIG_EXPLICIT" == false ]]; then
-    CONFIG=Scenario1_OneVictim_BaOn
+    CONFIG=MainExperiment_BaOn
 fi
 
 if $BUILD; then

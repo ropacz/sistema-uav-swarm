@@ -65,3 +65,11 @@ graphify-out/reflections/
 # ── macOS ────────────────────────────────────────────────────────────────────
 .DS_Store
 *.swp
+
+# Editor/LSP local configuration (machine-specific paths)
+.clangd
+
+# Ferramentas auxiliares locais
+.claude/
+CLAUDE.md
+firebase-debug.log
