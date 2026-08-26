@@ -146,6 +146,25 @@ class AlertSheetTests(unittest.TestCase):
         # Perda conta alertId sem entrega a nenhuma equipe: 2 de 4.
         self.assertAlmostEqual(summary["perda_pct"], 50.0)
 
+    def test_rate_figures_scale_from_one_cell_to_the_matrix(self):
+        figures.configure_style()
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        original = figures.SIMPLE_OUTPUT
+        figures.SIMPLE_OUTPUT = Path(directory.name)
+        self.addCleanup(setattr, figures, "SIMPLE_OUTPUT", original)
+
+        for levels in ([1], [1, 5, 10, 15]):
+            summary = pd.DataFrame([
+                {"config": "C", "numTeams": teams, "baEnabled": enabled,
+                 "atendimento_pct": 80.0, "perda_pct": 20.0}
+                for teams in levels for enabled in (False, True)])
+            for path in figures.attendance_figures(summary):
+                content = path.read_bytes()
+                self.assertTrue(content.startswith(b"%PDF"))
+                self.assertGreater(len(content), 2000,
+                                   f"{path.name} vazio com {len(levels)} nível(is)")
+
     def test_sheet_columns_are_the_requested_ones(self):
         self.assertEqual(alert_sheet.COLUMNS, [
             "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",

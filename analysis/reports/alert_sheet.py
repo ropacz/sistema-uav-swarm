@@ -25,6 +25,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from analysis.core.process_results import parse_sca  # noqa: E402
+from analysis.reports import figures  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
 OUTPUT = REPOSITORY_ROOT / "analysis/tables"
@@ -117,8 +118,13 @@ def main() -> None:
     sheet.to_csv(OUTPUT / "atendimento_alertas.csv", index=False)
     summary.to_csv(OUTPUT / "atendimento_resumo.csv", index=False)
 
+    figures.configure_style()
+    charts = figures.attendance_figures(summary)
+
     print(f"gerado: {workbook.relative_to(REPOSITORY_ROOT)} "
           f"({len(sheet)} alertas, {summary['execucoes'].sum()} execuções)")
+    for chart in charts:
+        print(f"gerado: {chart.relative_to(REPOSITORY_ROOT)}")
     print()
     print(summary.to_string(index=False, float_format=lambda value: f"{value:.1f}"))
 

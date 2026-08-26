@@ -25,6 +25,8 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 TABLES = REPOSITORY_ROOT / "analysis/tables/detalhado"
 OUTPUT = REPOSITORY_ROOT / "analysis/figures/detalhado"
+# As figuras de atendimento e perda acompanham a planilha simples.
+SIMPLE_OUTPUT = REPOSITORY_ROOT / "analysis/figures"
 
 # Largura útil de uma página A4 com margens ABNT (3 cm / 2 cm): ~16 cm.
 TEXT_WIDTH_IN = 6.3
@@ -75,12 +77,66 @@ def configure_style() -> None:
     })
 
 
-def save(figure: plt.Figure, name: str) -> Path:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    path = OUTPUT / f"{name}.pdf"
+def save(figure: plt.Figure, name: str, directory: Path | None = None) -> Path:
+    directory = OUTPUT if directory is None else directory
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{name}.pdf"
     figure.savefig(path)
     plt.close(figure)
     return path
+
+
+ARMS = [(False, "BA desligado", "#e0e0e0", "///"),
+        (True, "BA ligado", "#9e9e9e", "")]
+
+
+def rate_figure(summary: pd.DataFrame, column: str, axis_label: str,
+                name: str) -> Path:
+    """Barras agrupadas de uma taxa, uma cor por braço e uma legenda.
+
+    O eixo horizontal é a quantidade de equipes, de modo que a mesma figura
+    serve ao experimento principal (uma única quantidade) e à matriz de
+    robustez, sem trocar de formato entre os dois.
+    """
+    teams = sorted(summary["numTeams"].unique())
+    figure, axes = plt.subplots(figsize=(TEXT_WIDTH_IN, 2.7))
+    # Com poucas categorias, barras largas dominam a figura sem acrescentar
+    # informação; a largura acompanha a quantidade de níveis no eixo.
+    width = 0.34 if len(teams) > 2 else 0.20
+    for offset, (enabled, label, color, hatch) in zip((-width / 2, width / 2), ARMS):
+        rows = summary[summary["baEnabled"] == enabled].set_index("numTeams")
+        values = [rows.loc[team, column] if team in rows.index else float("nan")
+                  for team in teams]
+        positions = [index + offset for index in range(len(teams))]
+        axes.bar(positions, values, width=width, label=label,
+                 color=color, edgecolor=INK, linewidth=0.8, hatch=hatch)
+        for position, value in zip(positions, values):
+            if value == value:
+                axes.text(position, value + 1.5, f"{value:.1f}",
+                          ha="center", fontsize=8, color=INK)
+    axes.set_xticks(range(len(teams)))
+    axes.set_xticklabels([int(team) for team in teams])
+    axes.set_xlabel("Quantidade de equipes")
+    axes.set_ylabel(axis_label)
+    axes.set_xlim(-0.6, len(teams) - 0.4)
+    axes.set_ylim(0, 105)
+    # Legenda acima da área do gráfico: não disputa espaço com os rótulos das
+    # barras nem obriga a deixar um vazio artificial no topo.
+    axes.legend(frameon=False, ncols=2, loc="lower center",
+                bbox_to_anchor=(0.5, 1.01))
+    axes.grid(axis="y", color=GRID, linewidth=0.6, zorder=0)
+    axes.set_axisbelow(True)
+    return save(figure, name, SIMPLE_OUTPUT)
+
+
+def attendance_figures(summary: pd.DataFrame) -> list[Path]:
+    """As duas taxas pedidas, cada uma em sua figura para caber uma legenda."""
+    return [
+        rate_figure(summary, "atendimento_pct",
+                    "Atendimento (%)", "atendimento"),
+        rate_figure(summary, "perda_pct",
+                    "Perda (%)", "perda"),
+    ]
 
 
 def paired_effect_figure(summary: pd.DataFrame) -> Path:

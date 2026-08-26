@@ -19,6 +19,8 @@ tables/
     robustness/          # extensão não confirmatória
     verificacao.xlsx     # verificação da configuração executada
 figures/
+  atendimento.pdf        # taxa de atendimento por braço
+  perda.pdf              # taxa de perda por braço
   detalhado/
     efeito_pareado.pdf     # resultado confirmatório, com IC de 95%
     funil_exposicao.pdf    # alcance do mecanismo por etapa
@@ -38,9 +40,26 @@ A deduplicação acontece dentro da simulação: um mesmo `alertId` recebido por
 várias equipes ou retransmitido várias vezes já chega como uma única linha. Por
 isso `retryCount` conta retransmissões, e não alertas.
 
+As duas figuras acompanham a planilha e saem no mesmo comando. O eixo horizontal
+é a quantidade de equipes, de modo que a mesma figura serve ao experimento
+principal (um único nível) e à matriz de robustez (quatro níveis), sem trocar de
+formato. Cada braço tem cor e hachura próprias, legíveis em impressão em tons de
+cinza, e a legenda fica acima da área do gráfico.
+
+Legendas ABNT sugeridas, para colar no LaTeX:
+
+```latex
+\begin{figure}[htb]
+  \centering
+  \caption{Taxa de atendimento de alertas por braço experimental}
+  \includegraphics[width=\textwidth]{figuras/atendimento.pdf}
+  \legend{Fonte: elaborado pelo autor (2026).}
+\end{figure}
+```
+
 Tudo o que exige leitura mais detalhada — efeitos pareados por métrica, IC,
-exposição do mecanismo, verificação de configuração e as figuras — ficou em
-`detalhado/`.
+exposição do mecanismo, verificação de configuração e as demais figuras — ficou
+em `detalhado/`.
 
 `reports/report_main_experiment.py` é a entrada científica principal. Ele exige
 seeds pareadas, igualdade de parâmetros exceto `baEnabled` e todos os escalares
