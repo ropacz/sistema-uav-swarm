@@ -18,6 +18,10 @@ namespace echosar {
 
 Define_Module(DroneApp);
 
+/// Distingue o repasse de TeamUpdate agendado pelo próprio drone dos pacotes
+/// que chegam do socket.
+static constexpr short TEAM_UPDATE_RELAY_KIND = 0x5401;
+
 namespace {
 /// Valida uma condição nomeando o parâmetro que a violou.
 void require(bool satisfied, const char *requirement)
@@ -47,6 +51,11 @@ void DroneApp::validateParameters() const
             "alertInterval must exceed alertTtl to prevent overlapping alerts");
 
     require(teamEntryLifetime > 0, "teamEntryLifetime must be positive");
+    require(lastKnownTeamRetention >= teamEntryLifetime,
+            "lastKnownTeamRetention must cover at least teamEntryLifetime");
+    require(teamUpdateMaxHops >= 0, "teamUpdateMaxHops must not be negative");
+    require(teamUpdateForwardJitter >= 0,
+            "teamUpdateForwardJitter must not be negative");
     require(droneStatusInterval > 0, "droneStatusInterval must be positive");
     require(droneStatusInitialOffset >= 0 &&
             droneStatusInitialOffset < droneStatusInterval,
@@ -111,6 +120,9 @@ void DroneApp::initialize(int stage)
         maxAttempts = par("maxAttempts");
         repositionAfterUnackedAttempts = par("repositionAfterUnackedAttempts");
         teamEntryLifetime = par("teamEntryLifetime");
+        lastKnownTeamRetention = par("lastKnownTeamRetention");
+        teamUpdateMaxHops = par("teamUpdateMaxHops");
+        teamUpdateForwardJitter = par("teamUpdateForwardJitter");
         maintenanceInterval = par("maintenanceInterval");
         baEnabled = par("baEnabled");
         fitnessParameters.maximumRepositionDistance =
@@ -204,6 +216,11 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         sendDroneStatus();
         scheduleAt(simTime() + droneStatusInterval, droneStatusTimer);
     }
+    else if (message->isSelfMessage() && message->getKind() == TEAM_UPDATE_RELAY_KIND) {
+        auto forwarded = check_and_cast<Packet *>(message);
+        pendingTeamUpdateRelays.erase(forwarded);
+        socket.sendTo(forwarded, Ipv4Address::ALLONES_ADDRESS, appPort);
+    }
     else if (message->arrivedOn("assignmentIn"))
         handleAssignment(check_and_cast<VictimAssignment *>(message));
     else if (socket.belongsToSocket(message))
@@ -281,23 +298,65 @@ void DroneApp::handleTeamUpdate(Packet *packet)
     std::string senderId = update->getTeamId();
     std::string messageId = update->getMessageId();
     if (senderId.empty() || messageId.empty() || update->getSequenceNumber() <= 0 ||
-        update->getTimestamp() > simTime()) {
+        update->getTimestamp() > simTime() || update->getHopCount() < 0) {
         delete packet;
         return;
     }
-    auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
+    // No primeiro salto o endereço vem do pacote recebido, como exige a
+    // descoberta pela rede. Os repasses carregam esse mesmo endereço, para que
+    // um drone distante possa endereçar o alerta em unicast e deixar o AODV
+    // encontrar a rota.
+    std::string teamAddress = update->getTeamAddress();
+    if (teamAddress.empty()) {
+        auto source = packet->findTag<L3AddressInd>();
+        if (!source) {
+            delete packet;
+            return;
+        }
+        teamAddress = source->getSrcAddress().str();
+    }
     auto [teamIt, inserted] = discoveredTeams.try_emplace(senderId);
     auto& team = teamIt->second;
     (void)inserted;
     Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
+    // Duplicatas e pacotes reordenados não renovam a entrada nem são repassados.
+    // Como o repasse acontece só nesta condição, cada drone encaminha no máximo
+    // uma vez por (teamId, sequenceNumber).
     if (update->getSequenceNumber() > team.lastSequence) {
-        team.ipAddress = sourceAddress.str();
+        team.ipAddress = teamAddress;
         team.position = receivedPosition;
         team.lastSequence = update->getSequenceNumber();
         team.lastUpdateTime = update->getTimestamp();
-        // Duplicatas e pacotes reordenados não renovam a entrada descoberta.
+        team.stale = false;
+        everKnewTeam = true;
+        if (update->getHopCount() < teamUpdateMaxHops)
+            scheduleTeamUpdateRelay(*update, teamAddress);
     }
     delete packet;
+}
+
+void DroneApp::scheduleTeamUpdateRelay(const TeamUpdateChunk& original,
+                                       const std::string& teamAddress)
+{
+    auto relay = makeShared<TeamUpdateChunk>();
+    relay->setChunkLength(original.getChunkLength());
+    relay->setTeamId(original.getTeamId());
+    relay->setMessageId(original.getMessageId());
+    relay->setSequenceNumber(original.getSequenceNumber());
+    relay->setPositionX(original.getPositionX());
+    relay->setPositionY(original.getPositionY());
+    relay->setPositionZ(original.getPositionZ());
+    relay->setTimestamp(original.getTimestamp());
+    relay->setTeamAddress(teamAddress.c_str());
+    relay->setHopCount(original.getHopCount() + 1);
+    auto forwarded = new Packet("TeamUpdate", relay);
+    forwarded->setKind(TEAM_UPDATE_RELAY_KIND);
+    pendingTeamUpdateRelays.insert(forwarded);
+    // O jitter dispersa os repasses simultâneos dos drones que ouviram o mesmo
+    // broadcast e reduz colisão no acesso ao meio.
+    simtime_t delay = teamUpdateForwardJitter > SIMTIME_ZERO
+        ? uniform(0, teamUpdateForwardJitter.dbl()) : SIMTIME_ZERO;
+    scheduleAt(simTime() + delay, forwarded);
 }
 
 void DroneApp::handleDroneStatus(Packet *packet)
@@ -350,6 +409,8 @@ std::string DroneApp::selectTargetTeam() const
     for (const auto& [id, team] : discoveredTeams) {
         if (team.ipAddress.empty()) continue;
         if (team.lastUpdateTime < SIMTIME_ZERO) continue;
+        // Uma posição retida está desatualizada: não endereça nova tentativa.
+        if (team.stale) continue;
         double distance = current.distance(team.position);
         // O identificador resolve empates de forma reprodutível.
         if (selected.empty() || distance < best || (distance == best && id < selected)) {
@@ -366,7 +427,10 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
         return;
     alert.targetTeamId = selectTargetTeam();
     if (alert.targetTeamId.empty()) {
-        AlertMetricEvent failureEvent(alert.alertId, simTime(), "noKnownTeam");
+        // Nunca ter conhecido uma equipe e ter perdido a que se conhecia são
+        // falhas operacionais distintas: só a segunda pode acionar recuperação.
+        const char *category = everKnewTeam ? "expiredKnownTeam" : "neverKnownTeam";
+        AlertMetricEvent failureEvent(alert.alertId, simTime(), category);
         emit(operationalFailureSignal, &failureEvent);
         alert.nextAttempt = simTime() + retryInterval;
         return;
@@ -399,22 +463,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
 
 void DroneApp::performMaintenance()
 {
-    for (auto it = discoveredTeams.begin(); it != discoveredTeams.end(); ) {
-        auto& team = it->second;
-        if (team.lastUpdateTime >= SIMTIME_ZERO &&
-            simTime() - team.lastUpdateTime >= teamEntryLifetime)
-            it = discoveredTeams.erase(it);
-        else
-            ++it;
-    }
-
-    for (auto it = discoveredDrones.begin(); it != discoveredDrones.end(); ) {
-        if (it->second.lastUpdateTime >= SIMTIME_ZERO &&
-            simTime() - it->second.lastUpdateTime >= droneEntryLifetime)
-            it = discoveredDrones.erase(it);
-        else
-            ++it;
-    }
+    expireDiscoveredEntries();
 
     for (auto it = pendingAlerts.begin(); it != pendingAlerts.end(); ) {
         auto& alert = it->second;
@@ -423,6 +472,13 @@ void DroneApp::performMaintenance()
             (alert.attempts >= maxAttempts && simTime() >= alert.nextAttempt)) {
             AlertMetricEvent expiredEvent(alert.alertId);
             emit(alertExpiredSignal, &expiredEvent);
+            // Houve equipe conhecida e o alerta chegou a ser transmitido, mas
+            // nenhuma tentativa foi confirmada. É a falha que o mecanismo de
+            // reposicionamento existe para atacar.
+            if (alert.attempts > 0 && !alert.targetTeamId.empty()) {
+                AlertMetricEvent noAckEvent(alert.alertId, simTime(), "knownTeamNoAck");
+                emit(operationalFailureSignal, &noAckEvent);
+            }
             if (reposition.owns(alert.alertId)) {
                 reposition.release();
                 if (movementCompleteTimer->isScheduled())
@@ -459,11 +515,44 @@ void DroneApp::performMaintenance()
     }
 }
 
+void DroneApp::expireDiscoveredEntries()
+{
+    for (auto it = discoveredTeams.begin(); it != discoveredTeams.end(); ) {
+        auto& team = it->second;
+        if (team.lastUpdateTime < SIMTIME_ZERO) {
+            ++it;
+            continue;
+        }
+        simtime_t age = simTime() - team.lastUpdateTime;
+        // A entrada operacional expira em teamEntryLifetime, mas a última
+        // posição continua retida até lastKnownTeamRetention. Enquanto está
+        // retida serve apenas ao mecanismo de recuperação, nunca à seleção de
+        // destino de uma nova tentativa.
+        if (age >= lastKnownTeamRetention)
+            it = discoveredTeams.erase(it);
+        else {
+            team.stale = age >= teamEntryLifetime;
+            ++it;
+        }
+    }
+
+    for (auto it = discoveredDrones.begin(); it != discoveredDrones.end(); ) {
+        if (it->second.lastUpdateTime >= SIMTIME_ZERO &&
+            simTime() - it->second.lastUpdateTime >= droneEntryLifetime)
+            it = discoveredDrones.erase(it);
+        else
+            ++it;
+    }
+}
+
 void DroneApp::tryReposition(PendingVictimAlert& alert)
 {
+    // O BA nunca é acionado por uma equipe que jamais foi conhecida. Uma equipe
+    // que era conhecida e cuja entrada expirou continua elegível enquanto sua
+    // última posição estiver retida: é exatamente o caso que a recuperação trata.
     auto teamIt = discoveredTeams.find(alert.targetTeamId);
     if (teamIt == discoveredTeams.end() || teamIt->second.lastUpdateTime < SIMTIME_ZERO) {
-        EV_DEBUG << "Reposition skipped: target team is no longer known\n";
+        EV_DEBUG << "Reposition skipped: target team is no longer retained\n";
         return;
     }
     if (!reposition.idle()) {
@@ -613,6 +702,8 @@ DroneApp::~DroneApp()
     cancelAndDelete(maintenanceTimer);
     cancelAndDelete(movementCompleteTimer);
     cancelAndDelete(droneStatusTimer);
+    for (auto *relay : pendingTeamUpdateRelays)
+        cancelAndDelete(relay);
 }
 
 } // namespace echosar

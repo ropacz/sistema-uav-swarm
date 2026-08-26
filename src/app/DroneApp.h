@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 
 #include "inet/applications/base/ApplicationBase.h"
@@ -41,10 +42,13 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t alertTtl;
     omnetpp::simtime_t alertInterval;
     omnetpp::simtime_t teamEntryLifetime;
+    omnetpp::simtime_t lastKnownTeamRetention;
+    omnetpp::simtime_t teamUpdateForwardJitter;
     omnetpp::simtime_t droneStatusInterval;
     omnetpp::simtime_t droneStatusInitialOffset;
     omnetpp::simtime_t droneEntryLifetime;
     omnetpp::simtime_t maintenanceInterval;
+    int teamUpdateMaxHops = 3;
     int maxAttempts = 5;
     int repositionAfterUnackedAttempts = 2;
     int applicationIpTtl = 32;
@@ -55,6 +59,11 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int64_t droneStatusUpdatesAccepted = 0;
     int64_t connectivityConstraintsApplied = 0;
     int64_t connectivityPreservedSelections = 0;
+    /// Repasses de TeamUpdate ainda não transmitidos, aguardando o jitter.
+    std::set<omnetpp::cMessage *> pendingTeamUpdateRelays;
+    /// Alguma equipe já foi conhecida por este drone em algum momento. Separa
+    /// "nunca conheci" de "conhecia e expirou" na contabilidade de falhas.
+    bool everKnewTeam = false;
     bool baEnabled = true;
     FitnessParameters fitnessParameters;
     BatParameters batParameters;
@@ -97,8 +106,15 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void startAlertCycle(ActiveVictim& victim);
     /// Libera a vítima para o próximo ciclo após ACK ou expiração.
     void completeAlertCycle(const PendingVictimAlert& alert);
-    /// Atualiza a última posição recebida de uma equipe descoberta.
+    /// Atualiza a última posição recebida de uma equipe descoberta e, quando o
+    /// limite de saltos permitir, agenda o repasse da atualização pela FANET.
     void handleTeamUpdate(inet::Packet *packet);
+    /// Agenda uma única retransmissão desta atualização após um jitter curto.
+    void scheduleTeamUpdateRelay(const TeamUpdateChunk& original,
+                                 const std::string& teamAddress);
+    /// Remove entradas expiradas, retendo a última posição pelo prazo de
+    /// recuperação e marcando-a como desatualizada.
+    void expireDiscoveredEntries();
     /// Atualiza a posição anunciada por outro drone, ignorando ecos e reordenação.
     void handleDroneStatus(inet::Packet *packet);
     /// Valida o VictimAck contra o destino histórico e encerra o alerta.

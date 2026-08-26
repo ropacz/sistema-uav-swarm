@@ -37,8 +37,17 @@ simple DroneApp like IApp
         double alertInterval @unit(s);
 
         // Descoberta da equipe
-        // Tempo sem broadcast após o qual a equipe deixa a tabela descoberta.
+        // Tempo sem broadcast após o qual a equipe deixa de ser operacional.
         double teamEntryLifetime @unit(s) = default(30s);
+        // Após expirar, a última posição conhecida continua retida por este
+        // período. Fica marcada como desatualizada e só o mecanismo de
+        // recuperação pode usá-la; a transmissão normal exige entrada válida.
+        double lastKnownTeamRetention @unit(s) = default(120s);
+        // Saltos de aplicação que um TeamUpdate pode percorrer pela FANET.
+        // Zero desabilita o repasse e mantém a descoberta em um salto.
+        int teamUpdateMaxHops = default(3);
+        // Espera aleatória antes de repassar, para dispersar as retransmissões.
+        double teamUpdateForwardJitter @unit(s) = default(20ms);
         // Período do timer que verifica alertas, ACKs, TTL e reposicionamento.
         double maintenanceInterval @unit(s) = default(0.1s);
 

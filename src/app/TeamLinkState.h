@@ -17,6 +17,9 @@ struct TeamLinkState {
     inet::Coord position;
     omnetpp::simtime_t lastUpdateTime = -1;
     int64_t lastSequence = -1;
+    /// A entrada operacional expirou, mas a última posição continua retida
+    /// para o mecanismo de recuperação. Não serve para transmissão normal.
+    bool stale = false;
 };
 
 } // namespace echosar

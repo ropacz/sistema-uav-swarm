@@ -13,7 +13,7 @@ namespace echosar {
 
 // Wire format: "ECHO" | version | type | body length | typed fields | padding.
 // Integers and IEEE-754 doubles use network byte order (big endian).
-static constexpr uint8_t WIRE_VERSION = 4;
+static constexpr uint8_t WIRE_VERSION = 5;
 static constexpr uint8_t TEAM_UPDATE_TYPE = 1;
 static constexpr uint8_t VICTIM_ALERT_TYPE = 2;
 static constexpr uint8_t VICTIM_ACK_TYPE = 3;
@@ -82,6 +82,8 @@ struct SarCodec<TeamUpdateChunk>
         writeDouble(stream, chunk->getPositionY());
         writeDouble(stream, chunk->getPositionZ());
         writeTime(stream, chunk->getTimestamp());
+        writeString(stream, chunk->getTeamAddress());
+        stream.writeUint16Be(static_cast<uint16_t>(chunk->getHopCount()));
     }
 
     static void decode(inet::MemoryInputStream& stream,
@@ -94,6 +96,8 @@ struct SarCodec<TeamUpdateChunk>
         chunk->setPositionY(readDouble(stream));
         chunk->setPositionZ(readDouble(stream));
         chunk->setTimestamp(readTime(stream));
+        chunk->setTeamAddress(readString(stream).c_str());
+        chunk->setHopCount(stream.readUint16Be());
     }
 };
 
