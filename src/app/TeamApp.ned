@@ -8,10 +8,10 @@ simple TeamApp like IApp
         @class(echosar::TeamApp);
         string teamId = default("");
         int appPort = default(5000);
-        int positionUpdatePayloadBytes = default(160);
-        int victimAckPayloadBytes = default(96);
-        double positionUpdateInterval @unit(s) = default(1s);
-        double initialJitter @unit(s) = default(this.positionUpdateInterval);
+        int teamUpdatePayloadBytes = default(160);
+        int victimAckPayloadBytes;
+        double teamUpdateInterval @unit(s) = default(1s);
+        double initialJitter @unit(s) = default(this.teamUpdateInterval);
         int applicationIpTtl = default(32);
         // Injeção determinística de falha: nenhum VictimAck antes deste instante.
         double ackStartTime @unit(s) = default(0s);

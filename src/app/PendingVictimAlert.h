@@ -13,7 +13,7 @@ struct PendingVictimAlert {
     std::string alertId;
     std::string victimId;
     inet::Coord victimPosition;
-    omnetpp::simtime_t generationTime;
+    omnetpp::simtime_t creationTime;
     omnetpp::simtime_t ackDeadline = -1;
     omnetpp::simtime_t nextAttempt = -1;
     int attempts = 0;
@@ -25,7 +25,6 @@ struct PendingVictimAlert {
     // O limiar de tentativas sem ACK produz uma única decisão por alerta.
     bool repositionDecisionMade = false;
     inet::Coord repositionOrigin;
-    bool repositionDistanceRecorded = false;
 };
 
 } // namespace echosar

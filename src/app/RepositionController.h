@@ -27,11 +27,6 @@ class RepositionController
     {
         return !activeAlertId.empty() && activeAlertId == alertId;
     }
-    /// Há um reposicionamento em curso, conduzido por um alerta diferente.
-    bool busyWithOther(const std::string& alertId) const
-    {
-        return !activeAlertId.empty() && activeAlertId != alertId;
-    }
     /// Assume o alerta e inicia o deslocamento.
     void begin(const std::string& alertId)
     {

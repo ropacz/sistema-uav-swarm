@@ -5,8 +5,9 @@ namespace echosar;
 class VictimAckChunk extends inet::FieldsChunk
 {
     string alertId;
-    string receivedMessageId;
+    string messageId;
     string victimId;
+    string sourceDroneId;
     string teamId;
-    string originDroneId;
+    simtime_t ackTimestamp;
 }

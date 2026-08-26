@@ -21,13 +21,20 @@ def main() -> None:
         "alerts_confirmed": 1,
         "alerts_expired": 0,
         "alert_attempts_sent": 2,
+        "attempts_received": 2,
         "application_retries": 1,
+        "hop_count_sum": 1,
+        "hop_count_count": 1,
+        "multi_hop_deliveries": 0,
+        "intermediate_forwardings": 0,
+        "no_known_team_failures": 0,
+        "alerts_without_known_team": 0,
+        "confirmation_delay_count": 1,
         "reposition_triggers": 1,
         "obstacles_detected": 1,
         "ba_activations": 1,
         "repositions_started": 1,
         "repositions_completed": 1,
-        "reposition_distance_count": 1,
     }
     failures = [
         f"{name}: esperado {value}, obtido {row[name]}"
@@ -38,6 +45,16 @@ def main() -> None:
         failures.append(
             "reposition_distance_sum_m deve ser positivo, obtido "
             f"{row['reposition_distance_sum_m']}"
+        )
+    if row["confirmation_delay_sum_s"] <= 0:
+        failures.append(
+            "confirmation_delay_sum_s deve ser positivo, obtido "
+            f"{row['confirmation_delay_sum_s']}"
+        )
+    if row["reposition_duration_sum_s"] <= 0:
+        failures.append(
+            "reposition_duration_sum_s deve ser positivo, obtido "
+            f"{row['reposition_duration_sum_s']}"
         )
     if row["alert_pdr_pct"] != 100 or row["appack_pct"] != 100:
         failures.append(
@@ -51,6 +68,7 @@ def main() -> None:
     print("  timeout sem ACK -> sensor binário -> BA -> movimento: confirmado")
     print("  tentativa imediata na chegada -> ACK: confirmado")
     print(f"  distância real: {row['reposition_distance_sum_m']:.2f} m")
+    print(f"  duração do reposicionamento: {row['reposition_duration_sum_s']:.2f} s")
 
 
 if __name__ == "__main__":

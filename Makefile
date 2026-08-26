@@ -7,11 +7,20 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/write_manifest.py \
 	analysis/reports/report_robustness.py \
 	analysis/reports/report_main_experiment.py \
-	analysis/validation/validate_ba_smoke_test.py
+	analysis/validation/validate_ba_smoke_test.py \
+	analysis/validation/validate_alert_lifecycle_smoke_test.py \
+	analysis/validation/validate_connectivity_smoke_test.py \
+	analysis/validation/validate_obstacle_smoke_test.py \
+	analysis/validation/validate_sensor_range_smoke_test.py \
+	analysis/validation/validate_reposition_interrupted_smoke_test.py \
+	analysis/validation/validate_multihop_smoke_test.py \
+	analysis/validation/validate_no_known_team_smoke_test.py
 
 .PHONY: all clean cleanall clean-results makefiles checkmakefiles check analysis-tests \
 	experiment main-experiment robustness-experiment analyze reproduce \
-	ba-smoke-test manifest
+	ba-smoke-test alert-lifecycle-smoke-test connectivity-smoke-test \
+	obstacle-smoke-test reposition-interrupted-smoke-test multihop-smoke-test \
+	sensor-range-smoke-test no-known-team-smoke-test manifest
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -48,7 +57,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.report_main_experiment, analysis.reports.report_robustness, analysis.validation.validate_ba_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.report_main_experiment, analysis.reports.report_robustness, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -59,6 +68,42 @@ analysis-tests: check
 ba-smoke-test:
 	./run.sh -c BA_SmokeTest -r 0
 	python3 analysis/validation/validate_ba_smoke_test.py
+
+# Verifica ciclos periódicos sem alertas concorrentes para a mesma vítima.
+alert-lifecycle-smoke-test:
+	./run.sh -c AlertLifecycle_SmokeTest -r 0
+	python3 analysis/validation/validate_alert_lifecycle_smoke_test.py
+
+# Verifica descoberta local e preservação de ao menos um vizinho conhecido.
+connectivity-smoke-test:
+	./run.sh -c Connectivity_SmokeTest -r 0
+	python3 analysis/validation/validate_connectivity_smoke_test.py
+
+# Compara o mesmo enlace com e sem atenuação pelo obstáculo concreto.
+obstacle-smoke-test:
+	./run.sh -c ObstacleClear_SmokeTest -r 0
+	./run.sh -c ObstacleBlocked_SmokeTest -r 0
+	python3 analysis/validation/validate_obstacle_smoke_test.py
+
+# Verifica que uma interseção geométrica fora do alcance não ativa o sensor.
+sensor-range-smoke-test:
+	./run.sh -c SensorOutOfRange_SmokeTest -r 0
+	python3 analysis/validation/validate_sensor_range_smoke_test.py
+
+# Verifica que movimento ainda em curso não entra nas métricas de concluídos.
+reposition-interrupted-smoke-test:
+	./run.sh -c RepositionInterrupted_SmokeTest -r 0
+	python3 analysis/validation/validate_reposition_interrupted_smoke_test.py
+
+# Verifica hop count real e encaminhamento por um drone intermediário.
+multihop-smoke-test:
+	./run.sh -c Multihop_SmokeTest -r 0
+	python3 analysis/validation/validate_multihop_smoke_test.py
+
+# Verifica falhas operacionais quando nenhuma equipe foi descoberta.
+no-known-team-smoke-test:
+	./run.sh -c NoKnownTeam_SmokeTest -r 0
+	python3 analysis/validation/validate_no_known_team_smoke_test.py
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
 main-experiment: manifest

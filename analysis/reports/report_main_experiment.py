@@ -29,7 +29,12 @@ METRIC_SPECS = {
     "alert_loss_pct": ("derived", "lower"),
     "appack_pct": ("secondary", "higher"),
     "delivery_delay_mean_s": ("secondary", "lower"),
+    "confirmation_delay_mean_s": ("secondary", "lower"),
     "retries_per_alert": ("secondary", "lower"),
+    "attempt_pdr_pct": ("secondary", "higher"),
+    "attempt_loss_pct": ("derived", "lower"),
+    "mean_hop_count": ("secondary", "lower"),
+    "multi_hop_delivery_rate_pct": ("secondary", "neutral"),
 }
 OUTCOME_METRICS = tuple(METRIC_SPECS)
 
@@ -40,6 +45,11 @@ EXPOSURE_METRICS = (
     "repositions_started",
     "repositions_completed",
     "reposition_distance_sum_m",
+    "reposition_distance_mean_m",
+    "reposition_duration_sum_s",
+    "reposition_duration_mean_s",
+    "no_known_team_failures",
+    "alerts_without_known_team",
 )
 
 

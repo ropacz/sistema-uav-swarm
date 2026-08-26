@@ -14,6 +14,13 @@ simple DroneApp like IApp
         int appPort = default(5000);
         // Tamanho experimental do payload VictimAlert, sem cabeçalhos da pilha.
         int victimAlertPayloadBytes = default(320);
+        // Formato e validade dos anúncios usados para conhecer drones vizinhos.
+        int droneStatusPayloadBytes;
+        double droneStatusInterval @unit(s);
+        double droneStatusInitialOffset @unit(s);
+        double droneEntryLifetime @unit(s);
+        // Alcance geométrico aproximado usado apenas na previsão de conectividade.
+        double communicationRange @unit(m);
 
         // Ciclo do alerta
         // Intervalo entre duas tentativas da aplicação para o mesmo alerta.
@@ -26,6 +33,8 @@ simple DroneApp like IApp
         int repositionAfterUnackedAttempts = default(2);
         // Validade total do alerta desde sua geração.
         double alertTtl @unit(s) = default(180s);
+        // Intervalo entre alertas lógicos sucessivos da mesma vítima ativa.
+        double alertInterval @unit(s);
 
         // Descoberta da equipe
         // Tempo sem broadcast após o qual a equipe deixa a tabela descoberta.
@@ -102,6 +111,7 @@ simple DroneApp like IApp
         @signal[victimAlertAttemptSent](type=echosar::AlertMetricEvent);
         @signal[victimAlertConfirmed](type=echosar::AlertMetricEvent);
         @signal[victimAlertExpired](type=echosar::AlertMetricEvent);
+        @signal[victimAlertOperationalFailure](type=echosar::AlertMetricEvent);
         @signal[victimRepositionTriggered](type=echosar::AlertMetricEvent);
         @signal[victimSensorEvaluated](type=echosar::AlertMetricEvent);
         @signal[victimBaActivated](type=echosar::AlertMetricEvent);

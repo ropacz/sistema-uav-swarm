@@ -1,4 +1,5 @@
-#include "messages/PositionUpdate_m.h"
+#include "messages/DroneStatus_m.h"
+#include "messages/TeamUpdate_m.h"
 #include "messages/VictimAck_m.h"
 #include "messages/VictimAlert_m.h"
 
@@ -12,10 +13,11 @@ namespace echosar {
 
 // Wire format: "ECHO" | version | type | body length | typed fields | padding.
 // Integers and IEEE-754 doubles use network byte order (big endian).
-static constexpr uint8_t WIRE_VERSION = 2;
-static constexpr uint8_t POSITION_UPDATE_TYPE = 1;
+static constexpr uint8_t WIRE_VERSION = 4;
+static constexpr uint8_t TEAM_UPDATE_TYPE = 1;
 static constexpr uint8_t VICTIM_ALERT_TYPE = 2;
 static constexpr uint8_t VICTIM_ACK_TYPE = 3;
+static constexpr uint8_t DRONE_STATUS_TYPE = 4;
 
 static void writeString(inet::MemoryOutputStream& stream, const char *value)
 {
@@ -66,28 +68,62 @@ template<typename T>
 struct SarCodec;
 
 template<>
-struct SarCodec<PositionUpdateChunk>
+struct SarCodec<TeamUpdateChunk>
 {
-    static constexpr uint8_t TYPE = POSITION_UPDATE_TYPE;
+    static constexpr uint8_t TYPE = TEAM_UPDATE_TYPE;
 
     static void encode(inet::MemoryOutputStream& stream,
-            const inet::Ptr<const PositionUpdateChunk>& chunk)
+            const inet::Ptr<const TeamUpdateChunk>& chunk)
     {
-        writeString(stream, chunk->getSenderId());
+        writeString(stream, chunk->getTeamId());
+        writeString(stream, chunk->getMessageId());
+        stream.writeUint64Be(static_cast<uint64_t>(chunk->getSequenceNumber()));
         writeDouble(stream, chunk->getPositionX());
         writeDouble(stream, chunk->getPositionY());
         writeDouble(stream, chunk->getPositionZ());
-        stream.writeUint64Be(static_cast<uint64_t>(chunk->getSequenceNumber()));
+        writeTime(stream, chunk->getTimestamp());
     }
 
     static void decode(inet::MemoryInputStream& stream,
-            const inet::Ptr<PositionUpdateChunk>& chunk)
+            const inet::Ptr<TeamUpdateChunk>& chunk)
     {
-        chunk->setSenderId(readString(stream).c_str());
+        chunk->setTeamId(readString(stream).c_str());
+        chunk->setMessageId(readString(stream).c_str());
+        chunk->setSequenceNumber(static_cast<int64_t>(stream.readUint64Be()));
         chunk->setPositionX(readDouble(stream));
         chunk->setPositionY(readDouble(stream));
         chunk->setPositionZ(readDouble(stream));
+        chunk->setTimestamp(readTime(stream));
+    }
+};
+
+template<>
+struct SarCodec<DroneStatusChunk>
+{
+    static constexpr uint8_t TYPE = DRONE_STATUS_TYPE;
+
+    static void encode(inet::MemoryOutputStream& stream,
+            const inet::Ptr<const DroneStatusChunk>& chunk)
+    {
+        writeString(stream, chunk->getDroneId());
+        writeString(stream, chunk->getMessageId());
+        stream.writeUint64Be(static_cast<uint64_t>(chunk->getSequenceNumber()));
+        writeDouble(stream, chunk->getPositionX());
+        writeDouble(stream, chunk->getPositionY());
+        writeDouble(stream, chunk->getPositionZ());
+        writeTime(stream, chunk->getTimestamp());
+    }
+
+    static void decode(inet::MemoryInputStream& stream,
+            const inet::Ptr<DroneStatusChunk>& chunk)
+    {
+        chunk->setDroneId(readString(stream).c_str());
+        chunk->setMessageId(readString(stream).c_str());
         chunk->setSequenceNumber(static_cast<int64_t>(stream.readUint64Be()));
+        chunk->setPositionX(readDouble(stream));
+        chunk->setPositionY(readDouble(stream));
+        chunk->setPositionZ(readDouble(stream));
+        chunk->setTimestamp(readTime(stream));
     }
 };
 
@@ -102,12 +138,13 @@ struct SarCodec<VictimAlertChunk>
         writeString(stream, chunk->getAlertId());
         writeString(stream, chunk->getMessageId());
         writeString(stream, chunk->getVictimId());
-        writeString(stream, chunk->getOriginDroneId());
+        writeString(stream, chunk->getSourceDroneId());
+        writeString(stream, chunk->getTargetTeamId());
         writeDouble(stream, chunk->getVictimPositionX());
         writeDouble(stream, chunk->getVictimPositionY());
         writeDouble(stream, chunk->getVictimPositionZ());
+        writeTime(stream, chunk->getCreationTime());
         stream.writeUint32Be(static_cast<uint32_t>(chunk->getAttemptNumber()));
-        writeTime(stream, chunk->getGenerationTimestamp());
         writeTime(stream, chunk->getTimeToLive());
     }
 
@@ -117,12 +154,13 @@ struct SarCodec<VictimAlertChunk>
         chunk->setAlertId(readString(stream).c_str());
         chunk->setMessageId(readString(stream).c_str());
         chunk->setVictimId(readString(stream).c_str());
-        chunk->setOriginDroneId(readString(stream).c_str());
+        chunk->setSourceDroneId(readString(stream).c_str());
+        chunk->setTargetTeamId(readString(stream).c_str());
         chunk->setVictimPositionX(readDouble(stream));
         chunk->setVictimPositionY(readDouble(stream));
         chunk->setVictimPositionZ(readDouble(stream));
+        chunk->setCreationTime(readTime(stream));
         chunk->setAttemptNumber(static_cast<int32_t>(stream.readUint32Be()));
-        chunk->setGenerationTimestamp(readTime(stream));
         chunk->setTimeToLive(readTime(stream));
     }
 };
@@ -136,20 +174,22 @@ struct SarCodec<VictimAckChunk>
             const inet::Ptr<const VictimAckChunk>& chunk)
     {
         writeString(stream, chunk->getAlertId());
-        writeString(stream, chunk->getReceivedMessageId());
+        writeString(stream, chunk->getMessageId());
         writeString(stream, chunk->getVictimId());
+        writeString(stream, chunk->getSourceDroneId());
         writeString(stream, chunk->getTeamId());
-        writeString(stream, chunk->getOriginDroneId());
+        writeTime(stream, chunk->getAckTimestamp());
     }
 
     static void decode(inet::MemoryInputStream& stream,
             const inet::Ptr<VictimAckChunk>& chunk)
     {
         chunk->setAlertId(readString(stream).c_str());
-        chunk->setReceivedMessageId(readString(stream).c_str());
+        chunk->setMessageId(readString(stream).c_str());
         chunk->setVictimId(readString(stream).c_str());
+        chunk->setSourceDroneId(readString(stream).c_str());
         chunk->setTeamId(readString(stream).c_str());
-        chunk->setOriginDroneId(readString(stream).c_str());
+        chunk->setAckTimestamp(readTime(stream));
     }
 };
 
@@ -217,7 +257,8 @@ class SarChunkSerializer : public inet::ChunkSerializer
     }
 };
 
-using PositionUpdateChunkSerializer = SarChunkSerializer<PositionUpdateChunk>;
+using TeamUpdateChunkSerializer = SarChunkSerializer<TeamUpdateChunk>;
+using DroneStatusChunkSerializer = SarChunkSerializer<DroneStatusChunk>;
 using VictimAckChunkSerializer = SarChunkSerializer<VictimAckChunk>;
 using VictimAlertChunkSerializer = SarChunkSerializer<VictimAlertChunk>;
 
@@ -225,7 +266,8 @@ using VictimAlertChunkSerializer = SarChunkSerializer<VictimAlertChunk>;
 
 namespace inet {
 
-Register_Serializer(echosar::PositionUpdateChunk, echosar::PositionUpdateChunkSerializer);
+Register_Serializer(echosar::TeamUpdateChunk, echosar::TeamUpdateChunkSerializer);
+Register_Serializer(echosar::DroneStatusChunk, echosar::DroneStatusChunkSerializer);
 Register_Serializer(echosar::VictimAckChunk, echosar::VictimAckChunkSerializer);
 Register_Serializer(echosar::VictimAlertChunk, echosar::VictimAlertChunkSerializer);
 

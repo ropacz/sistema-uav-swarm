@@ -49,6 +49,19 @@ __pycache__/
 *.pyo
 .venv/
 
+# ── Intermediários da documentação LaTeX/Markdown ────────────────────────────
+docs/_markdown_*/
+docs/*.aux
+docs/*.log
+docs/*.luabridge.lua
+docs/*.out
+
+# ── Estado local de aprendizado do graphify ──────────────────────────────────
+graphify-out/.graphify_learning.json
+graphify-out/.vocab.txt
+graphify-out/memory/
+graphify-out/reflections/
+
 # ── macOS ────────────────────────────────────────────────────────────────────
 .DS_Store
 *.swp

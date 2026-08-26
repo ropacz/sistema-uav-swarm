@@ -7,11 +7,14 @@
 #include "inet/common/geometry/common/Coord.h"
 #include "inet/common/lifecycle/LifecycleOperation.h"
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
-#include "messages/PositionUpdate_m.h"
+#include "messages/DroneStatus_m.h"
+#include "messages/TeamUpdate_m.h"
 #include "messages/VictimAck_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAssignment_m.h"
+#include "ActiveVictim.h"
 #include "PendingVictimAlert.h"
+#include "DroneLinkState.h"
 #include "RepositionController.h"
 #include "TeamLinkState.h"
 #include "optimization/BatAlgorithm.h"
@@ -25,21 +28,33 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     inet::UdpSocket socket;
     omnetpp::cMessage *maintenanceTimer = nullptr;
     omnetpp::cMessage *movementCompleteTimer = nullptr;
+    omnetpp::cMessage *droneStatusTimer = nullptr;
     std::string droneId;
     std::map<std::string, TeamLinkState> discoveredTeams;
+    std::map<std::string, DroneLinkState> discoveredDrones;
+    std::map<std::string, ActiveVictim> activeVictims;
     std::map<std::string, PendingVictimAlert> pendingAlerts;
     RepositionController reposition;
 
     omnetpp::simtime_t retryInterval;
     omnetpp::simtime_t ackTimeout;
     omnetpp::simtime_t alertTtl;
+    omnetpp::simtime_t alertInterval;
     omnetpp::simtime_t teamEntryLifetime;
+    omnetpp::simtime_t droneStatusInterval;
+    omnetpp::simtime_t droneStatusInitialOffset;
+    omnetpp::simtime_t droneEntryLifetime;
     omnetpp::simtime_t maintenanceInterval;
     int maxAttempts = 5;
     int repositionAfterUnackedAttempts = 2;
     int applicationIpTtl = 32;
     int appPort = 5000;
     int64_t victimAlertPayloadBytes = 320;
+    int64_t droneStatusPayloadBytes = 0;
+    int64_t droneStatusSequence = 0;
+    int64_t droneStatusUpdatesAccepted = 0;
+    int64_t connectivityConstraintsApplied = 0;
+    int64_t connectivityPreservedSelections = 0;
     bool baEnabled = true;
     FitnessParameters fitnessParameters;
     BatParameters batParameters;
@@ -48,6 +63,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simsignal_t alertAttemptSentSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t alertConfirmedSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t alertExpiredSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t operationalFailureSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t repositionTriggerSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t sensorEvaluationSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t baActivationSignal = SIMSIGNAL_NULL;
@@ -59,6 +75,8 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     /// Lê parâmetros, registra métricas e configura socket e timers.
     virtual void initialize(int stage) override;
+    /// Registra diagnósticos locais usados pelos testes de conectividade.
+    virtual void finish() override;
     /// Verifica cada parâmetro isoladamente, nomeando o que estiver inválido.
     void validateParameters() const;
     /// Despacha timers de manutenção, conclusão de movimento e eventos do socket.
@@ -73,22 +91,30 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual void socketErrorArrived(inet::UdpSocket *, inet::Indication *indication) override { delete indication; }
     virtual void socketClosed(inet::UdpSocket *) override {}
 
-    /// Cria um alerta pendente para a vítima atribuída pelo gerenciador.
+    /// Mantém ativa a vítima atribuída pelo gerenciador.
     void handleAssignment(VictimAssignment *assignment);
+    /// Cria um novo alerta lógico para uma vítima ativa sem alerta pendente.
+    void startAlertCycle(ActiveVictim& victim);
+    /// Libera a vítima para o próximo ciclo após ACK ou expiração.
+    void completeAlertCycle(const PendingVictimAlert& alert);
     /// Atualiza a última posição recebida de uma equipe descoberta.
-    void handlePositionUpdate(inet::Packet *packet);
+    void handleTeamUpdate(inet::Packet *packet);
+    /// Atualiza a posição anunciada por outro drone, ignorando ecos e reordenação.
+    void handleDroneStatus(inet::Packet *packet);
     /// Valida o VictimAck contra o destino histórico e encerra o alerta.
     void handleVictimAck(inet::Packet *packet);
     /// Expira alertas, trata timeouts sem ACK e agenda tentativas regulares.
     void performMaintenance();
     /// Monta e envia uma nova tentativa do VictimAlert para a equipe selecionada.
     void sendAttempt(PendingVictimAlert& alert);
+    /// Divulga identidade e posição para a estimativa local de conectividade.
+    void sendDroneStatus();
     /// Escolhe a equipe descoberta mais próxima; vazio significa nenhuma visível.
     std::string selectTargetTeam() const;
     /// Faz uma consulta binária do sensor e, no tratamento, executa o BA uma vez.
     void tryReposition(PendingVictimAlert& alert);
-    /// Acumula uma vez a distância efetivamente percorrida no comando corrente.
-    void recordActualRepositionDistance(PendingVictimAlert& alert);
+    /// Registra a distância efetiva de um reposicionamento concluído.
+    void recordCompletedRepositionDistance(const PendingVictimAlert& alert);
     /// Encerra o modo de reposicionamento e retoma a mobilidade Gauss-Markov.
     void resumeMobility();
 };

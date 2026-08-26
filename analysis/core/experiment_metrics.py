@@ -44,16 +44,25 @@ def collect(path: str) -> dict:
         "alerts_confirmed": "alertsConfirmed",
         "alerts_expired": "alertsExpired",
         "alert_attempts_sent": "alertAttemptsSent",
+        "attempts_received": "attemptsReceived",
         "application_retries": "applicationRetries",
         "delivery_delay_sum_s": "deliveryDelaySum",
         "delivery_delay_count": "deliveryDelayCount",
+        "confirmation_delay_sum_s": "confirmationDelaySum",
+        "confirmation_delay_count": "confirmationDelayCount",
+        "hop_count_sum": "hopCountSum",
+        "hop_count_count": "hopCountCount",
+        "multi_hop_deliveries": "multiHopDeliveries",
+        "intermediate_forwardings": "intermediateForwardings",
+        "no_known_team_failures": "noKnownTeamFailures",
+        "alerts_without_known_team": "alertsWithoutKnownTeam",
         "reposition_triggers": "repositionTriggers",
         "obstacles_detected": "obstaclesDetected",
         "ba_activations": "baActivations",
         "repositions_started": "repositionsStarted",
         "repositions_completed": "repositionsCompleted",
         "reposition_distance_sum_m": "repositionDistanceSum",
-        "reposition_distance_count": "repositionDistanceCount",
+        "reposition_duration_sum_s": "repositionDurationSum",
     }
     values = {
         output_name: central_scalar(frame, scalar_name)
@@ -73,6 +82,32 @@ def collect(path: str) -> dict:
         "delivery_delay_mean_s": ratio(
             values["delivery_delay_sum_s"], values["delivery_delay_count"]
         ),
+        "confirmation_delay_mean_s": ratio(
+            values["confirmation_delay_sum_s"],
+            values["confirmation_delay_count"],
+        ),
         "retries_per_alert": ratio(values["application_retries"], generated),
+        "attempt_pdr_pct": ratio(
+            values["attempts_received"], values["alert_attempts_sent"], 100
+        ),
+        "attempt_loss_pct": ratio(
+            values["alert_attempts_sent"] - values["attempts_received"],
+            values["alert_attempts_sent"],
+            100,
+        ),
+        "mean_hop_count": ratio(
+            values["hop_count_sum"], values["hop_count_count"]
+        ),
+        "multi_hop_delivery_rate_pct": ratio(
+            values["multi_hop_deliveries"], values["alerts_delivered"], 100
+        ),
+        "reposition_distance_mean_m": ratio(
+            values["reposition_distance_sum_m"],
+            values["repositions_completed"],
+        ),
+        "reposition_duration_mean_s": ratio(
+            values["reposition_duration_sum_s"],
+            values["repositions_completed"],
+        ),
     })
     return values

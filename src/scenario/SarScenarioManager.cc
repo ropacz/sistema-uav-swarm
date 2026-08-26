@@ -94,7 +94,6 @@ void SarScenarioManager::handleMessage(cMessage *message)
 
     auto assignment = new VictimAssignment("victimAssignment");
     std::string victimId = victim->par("victimId").stdstringValue();
-    assignment->setAlertId((victimId + "-event").c_str());
     assignment->setVictimId(victimId.c_str());
     assignment->setVictimPositionX(victimPosition.x);
     assignment->setVictimPositionY(victimPosition.y);

@@ -1,0 +1,6 @@
+<movement>
+    <set x="700" y="100" z="0" speed="100" angle="0"/>
+    <wait t="1"/>
+    <forward d="350"/>
+    <wait t="1000"/>
+</movement>

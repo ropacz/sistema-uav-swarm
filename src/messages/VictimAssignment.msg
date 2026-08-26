@@ -2,7 +2,6 @@ namespace echosar;
 
 message VictimAssignment
 {
-    string alertId;
     string victimId;
     double victimPositionX;
     double victimPositionY;

@@ -40,3 +40,17 @@ dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
 
 Consulte [simulations/README.md](simulations/README.md) para distinguir cenários
 científicos de validações técnicas.
+
+## Limitações do modelo
+
+O modelo utiliza obstáculos estáticos, vítimas identificadas abstratamente,
+sensor geométrico simplificado e informações de posição que podem ficar
+desatualizadas. A nova posição é uma estimativa geométrica; não há modelo
+energético detalhado nem processamento de imagens, e o AODV do INET é utilizado
+sem modificações. Os resultados dependem do cenário e da configuração executada.
+
+Distância e duração de movimento representam custo operacional, não consumo de
+energia ou carga real de bateria. Uma perda não deve ser atribuída
+automaticamente a um obstáculo, e a ausência de ACK não prova que o alerta não
+chegou à equipe. O cenário principal direto não constitui evidência de
+conectividade multissalto; essa capacidade possui validação técnica separada.

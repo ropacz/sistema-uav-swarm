@@ -14,10 +14,21 @@ RepositionFitness::RepositionFitness(const FitnessParameters& parameters,
                                      const Coord& current,
                                      const Coord& teamPosition,
                                      const Coord& obstaclePoint,
+                                     const std::vector<Coord>& neighborPositions,
+                                     bool preserveConnectivity,
                                      omnetpp::simtime_t now) :
     parameters(parameters), sensor(sensor), current(current), teamPosition(teamPosition),
-    obstaclePoint(obstaclePoint), now(now)
+    obstaclePoint(obstaclePoint), neighborPositions(neighborPositions),
+    preserveConnectivity(preserveConnectivity), now(now)
 {
+}
+
+bool RepositionFitness::predictsNeighbor(const Coord& candidate) const
+{
+    return std::any_of(neighborPositions.begin(), neighborPositions.end(),
+        [&](const Coord& position) {
+            return candidate.distance(position) <= parameters.communicationRange;
+        });
 }
 
 double RepositionFitness::travelTime(const Coord& from, const Coord& to) const
@@ -55,6 +66,10 @@ bool RepositionFitness::feasible(const Coord& candidate) const
         candidate.distance(obstaclePoint) < parameters.obstacleSafetyMargin)
         return false;
     if (now + travelTime(current, candidate) > parameters.flightTimeLimit)
+        return false;
+    // A restrição só existe quando o drone tinha conectividade estimada antes
+    // do movimento. Um drone já isolado não é impedido de buscar uma saída.
+    if (preserveConnectivity && !predictsNeighbor(candidate))
         return false;
     // O trajeto do drone deve ser livre e a posição final precisa de linha de
     // visada até a equipe estimada. Uma posição ainda obstruída não cumpre a

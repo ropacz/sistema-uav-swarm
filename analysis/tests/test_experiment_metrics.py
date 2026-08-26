@@ -19,16 +19,25 @@ SCALARS = {
     "alertsConfirmed": 1,
     "alertsExpired": 1,
     "alertAttemptsSent": 5,
+    "attemptsReceived": 3,
     "applicationRetries": 3,
     "deliveryDelaySum": 4,
     "deliveryDelayCount": 1,
+    "confirmationDelaySum": 5,
+    "confirmationDelayCount": 1,
+    "hopCountSum": 2,
+    "hopCountCount": 1,
+    "multiHopDeliveries": 1,
+    "intermediateForwardings": 1,
+    "noKnownTeamFailures": 4,
+    "alertsWithoutKnownTeam": 1,
     "repositionTriggers": 2,
     "obstaclesDetected": 1,
     "baActivations": 1,
     "repositionsStarted": 1,
     "repositionsCompleted": 1,
     "repositionDistanceSum": 12.5,
-    "repositionDistanceCount": 1,
+    "repositionDurationSum": 3.5,
 }
 
 
@@ -53,7 +62,14 @@ class ExperimentMetricsReaderTests(unittest.TestCase):
         self.assertEqual(row["alert_loss_pct"], 50)
         self.assertEqual(row["appack_pct"], 50)
         self.assertEqual(row["delivery_delay_mean_s"], 4)
+        self.assertEqual(row["confirmation_delay_mean_s"], 5)
         self.assertEqual(row["retries_per_alert"], 1.5)
+        self.assertEqual(row["attempt_pdr_pct"], 60)
+        self.assertEqual(row["attempt_loss_pct"], 40)
+        self.assertEqual(row["mean_hop_count"], 2)
+        self.assertEqual(row["multi_hop_delivery_rate_pct"], 100)
+        self.assertEqual(row["reposition_distance_mean_m"], 12.5)
+        self.assertEqual(row["reposition_duration_mean_s"], 3.5)
 
     def test_zero_generated_alerts_produce_undefined_ratios(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

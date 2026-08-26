@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "inet/common/geometry/common/Coord.h"
 #include "omnetpp.h"
 
@@ -20,6 +22,8 @@ struct FitnessParameters {
     double obstacleSafetyMargin = 1;
     // Distância de referência para normalizar o custo de enlace.
     double linkNormalizationDistance = 1000;
+    // Alcance geométrico aproximado para preservar ao menos um vizinho conhecido.
+    double communicationRange = 0;
     // Raio da região de busca ao redor da posição atual.
     double maximumRepositionDistance = 25;
     double areaMinX = 0, areaMaxX = 1000, areaMinY = 0, areaMaxY = 1000;
@@ -42,6 +46,8 @@ class RepositionFitness
                       const inet::Coord& current,
                       const inet::Coord& teamPosition,
                       const inet::Coord& obstaclePoint,
+                      const std::vector<inet::Coord>& neighborPositions,
+                      bool preserveConnectivity,
                       omnetpp::simtime_t now);
 
     /// Custo normalizado do candidato: enlace, obstáculo e deslocamento.
@@ -57,7 +63,11 @@ class RepositionFitness
     inet::Coord current;
     inet::Coord teamPosition;
     inet::Coord obstaclePoint;
+    std::vector<inet::Coord> neighborPositions;
+    bool preserveConnectivity;
     omnetpp::simtime_t now;
+
+    bool predictsNeighbor(const inet::Coord& candidate) const;
 };
 
 } // namespace echosar

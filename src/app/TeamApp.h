@@ -6,7 +6,7 @@
 #include "inet/applications/base/ApplicationBase.h"
 #include "inet/common/lifecycle/LifecycleOperation.h"
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
-#include "messages/PositionUpdate_m.h"
+#include "messages/TeamUpdate_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAck_m.h"
 
@@ -22,7 +22,8 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t initialJitter;
     omnetpp::simtime_t ackStartTime;
     int appPort = 5000;
-    int64_t positionUpdatePayloadBytes = 160;
+    int applicationIpTtl = 32;
+    int64_t teamUpdatePayloadBytes = 160;
     int64_t victimAckPayloadBytes = 96;
     int64_t updateSequence = 0;
     std::set<std::string> receivedAttempts;
@@ -35,7 +36,7 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
     /// Valida parâmetros e configura identidade, socket UDP e timer de posição.
     virtual void initialize(int stage) override;
-    /// Processa o timer de PositionUpdate e as indicações recebidas pelo socket.
+    /// Processa o timer de TeamUpdate e as indicações recebidas pelo socket.
     virtual void handleMessageWhenUp(omnetpp::cMessage *message) override;
     /// Hooks vazios: os experimentos não param nem reiniciam a aplicação em runtime.
     virtual void handleStartOperation(inet::LifecycleOperation *) override {}
@@ -47,8 +48,8 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     virtual void socketErrorArrived(inet::UdpSocket *, inet::Indication *indication) override { delete indication; }
     virtual void socketClosed(inet::UdpSocket *) override {}
 
-    /// Publica a posição atual da equipe por broadcast UDP de um salto.
-    void sendPositionUpdate();
+    /// Publica a posição atual da equipe por broadcast UDP.
+    void sendTeamUpdate();
     /// Valida e deduplica a tentativa, registra a entrega e envia VictimAck.
     void handleVictimAlert(inet::Packet *packet);
 };
