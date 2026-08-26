@@ -13,7 +13,8 @@ struct ObstacleObservation {
     /// Primeiro ponto da superfície a partir do drone: onde a linha de visada
     /// começa a ser bloqueada. É o único ponto que o BA consome.
     inet::Coord nearestSurfacePoint;
-    /// Distância drone-superfície, comparada com os limites do sensor.
+    /// Distância drone-superfície. Registrada sempre; só limita a confirmação
+    /// quando o sensor tem alcance máximo configurado.
     double distance = NAN;
     /// Motivo da confirmação ou da rejeição, contabilizado pela aplicação.
     std::string reason;
@@ -24,7 +25,10 @@ class AbstractObstacleSensor : public omnetpp::cSimpleModule
   protected:
     inet::ModuleRefByPar<inet::physicalenvironment::IPhysicalEnvironment> environment;
     double minimumRange = 0.7;
-    double maximumRange = 30;
+    /// Alcance máximo do sensor. Negativo significa sem limite: o mecanismo
+    /// científico avalia a obstrução geométrica do enlace inteiro, e não a
+    /// faixa de um sensor de prevenção de colisões.
+    double maximumRange = -1;
 
     /// Obtém o ambiente físico e valida os limites de alcance configurados.
     virtual void initialize() override;

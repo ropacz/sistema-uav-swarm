@@ -19,8 +19,10 @@ void AbstractObstacleSensor::initialize()
     environment.reference(this, "physicalEnvironmentModule", true);
     minimumRange = par("minimumRange");
     maximumRange = par("maximumRange");
-    if (minimumRange < 0 || maximumRange <= minimumRange)
-        throw cRuntimeError("Invalid abstract obstacle sensor limits");
+    if (minimumRange < 0)
+        throw cRuntimeError("minimumRange must not be negative");
+    if (maximumRange >= 0 && maximumRange <= minimumRange)
+        throw cRuntimeError("maximumRange must exceed minimumRange, or be negative for no limit");
 }
 
 namespace {
@@ -67,24 +69,21 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
         result.reason = "invalidTargetDirection";
         return result;
     }
-    // O sensor é orientado pelo azimute da última posição conhecida. Quando a
-    // equipe acabou de cruzar uma superfície, o último broadcast válido pode
-    // estar poucos centímetros antes dela. Estender o raio até o alcance do
-    // sensor evita que essa discretização temporal esconda o obstáculo.
-    Coord horizontalBearing(direction.x, direction.y, 0);
-    Coord inspectionDestination = teamPosition;
-    if (horizontalBearing.length() > 0)
-        inspectionDestination += horizontalBearing / horizontalBearing.length() * maximumRange;
-    IntersectionVisitor visitor(dronePosition, inspectionDestination);
-    environment->visitObjects(&visitor, LineSegment(dronePosition, inspectionDestination));
+    // A verificação é sobre o segmento entre a posição do drone e a última
+    // posição conhecida da equipe: é esse percurso que o sinal atravessa.
+    IntersectionVisitor visitor(dronePosition, teamPosition);
+    environment->visitObjects(&visitor, LineSegment(dronePosition, teamPosition));
     if (!visitor.closest) {
         result.reason = "clearLineOfSight";
         return result;
     }
     result.nearestSurfacePoint = visitor.closestPoint;
     result.distance = visitor.closestDistance;
-    // Interseção geométrica fora do alcance não equivale a confirmação sensorial.
-    if (result.distance < minimumRange || result.distance > maximumRange) {
+    // O alcance máximo modela um sensor de prevenção de colisões e só se aplica
+    // quando configurado. Um edifício que bloqueia o enlace é identificado pela
+    // geometria do percurso, não pela proximidade do drone.
+    if (result.distance < minimumRange ||
+        (maximumRange >= 0 && result.distance > maximumRange)) {
         result.reason = "outsideVisualRange";
         return result;
     }
