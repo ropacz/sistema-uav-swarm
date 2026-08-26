@@ -5,7 +5,8 @@ Os arquivos Python são organizados pelo domínio que atendem:
 - `core/`: leitura de `.sca`, métricas centrais, estatística e manifesto;
 - `reports/`: experimento confirmatório, robustez, figuras e planilha;
 - `validation/`: contratos automáticos dos cenários técnicos;
-- `tests/`: testes unitários da análise;
+- `tests/`: testes unitários da análise, incluindo o contrato entre relatórios
+  e entregáveis;
 - `tables/` e `figures/`: artefatos derivados, ignorados pelo Git.
 
 As saídas são separadas por natureza, e não só por domínio:
@@ -30,6 +31,15 @@ variações de vítimas e equipes, sem misturá-las à inferência confirmatóri
 
 `make deliverables` gera as figuras e a planilha a partir das tabelas já
 existentes, sem reexecutar simulação.
+
+`make analysis-tests` valida os entregáveis com dados sintéticos em cerca de um
+segundo, **antes** de gastar horas de campanha. `tests/test_deliverables.py`
+verifica que as três figuras saem em PDF com desenho, que toda métrica consumida
+por uma figura continua sendo exportada pelos relatórios, que a planilha lê o
+`.sca` em vez de repetir a documentação, e que um desvio conhecido nunca é
+classificado como conforme. As colunas sintéticas vêm das constantes dos próprios
+relatórios, de modo que renomear uma métrica quebra o teste em vez de quebrar a
+figura no fim da campanha.
 
 `reports/figures.py` não recalcula nada: todo número exibido vem de um CSV
 produzido pelos relatórios. As figuras saem em PDF vetorial e **sem título
