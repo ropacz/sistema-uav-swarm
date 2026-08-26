@@ -6,15 +6,17 @@ This repository implements the ECHOSAR-Net UAV search-and-rescue simulation usin
 
 - `src/app/`: C++ application modules, NED definitions, headers, and shared UDP port constants.
 - `src/messages/`: OMNeT++ message schemas (`.msg`); generated message sources are build artifacts.
-- `simulations/`: network topology, `omnetpp.ini`, obstacle data, launcher, and generated results.
+- `simulations/`: network topology, three `.ini` configurations (`omnetpp.ini`
+  holds `[General]`, `experiment.ini` the scientific scenario), obstacle data
+  and generated results. `simulations/validation/` keeps the smoke-test
+  configuration next to the data only those tests use.
 - `analysis/`: Python post-processing and plots derived from `.sca` result files.
-- `docs/`: four authored documents — `scientific_protocol.md` (normative:
-  question, H0/H1, paired design), `model_and_assumptions.md`, `metrics.md` and
-  `traceability.md`. External material stays in `docs/references/`.
+- `docs/`: normative implementation directive and its concise index. External
+  material stays in `docs/references/`.
 - `run.sh`: standard entry point for command-line and GUI simulation runs.
 
-Parameter values live only in `simulations/omnetpp.ini`. Documentation cites the
-keys; it must not repeat the values.
+Parameter values live only in the configuration files under `simulations/`.
+Documentation cites the keys; it must not repeat the values.
 
 Keep protocol behavior in `src/`, experiment configuration in `simulations/`, and interpretation or plotting logic in `analysis/`.
 
@@ -26,17 +28,17 @@ Copy `.env.example` to `.env` and adjust the workspace path before running tools
 make makefiles                    # regenerate src/Makefile with opp_makemake
 make                              # debug build
 make clean                        # remove debug build products
-make hypothesis-pilot            # run both paired arms and report results
 make analysis-tests               # analyser unit tests
-make experiment                   # both paired arms, then the analysis
+make experiment                   # 30 paired runs per arm, then analysis
+make robustness-experiment        # separate non-confirmatory matrix
 make reproduce                    # build → tests → paired experiment
-./run.sh --build                  # build, then run HypothesisPilot_BaOn
+./run.sh --build -c MainExperiment_BaOn -r 0
 ./run.sh --gui                    # run interactively in Qtenv
-./run.sh -c HypothesisPilot_BaOff -r 0  # run control seed zero
+./run.sh -c MainExperiment_BaOff -r 0   # run control seed zero
 ```
 
-`HypothesisPilotBase` is declared `abstract = true` and cannot be run directly: use
-`HypothesisPilot_BaOff` or `HypothesisPilot_BaOn`. The analysis fails
+`MainExperimentBase` is declared `abstract = true` and cannot be run directly:
+use `MainExperiment_BaOff` or `MainExperiment_BaOn`. The analysis fails
 when the two arms differ by anything other than `baEnabled`.
 
 Run commands through the configured `opp_env` environment when OMNeT++ tools are not already on `PATH`.
@@ -49,7 +51,13 @@ For Python, follow PEP 8, use four spaces, and prefer `snake_case`. Preserve con
 
 ## Testing Guidelines
 
-There is no standalone unit-test framework. Validate changes by rebuilding and running deterministic seeds with Cmdenv. Check the exit status, simulation logs, and generated scalars under `simulations/results/`. For metric changes, run `analysis/reports/report_professor_scenarios.py` and inspect outputs in `analysis/figures/`. Test more than one seed when behavior is stochastic.
+The Python analyser has a `unittest` suite. Validate simulation changes by
+rebuilding and running the deterministic smoke-test targets with Cmdenv. Check
+the exit status, simulation logs, and generated scalars under
+`simulations/results/`. For metric changes, run
+`analysis/reports/report_main_experiment.py`; use `report_robustness.py` only for
+the separate robustness matrix. Test more than one seed when behavior is
+stochastic.
 
 ## Commit & Pull Request Guidelines
 
