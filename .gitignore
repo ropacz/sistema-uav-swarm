@@ -12,6 +12,7 @@ src/messages/*_m.h
 
 # ── Tabelas e figuras derivadas pela análise ──────────────────────────────────
 analysis/figures/
+analysis/tables/
 
 # ── IDE Eclipse / OMNeT++ IDE ────────────────────────────────────────────────
 .cproject

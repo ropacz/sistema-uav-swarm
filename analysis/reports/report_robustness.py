@@ -21,7 +21,7 @@ from analysis.reports.report_main_experiment import (  # noqa: E402
 )
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
-OUTPUT = REPOSITORY_ROOT / "analysis/figures/robustness"
+OUTPUT = REPOSITORY_ROOT / "analysis/tables/robustness"
 METRICS = (
     "alert_pdr_pct", "alert_loss_pct", "appack_pct",
     "delivery_delay_mean_s", "confirmation_delay_mean_s",

@@ -7,6 +7,8 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/core/write_manifest.py \
 	analysis/reports/report_robustness.py \
 	analysis/reports/report_main_experiment.py \
+	analysis/reports/figures.py \
+	analysis/reports/verification_sheet.py \
 	analysis/validation/validate_ba_smoke_test.py \
 	analysis/validation/validate_alert_lifecycle_smoke_test.py \
 	analysis/validation/validate_connectivity_smoke_test.py \
@@ -18,6 +20,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 
 .PHONY: all clean cleanall clean-results makefiles checkmakefiles check analysis-tests \
 	experiment main-experiment robustness-experiment analyze reproduce \
+	figures verification-sheet deliverables \
 	ba-smoke-test alert-lifecycle-smoke-test connectivity-smoke-test \
 	obstacle-smoke-test reposition-interrupted-smoke-test multihop-smoke-test \
 	sensor-range-smoke-test no-known-team-smoke-test manifest
@@ -35,7 +38,8 @@ cleanall: checkmakefiles
 
 # Remove somente artefatos reproduzíveis; código, configuração e referências ficam.
 clean-results:
-	rm -rf "$(CURDIR)/simulations/results" "$(CURDIR)/analysis/figures"
+	rm -rf "$(CURDIR)/simulations/results" "$(CURDIR)/analysis/figures" \
+	       "$(CURDIR)/analysis/tables"
 
 makefiles:
 	cd src && opp_makemake -f --deep -O out \
@@ -57,7 +61,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.report_main_experiment, analysis.reports.report_robustness, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.report_main_experiment, analysis.reports.report_robustness, analysis.reports.figures, analysis.reports.verification_sheet, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -130,6 +134,16 @@ manifest:
 
 analyze:
 	python3 analysis/reports/report_main_experiment.py
+
+# Entregáveis do texto: figuras em PDF vetorial e planilha de verificação.
+# Consomem apenas as tabelas já geradas, sem reexecutar simulação.
+figures:
+	python3 analysis/reports/figures.py
+
+verification-sheet:
+	python3 analysis/reports/verification_sheet.py
+
+deliverables: figures verification-sheet
 
 # Reprodução confirmatória. A robustez possui alvo próprio.
 reproduce:

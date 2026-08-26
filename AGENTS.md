@@ -10,7 +10,10 @@ This repository implements the ECHOSAR-Net UAV search-and-rescue simulation usin
   holds `[General]`, `experiment.ini` the scientific scenario), obstacle data
   and generated results. `simulations/validation/` keeps the smoke-test
   configuration next to the data only those tests use.
-- `analysis/`: Python post-processing and plots derived from `.sca` result files.
+- `analysis/`: Python post-processing derived from `.sca` result files.
+  `analysis/tables/` receives the CSV tables and the verification workbook;
+  `analysis/figures/` receives the vector PDF figures for the dissertation.
+  Both are regenerable and ignored by Git.
 - `docs/`: normative implementation directive and its concise index. External
   material stays in `docs/references/`.
 - `run.sh`: standard entry point for command-line and GUI simulation runs.
@@ -32,6 +35,7 @@ make analysis-tests               # analyser unit tests
 make experiment                   # 30 paired runs per arm, then analysis
 make robustness-experiment        # separate non-confirmatory matrix
 make reproduce                    # build → tests → paired experiment
+make deliverables                 # figures and verification sheet from existing tables
 ./run.sh --build -c MainExperiment_BaOn -r 0
 ./run.sh --gui                    # run interactively in Qtenv
 ./run.sh -c MainExperiment_BaOff -r 0   # run control seed zero
@@ -56,7 +60,8 @@ rebuilding and running the deterministic smoke-test targets with Cmdenv. Check
 the exit status, simulation logs, and generated scalars under
 `simulations/results/`. For metric changes, run
 `analysis/reports/report_main_experiment.py`; use `report_robustness.py` only for
-the separate robustness matrix. Test more than one seed when behavior is
+the separate robustness matrix. Figures carry no embedded title: ABNT places the
+caption above and the source below, both written in LaTeX. Test more than one seed when behavior is
 stochastic.
 
 ## Commit & Pull Request Guidelines
