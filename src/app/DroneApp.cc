@@ -19,9 +19,7 @@ namespace echosar {
 Define_Module(DroneApp);
 
 namespace {
-/// Valida uma condição nomeando o parâmetro que a violou. A verificação
-/// anterior era uma única expressão com quase cinquenta condições encadeadas,
-/// e a mensagem de erro não dizia qual delas falhou.
+/// Valida uma condição nomeando o parâmetro que a violou.
 void require(bool satisfied, const char *requirement)
 {
     if (!satisfied)
@@ -533,10 +531,16 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
         return;
     }
     alert.repositionOrigin = current;
-    double travelTime = fitness.travelTime(current, result.position);
-    // A mobilidade executa o trajeto no tempo calculado; não há teletransporte.
-    controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
-                       fitnessParameters.climbSpeed, fitnessParameters.descentSpeed);
+    // O trajeto é executado gradualmente pela mobilidade, que devolve o instante
+    // real de chegada. Agendar a retomada com esse valor evita que a aplicação
+    // recalcule o tempo por conta própria e divirja do movimento em curso.
+    double travelTime = controlled->moveTo(result.position, fitnessParameters.horizontalSpeed,
+                                           fitnessParameters.climbSpeed,
+                                           fitnessParameters.descentSpeed);
+    if (travelTime <= 0) {
+        EV_DEBUG << "Reposition skipped: mobility reported no movement\n";
+        return;
+    }
     reposition.begin(alert.alertId);
     AlertMetricEvent startedEvent(alert.alertId, simTime(), "started", distance);
     emit(repositionEventSignal, &startedEvent);

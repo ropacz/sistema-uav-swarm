@@ -6,11 +6,6 @@ namespace echosar {
 
 /// Estado do reposicionamento de um drone.
 ///
-/// Antes, `repositionState` e `activeRepositionAlertId` eram mutados em doze
-/// pontos espalhados por quatro métodos do DroneApp, com as transições
-/// implícitas no meio da lógica de cada um. Reunidos aqui, a máquina inteira
-/// cabe numa tela e cada transição tem nome.
-///
 ///     IDLE --begin--> MOVING --release--> IDLE
 ///
 /// Um drone conduz no máximo um reposicionamento por vez; os demais alertas

@@ -19,9 +19,11 @@ class BaGaussMarkovMobility : public inet::GaussMarkovMobility
     virtual void setTargetPosition() override;
 
   public:
-    /// Inicia um deslocamento gradual até o candidato respeitando velocidades por eixo.
-    void moveTo(const inet::Coord& destination, double horizontalSpeed,
-                double climbSpeed, double descentSpeed);
+    /// Inicia um deslocamento gradual até o candidato respeitando velocidades por
+    /// eixo e devolve o tempo de trajeto que a mobilidade vai efetivamente usar.
+    /// Zero significa que nenhum movimento foi iniciado.
+    double moveTo(const inet::Coord& destination, double horizontalSpeed,
+                  double climbSpeed, double descentSpeed);
     /// Cancela a espera/comando do BA e retoma a trajetória estocástica normal.
     void resumeNormal();
 };

@@ -54,8 +54,8 @@ void BaGaussMarkovMobility::setTargetPosition()
     targetPosition = lastPosition + direction * (speed * updateInterval.dbl());
 }
 
-void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSpeed,
-                                   double climbSpeed, double descentSpeed)
+double BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSpeed,
+                                     double climbSpeed, double descentSpeed)
 {
     // Chamado pela aplicação, que roda no contexto de outro módulo. Sem trocar
     // o contexto, o evento de mobilidade seria agendado e possuído pelo
@@ -69,13 +69,14 @@ void BaGaussMarkovMobility::moveTo(const Coord& destination, double horizontalSp
     // Os eixos evoluem simultaneamente; o eixo mais lento determina a chegada.
     double travelTime = std::max(horizontalTime, verticalTime);
     if (travelTime <= 0)
-        return;
+        return 0;
     targetPosition = destination;
     nextChange = simTime() + travelTime;
     lastVelocity = delta / travelTime;
     stationary = false;
     baOverride = true;
     scheduleUpdate();
+    return travelTime;
 }
 
 void BaGaussMarkovMobility::resumeNormal()
