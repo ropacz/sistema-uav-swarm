@@ -117,6 +117,7 @@ void DroneApp::initialize(int stage)
         ackTimeout = par("ackTimeout");
         alertTtl = par("alertTtl");
         alertInterval = par("alertInterval");
+        alertGenerationEndTime = par("alertGenerationEndTime");
         maxAttempts = par("maxAttempts");
         repositionAfterUnackedAttempts = par("repositionAfterUnackedAttempts");
         teamEntryLifetime = par("teamEntryLifetime");
@@ -260,6 +261,10 @@ void DroneApp::handleAssignment(VictimAssignment *assignment)
         delete assignment;
         return;
     }
+    if (!canStartAlertCycle()) {
+        delete assignment;
+        return;
+    }
     auto [it, inserted] = activeVictims.try_emplace(victimId);
     if (!inserted) {
         delete assignment;
@@ -272,6 +277,11 @@ void DroneApp::handleAssignment(VictimAssignment *assignment)
                             assignment->getVictimPositionZ());
     delete assignment;
     startAlertCycle(victim);
+}
+
+bool DroneApp::canStartAlertCycle() const
+{
+    return alertGenerationEndTime < SIMTIME_ZERO || simTime() <= alertGenerationEndTime;
 }
 
 void DroneApp::startAlertCycle(ActiveVictim& victim)
@@ -524,7 +534,8 @@ void DroneApp::performMaintenance()
 
     for (auto& entry : activeVictims) {
         auto& victim = entry.second;
-        if (victim.pendingAlertId.empty() && simTime() >= victim.nextAlertTime)
+        if (victim.pendingAlertId.empty() && simTime() >= victim.nextAlertTime &&
+            canStartAlertCycle())
             startAlertCycle(victim);
     }
 }
@@ -607,7 +618,9 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
                               neighborPositions, preserveConnectivity, simTime());
     BatResult result = BatAlgorithm::optimize(
         current, fitnessParameters.maximumRepositionDistance,
-        batParameters, getRNG(0),
+        // O RNG 1 é exclusivo do tratamento. O RNG 0 continua reservado ao
+        // jitter operacional de TeamUpdate, preservando o pareamento dos braços.
+        batParameters, getRNG(1),
         [&](const Coord& candidate) { return fitness.cost(candidate); },
         [&](const Coord& candidate) { return fitness.feasible(candidate); },
         [&](const Coord& candidate) { return fitness.inDomain(candidate); });

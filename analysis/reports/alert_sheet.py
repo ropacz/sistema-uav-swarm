@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Planilha de atendimento: uma linha por alerta, duas taxas por execução.
+"""Planilha de atendimento e efeito pareado: uma linha por alerta.
 
 A simulação grava um CSV por execução com uma linha por `alertId`. Este script
 apenas junta esses arquivos com o contexto da execução lido do `.sca`
@@ -18,6 +18,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import numpy as np
 import pandas as pd
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +34,8 @@ OUTPUT = REPOSITORY_ROOT / "analysis/tables"
 # Connectivity_SmokeTest liga a política só no drone que a testa. Não são
 # execuções da campanha e não têm lugar nesta planilha.
 EXCLUDED_SUFFIX = "_SmokeTest"
+ARM_PATTERN = r"^(?P<scenario>.+)_Ba(?P<arm>Off|On)$"
+BOOTSTRAP_RESAMPLES = 10_000
 
 COLUMNS = [
     "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",
@@ -106,6 +109,72 @@ def summarize(table: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def paired_effects(table: pd.DataFrame) -> pd.DataFrame:
+    """Resume diferenças BA-On − BA-Off por seed, com IC bootstrap de 95%."""
+    arm = table["config"].str.extract(ARM_PATTERN)
+    selected = table.loc[arm["scenario"].notna()].copy()
+    if selected.empty:
+        return pd.DataFrame()
+    selected["scenario"] = arm.loc[selected.index, "scenario"]
+    selected["declaredEnabled"] = arm.loc[selected.index, "arm"].eq("On")
+    if not (selected["declaredEnabled"] == selected["baEnabled"]).all():
+        raise ValueError("nome do braço e baEnabled são inconsistentes")
+
+    runs = selected.groupby(
+        ["scenario", "numTeams", "seed", "baEnabled"], sort=True
+    ).agg(
+        generated=("alertId", "size"),
+        acknowledged=("acknowledged", "sum"),
+        undelivered=("delivered", lambda values: int((values == 0).sum())),
+    ).reset_index()
+    runs["attendancePct"] = 100.0 * runs["acknowledged"] / runs["generated"]
+    runs["lossPct"] = 100.0 * runs["undelivered"] / runs["generated"]
+
+    keys = ["scenario", "numTeams", "seed"]
+    off = runs.loc[~runs["baEnabled"], keys + ["attendancePct", "lossPct"]].rename(
+        columns={"attendancePct": "attendanceOff", "lossPct": "lossOff"})
+    on = runs.loc[runs["baEnabled"], keys + ["attendancePct", "lossPct"]].rename(
+        columns={"attendancePct": "attendanceOn", "lossPct": "lossOn"})
+    pairs = off.merge(on, on=keys, how="inner", validate="one_to_one")
+    if len(pairs) != len(off) or len(pairs) != len(on):
+        raise ValueError("a campanha contém seeds sem o respectivo braço pareado")
+    pairs["attendanceEffect"] = pairs["attendanceOn"] - pairs["attendanceOff"]
+    pairs["lossEffect"] = pairs["lossOn"] - pairs["lossOff"]
+
+    rng = np.random.default_rng(20260826)
+
+    def interval(values: pd.Series) -> tuple[float, float]:
+        data = values.to_numpy(dtype=float)
+        if len(data) == 1:
+            return data[0], data[0]
+        means = rng.choice(
+            data, size=(BOOTSTRAP_RESAMPLES, len(data)), replace=True
+        ).mean(axis=1)
+        return tuple(np.quantile(means, [0.025, 0.975]))
+
+    rows = []
+    for (scenario, teams), group in pairs.groupby(
+            ["scenario", "numTeams"], sort=True):
+        attendance_low, attendance_high = interval(group["attendanceEffect"])
+        loss_low, loss_high = interval(group["lossEffect"])
+        rows.append({
+            "cenario": scenario,
+            "numTeams": teams,
+            "pares": len(group),
+            "atendimento_ba_off_pct": group["attendanceOff"].mean(),
+            "atendimento_ba_on_pct": group["attendanceOn"].mean(),
+            "efeito_atendimento_pp": group["attendanceEffect"].mean(),
+            "efeito_atendimento_ic95_inf_pp": attendance_low,
+            "efeito_atendimento_ic95_sup_pp": attendance_high,
+            "perda_ba_off_pct": group["lossOff"].mean(),
+            "perda_ba_on_pct": group["lossOn"].mean(),
+            "efeito_perda_pp": group["lossEffect"].mean(),
+            "efeito_perda_ic95_inf_pp": loss_low,
+            "efeito_perda_ic95_sup_pp": loss_high,
+        })
+    return pd.DataFrame(rows)
+
+
 def main() -> None:
     table = load()
     # Um alertId é único dentro da execução; a chave global inclui o contexto.
@@ -116,14 +185,19 @@ def main() -> None:
     sheet = table[COLUMNS].sort_values(
         ["baEnabled", "numTeams", "seed", "generationTime"]).reset_index(drop=True)
     summary = summarize(table)
+    paired = paired_effects(table)
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
     workbook = OUTPUT / "atendimento.xlsx"
     with pd.ExcelWriter(workbook, engine="openpyxl") as writer:
         sheet.to_excel(writer, sheet_name="Alertas", index=False)
         summary.to_excel(writer, sheet_name="Resumo", index=False)
+        if not paired.empty:
+            paired.to_excel(writer, sheet_name="EfeitoPareado", index=False)
     sheet.to_csv(OUTPUT / "atendimento_alertas.csv", index=False)
     summary.to_csv(OUTPUT / "atendimento_resumo.csv", index=False)
+    if not paired.empty:
+        paired.to_csv(OUTPUT / "efeito_pareado.csv", index=False)
 
     figures.configure_style()
     charts = figures.attendance_figures(summary)
@@ -134,6 +208,10 @@ def main() -> None:
         print(f"gerado: {chart.relative_to(REPOSITORY_ROOT)}")
     print()
     print(summary.to_string(index=False, float_format=lambda value: f"{value:.1f}"))
+    if not paired.empty:
+        print()
+        print("Efeito pareado BA-On − BA-Off por seed (pontos percentuais):")
+        print(paired.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
 
 
 if __name__ == "__main__":

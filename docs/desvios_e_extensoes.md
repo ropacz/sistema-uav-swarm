@@ -233,9 +233,9 @@ custo. Pelo mesmo motivo, `C_obstaculo` recebe **custo máximo** quando o
 candidato continua obstruído, em vez de apenas o decaimento exponencial do
 §16.2.
 
-O efeito é um espaço de busca mais restrito que o da diretriz. Medido: 86% das
-ativações do BA resultam em movimento iniciado, então a restrição não está
-inviabilizando a busca.
+O efeito é um espaço de busca mais restrito que o da diretriz. Sua viabilidade
+deve ser avaliada pelo funil de ativações, soluções e movimentos da campanha
+corrente, sem reutilizar percentuais obtidos antes de mudanças nos RNGs.
 
 `src/optimization/RepositionFitness.cc`.
 
@@ -392,17 +392,11 @@ Trocar a seed configurada no `.ini` não afeta esses sorteios: são uma fonte de
 não determinismo que a própria configuração de reprodutibilidade do
 experimento não alcança.
 
-Este projeto já havia sido corrigido de um problema da mesma classe: o
-`BatAlgorithm` sorteava de `getRNG(0)`, o fluxo global também consumido por
-mobilidade, backoff do 802.11, AODV e jitter das aplicações — só o braço
-tratado consumia esses sorteios extras, o que divergia trajetórias e filas
-entre os braços mesmo com a mesma seed (36 escalares divergentes, medido na
-época). A correção — `num-rngs = 25`, um fluxo dedicado por drone, por equipe
-e por aplicação de drone (`omnetpp.ini`, linhas 3–29) — é exatamente a
-disciplina que evita a classe de erro observada no projeto comparado. A
-comparação não motivou a correção (já existia), mas confirma que o cuidado
-era necessário e não excesso de engenharia: é o tipo de falha real que ocorre
-quando esse cuidado não é tomado.
+O `BatAlgorithm` usa um fluxo próprio de cada aplicação de drone. O jitter
+operacional dos repasses de `TeamUpdate` permanece em outro fluxo local, além
+dos fluxos dedicados à mobilidade. Assim, os sorteios exclusivos do braço
+tratado não deslocam nem a mobilidade nem a temporização aleatória do tráfego
+de controle. O mapeamento normativo está em `simulations/omnetpp.ini`.
 
 ## Verificação empírica: `ackTimeout` não é responsável pela perda
 
@@ -484,7 +478,8 @@ de cada avaliação cara de `feasible()`/`cost()`. Sem `std::clamp()`: reamostra
 preserva a distribuição condicionada ao domínio; recortar concentraria
 candidatos artificialmente nas bordas/teto/piso (ver `BatAlgorithm.h`/`.cc`).
 
-Reexecutando a mesma ativação (seed 4) com a correção, mesmas seeds de RNG:
+Em uma medição histórica anterior à separação dos RNGs, a mesma ativação foi
+reexecutada após a correção:
 
 | | pré-fix | pós-fix |
 | --- | --- | --- |
@@ -499,13 +494,11 @@ testando a restrição real, não por 3,5%. Uma segunda ativação da mesma seed
 (que já encontrava solução antes da correção) passou a encontrá-la com 930
 avaliações em vez de 2126 — mesmo resultado qualitativo, menos desperdício.
 
-`Calibration_Exposure` (10 seeds reservadas, `seed-set + 100`) não teve
-nenhum escalar de funil alterado pela correção — nenhuma das ativações
-daquele lote era um caso-limite que a ineficiência de amostragem decidia. A
-correção melhora a validade do diagnóstico "sem solução viável" e a
-eficiência computacional; não há evidência, nas seeds testadas, de que altere
-a taxa de reposicionamento da campanha. Verificado com a suíte completa dos 8
-smoke tests obrigatórios (8/8 OK) antes do commit.
+Esses números documentam o defeito corrigido, mas não são resultado da
+campanha corrente. Após mudanças no mapeamento dos RNGs ou nas janelas de
+alerta, o funil deve ser regenerado com `Calibration_Exposure`. A correção
+melhora a validade do diagnóstico "sem solução viável" e a eficiência
+computacional, sem antecipar o efeito confirmatório.
 
 ## Correção: `minimumRange` do sensor ativo mesmo no modo oráculo idealizado
 

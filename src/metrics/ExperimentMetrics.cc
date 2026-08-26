@@ -267,6 +267,8 @@ void ExperimentMetrics::finish()
     bool confirmedAndExpiredOverlap = std::any_of(
         confirmedAlertIds.begin(), confirmedAlertIds.end(),
         [&](const auto& id) { return expiredAlertIds.count(id); });
+    bool incompleteAlerts = confirmedAlertIds.size() + expiredAlertIds.size() !=
+        generatedAlertIds.size();
 
     // Relações que detectam contagem duplicada e estados impossíveis.
     if (!isSubset(deliveredAlertIds, generatedAlertIds) ||
@@ -274,6 +276,7 @@ void ExperimentMetrics::finish()
         !isSubset(expiredAlertIds, generatedAlertIds) ||
         !isSubset(receivedAttemptIds, sentAttemptIds) ||
         confirmedAndExpiredOverlap ||
+        (par("requireClosedAlerts").boolValue() && incompleteAlerts) ||
         confirmedAlertIds.size() + expiredAlertIds.size() > generatedAlertIds.size() ||
         repositionsCompleted > repositionsStarted ||
         repositionsStarted > baActivations ||

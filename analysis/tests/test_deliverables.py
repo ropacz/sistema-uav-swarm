@@ -58,6 +58,30 @@ class AlertSheetTests(unittest.TestCase):
             "generationTime", "delivered", "receivingTeamId", "acknowledged",
             "ackTeamId", "retryCount"])
 
+    def test_paired_effects_use_seed_level_differences(self):
+        rows = []
+        outcomes = {
+            (False, 0): [(1, 1), (0, 0), (0, 0), (1, 0)],
+            (True, 0): [(1, 1), (1, 1), (1, 1), (0, 0)],
+            (False, 1): [(1, 1), (1, 1), (1, 0), (0, 0)],
+            (True, 1): [(1, 1), (1, 1), (1, 1), (1, 0)],
+        }
+        for (enabled, seed), values in outcomes.items():
+            config = f"Main_Ba{'On' if enabled else 'Off'}"
+            for index, (delivered, acknowledged) in enumerate(values):
+                rows.append({
+                    "config": config, "numTeams": 1, "baEnabled": enabled,
+                    "seed": seed, "alertId": f"{enabled}-{seed}-{index}",
+                    "delivered": delivered, "acknowledged": acknowledged,
+                })
+
+        effect = alert_sheet.paired_effects(pd.DataFrame(rows)).iloc[0]
+        self.assertEqual(effect["pares"], 2)
+        self.assertAlmostEqual(effect["efeito_atendimento_pp"], 37.5)
+        self.assertAlmostEqual(effect["efeito_perda_pp"], -25.0)
+        self.assertLessEqual(effect["efeito_atendimento_ic95_inf_pp"], 37.5)
+        self.assertGreaterEqual(effect["efeito_atendimento_ic95_sup_pp"], 37.5)
+
 
 class FigureTests(unittest.TestCase):
     """As duas figuras precisam sair em PDF com desenho de verdade."""

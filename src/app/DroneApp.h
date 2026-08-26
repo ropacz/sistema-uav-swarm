@@ -41,6 +41,9 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simtime_t ackTimeout;
     omnetpp::simtime_t alertTtl;
     omnetpp::simtime_t alertInterval;
+    /// Último instante em que um novo alerta pode ser criado. Valor negativo
+    /// desabilita o corte (útil nos smoke tests que exercitam truncamento).
+    omnetpp::simtime_t alertGenerationEndTime;
     omnetpp::simtime_t teamEntryLifetime;
     omnetpp::simtime_t lastKnownTeamRetention;
     omnetpp::simtime_t teamUpdateForwardJitter;
@@ -104,6 +107,8 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void handleAssignment(VictimAssignment *assignment);
     /// Cria um novo alerta lógico para uma vítima ativa sem alerta pendente.
     void startAlertCycle(ActiveVictim& victim);
+    /// Retorna se a janela de geração ainda admite um novo alerta.
+    bool canStartAlertCycle() const;
     /// Libera a vítima para o próximo ciclo após ACK ou expiração.
     void completeAlertCycle(const PendingVictimAlert& alert);
     /// Atualiza a última posição recebida de uma equipe descoberta e, quando o

@@ -109,8 +109,7 @@ no-known-team-smoke-test:
 	python3 analysis/validation/validate_no_known_team_smoke_test.py
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
-# Por hora, a análise produz somente atendimento e perda (ver alert-sheet);
-# a estatística pareada detalhada foi removida temporariamente.
+# A análise produz atendimento/perda e o efeito BA-On − BA-Off pareado por seed.
 main-experiment: manifest
 	./run.sh -c MainExperiment_BaOff
 	./run.sh -c MainExperiment_BaOn

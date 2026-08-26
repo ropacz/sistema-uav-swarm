@@ -1,8 +1,8 @@
 # ECHOSAR-Net — reposicionamento de UAV com Bat Algorithm
 
 Simulação de busca e salvamento com OMNeT++ 6.2 e INET 4.5.4. A pergunta central
-é se o reposicionamento de um UAV pelo Bat Algorithm melhora a entrega direta de
-alertas de vítima. O experimento principal compara somente dois braços pareados:
+é se o reposicionamento de um UAV pelo Bat Algorithm melhora a entrega fim a fim
+de alertas de vítima na FANET. O experimento principal compara dois braços pareados:
 
 - `MainExperiment_BaOff`: controle sem reposicionamento;
 - `MainExperiment_BaOn`: mesmo cenário e mesmas seeds, alterando apenas
@@ -58,5 +58,5 @@ equipe, e não há predição nem extrapolação de velocidade.
 Distância e duração de movimento representam custo operacional, não consumo de
 energia ou carga real de bateria. Uma perda não deve ser atribuída
 automaticamente a um obstáculo, e a ausência de ACK não prova que o alerta não
-chegou à equipe. O cenário principal direto não constitui evidência de
-conectividade multissalto; essa capacidade possui validação técnica separada.
+chegou à equipe. O cenário principal permite rotas AODV multissalto e registra
+o número de saltos observado em cada primeira entrega.

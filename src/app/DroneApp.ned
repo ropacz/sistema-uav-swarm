@@ -35,6 +35,9 @@ simple DroneApp like IApp
         double alertTtl @unit(s) = default(180s);
         // Intervalo entre alertas lógicos sucessivos da mesma vítima ativa.
         double alertInterval @unit(s);
+        // Último instante permitido para gerar um alerta. Negativo mantém a
+        // geração sem corte, como nos cenários técnicos deliberadamente curtos.
+        double alertGenerationEndTime @unit(s) = default(-1s);
 
         // Descoberta da equipe
         // Tempo sem broadcast após o qual a equipe deixa de ser operacional.

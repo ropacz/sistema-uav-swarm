@@ -9,10 +9,9 @@ Os arquivos Python são organizados pelo domínio que atendem:
 - `tests/`: testes unitários da análise;
 - `tables/` e `figures/`: artefatos derivados, ignorados pelo Git.
 
-> Por hora, a análise entrega apenas atendimento e perda. Estatística pareada
-> detalhada (efeito por métrica, intervalo de confiança, exposição do
-> mecanismo, verificação de configuração) foi removida temporariamente — ver
-> histórico do Git para recuperar.
+Além das taxas agregadas de atendimento e perda, a análise calcula o efeito
+BA-On − BA-Off dentro de cada seed e informa a média pareada com intervalo de
+confiança bootstrap de 95%. A unidade de pareamento é a execução, não o alerta.
 
 ## Planilha de atendimento
 
@@ -33,7 +32,8 @@ ligam a política em só um drone por desenho do próprio teste, e misturar isso
 à campanha contaminaria as taxas.
 
 ```text
-tables/atendimento.xlsx    # abas "Alertas" (uma linha por alerta) e "Resumo"
+tables/atendimento.xlsx    # abas "Alertas", "Resumo" e "EfeitoPareado"
+tables/efeito_pareado.csv  # efeito por cenário, com IC de 95%
 figures/atendimento.pdf    # taxa de atendimento por braço
 figures/perda.pdf          # taxa de perda por braço
 ```
