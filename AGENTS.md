@@ -11,9 +11,9 @@ This repository implements the ECHOSAR-Net UAV search-and-rescue simulation usin
   and generated results. `simulations/validation/` keeps the smoke-test
   configuration next to the data only those tests use.
 - `analysis/`: Python post-processing derived from `.sca` result files.
-  `analysis/tables/` receives the CSV tables and the verification workbook;
-  `analysis/figures/` receives the vector PDF figures for the dissertation.
-  Both are regenerable and ignored by Git.
+  `analysis/tables/` and `analysis/figures/` receive the attendance/loss
+  workbook and its two PDF figures; both are regenerable and ignored by Git.
+  Detailed statistical reporting was removed for now — see Git history.
 - `docs/`: normative implementation directive and its concise index. External
   material stays in `docs/references/`.
 - `run.sh`: standard entry point for command-line and GUI simulation runs.
@@ -35,7 +35,7 @@ make analysis-tests               # analyser unit tests
 make experiment                   # 30 paired runs per arm, then analysis
 make robustness-experiment        # separate non-confirmatory matrix
 make reproduce                    # build → tests → paired experiment
-make deliverables                 # figures and verification sheet from existing tables
+make alert-sheet                  # attendance/loss workbook and figures from existing results
 ./run.sh --build -c MainExperiment_BaOn -r 0
 ./run.sh --gui                    # run interactively in Qtenv
 ./run.sh -c MainExperiment_BaOff -r 0   # run control seed zero
@@ -58,11 +58,9 @@ For Python, follow PEP 8, use four spaces, and prefer `snake_case`. Preserve con
 The Python analyser has a `unittest` suite. Validate simulation changes by
 rebuilding and running the deterministic smoke-test targets with Cmdenv. Check
 the exit status, simulation logs, and generated scalars under
-`simulations/results/`. For metric changes, run
-`analysis/reports/report_main_experiment.py`; use `report_robustness.py` only for
-the separate robustness matrix. Figures carry no embedded title: ABNT places the
-caption above and the source below, both written in LaTeX. Test more than one seed when behavior is
-stochastic.
+`simulations/results/`. For metric changes, run `analysis/reports/alert_sheet.py`. Figures carry no
+embedded title: ABNT places the caption above and the source below, both
+written in LaTeX. Test more than one seed when behavior is stochastic.
 
 ## Commit & Pull Request Guidelines
 

@@ -29,6 +29,11 @@ from analysis.reports import figures  # noqa: E402
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
 OUTPUT = REPOSITORY_ROOT / "analysis/tables"
 
+# Smoke tests (validation/) usam baEnabled misto por desenho de teste — ex.:
+# Connectivity_SmokeTest liga a política só no drone que a testa. Não são
+# execuções da campanha e não têm lugar nesta planilha.
+EXCLUDED_SUFFIX = "_SmokeTest"
+
 COLUMNS = [
     "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",
     "generationTime", "delivered", "receivingTeamId", "acknowledged",
@@ -59,7 +64,10 @@ def run_context(alerts_path: Path) -> dict:
 
 
 def load() -> pd.DataFrame:
-    paths = sorted(RESULTS.glob("*-alerts.csv"))
+    paths = sorted(
+        path for path in RESULTS.glob("*-alerts.csv")
+        if EXCLUDED_SUFFIX not in path.name
+    )
     if not paths:
         raise SystemExit(
             f"nenhum registro de alertas em {RESULTS}.\n"

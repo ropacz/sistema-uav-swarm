@@ -2,36 +2,24 @@
 
 Os arquivos Python são organizados pelo domínio que atendem:
 
-- `core/`: leitura de `.sca`, métricas centrais, estatística e manifesto;
-- `reports/`: experimento confirmatório, robustez, figuras e planilha;
+- `core/`: leitura de `.sca` e métricas centrais, usadas pelos smoke tests
+  obrigatórios (§28) e pelo manifesto de proveniência;
+- `reports/`: geração da planilha e das figuras de atendimento e perda;
 - `validation/`: contratos automáticos dos cenários técnicos;
-- `tests/`: testes unitários da análise, incluindo o contrato entre relatórios
-  e entregáveis;
+- `tests/`: testes unitários da análise;
 - `tables/` e `figures/`: artefatos derivados, ignorados pelo Git.
 
-As saídas são separadas por natureza, e não só por domínio:
-
-```text
-tables/
-  atendimento.xlsx       # uma linha por alerta, atendimento e perda
-  detalhado/
-    main_experiment/     # runs, efeitos pareados, resumo e exposição
-    robustness/          # extensão não confirmatória
-    verificacao.xlsx     # verificação da configuração executada
-figures/
-  atendimento.pdf        # taxa de atendimento por braço
-  perda.pdf              # taxa de perda por braço
-  detalhado/
-    efeito_pareado.pdf     # resultado confirmatório, com IC de 95%
-    funil_exposicao.pdf    # alcance do mecanismo por etapa
-    efeito_por_equipes.pdf # robustez à quantidade de equipes
-```
+> Por hora, a análise entrega apenas atendimento e perda. Estatística pareada
+> detalhada (efeito por métrica, intervalo de confiança, exposição do
+> mecanismo, verificação de configuração) foi removida temporariamente — ver
+> histórico do Git para recuperar.
 
 ## Planilha de atendimento
 
-É a saída simples, e fica na raiz de `tables/`. A simulação grava um CSV por
-execução com **uma linha por `alertId`**; `reports/alert_sheet.py` junta esses
-arquivos com o contexto lido do `.sca` (seed, equipes, política) e calcula:
+A simulação grava um CSV por execução com **uma linha por `alertId`**
+(`ExperimentMetrics.cc`, ao lado do `.sca`). `reports/alert_sheet.py` junta
+esses arquivos com o contexto lido do `.sca` (seed, quantidade de equipes,
+política ligada ou desligada) e calcula:
 
     Atendimento(%) = alertId com ao menos um ACK / alertId únicos gerados
     Perda(%)       = alertId sem entrega a nenhuma equipe / alertId únicos gerados
@@ -40,13 +28,24 @@ A deduplicação acontece dentro da simulação: um mesmo `alertId` recebido por
 várias equipes ou retransmitido várias vezes já chega como uma única linha. Por
 isso `retryCount` conta retransmissões, e não alertas.
 
-As duas figuras acompanham a planilha e saem no mesmo comando. O eixo horizontal
-é a quantidade de equipes, de modo que a mesma figura serve ao experimento
-principal (um único nível) e à matriz de robustez (quatro níveis), sem trocar de
-formato. Cada braço tem cor e hachura próprias, legíveis em impressão em tons de
-cinza, e a legenda fica acima da área do gráfico.
+Execuções de smoke test (`*_SmokeTest`) são excluídas: alguns desses testes
+ligam a política em só um drone por desenho do próprio teste, e misturar isso
+à campanha contaminaria as taxas.
 
-Legendas ABNT sugeridas, para colar no LaTeX:
+```text
+tables/atendimento.xlsx    # abas "Alertas" (uma linha por alerta) e "Resumo"
+figures/atendimento.pdf    # taxa de atendimento por braço
+figures/perda.pdf          # taxa de perda por braço
+```
+
+As duas figuras saem no mesmo comando que a planilha. O eixo horizontal é a
+quantidade de equipes, de modo que a mesma figura serve a uma única célula (o
+experimento principal, hoje) ou a uma matriz maior (a robustez, quando rodar),
+sem trocar de formato. Cada braço tem cor e hachura próprias, legíveis em
+impressão em tons de cinza, e a legenda fica acima da área do gráfico.
+
+Legenda ABNT sugerida, para colar no LaTeX — as figuras não têm título
+embutido, porque na ABNT o título é legenda acima e a fonte vem abaixo:
 
 ```latex
 \begin{figure}[htb]
@@ -57,40 +56,15 @@ Legendas ABNT sugeridas, para colar no LaTeX:
 \end{figure}
 ```
 
-Tudo o que exige leitura mais detalhada — efeitos pareados por métrica, IC,
-exposição do mecanismo, verificação de configuração e as demais figuras — ficou
-em `detalhado/`.
+## Como gerar
 
-`reports/report_main_experiment.py` é a entrada científica principal. Ele exige
-seeds pareadas, igualdade de parâmetros exceto `baEnabled` e todos os escalares
-centrais. `reports/report_robustness.py` reutiliza esse contrato para as
-variações de vítimas e equipes, sem misturá-las à inferência confirmatória.
+```bash
+make experiment          # roda os dois braços e chama alert-sheet
+make alert-sheet          # só a planilha e as figuras, a partir de resultados já gravados
+make analysis-tests       # valida fórmulas e figuras com dados sintéticos, ~1 s
+```
 
-## Figuras e planilha
-
-`make deliverables` gera as figuras e a planilha a partir das tabelas já
-existentes, sem reexecutar simulação.
-
-`make analysis-tests` valida os entregáveis com dados sintéticos em cerca de um
-segundo, **antes** de gastar horas de campanha. `tests/test_deliverables.py`
-verifica que as três figuras saem em PDF com desenho, que toda métrica consumida
-por uma figura continua sendo exportada pelos relatórios, que a planilha lê o
-`.sca` em vez de repetir a documentação, e que um desvio conhecido nunca é
-classificado como conforme. As colunas sintéticas vêm das constantes dos próprios
-relatórios, de modo que renomear uma métrica quebra o teste em vez de quebrar a
-figura no fim da campanha.
-
-`reports/figures.py` não recalcula nada: todo número exibido vem de um CSV
-produzido pelos relatórios. As figuras saem em PDF vetorial e **sem título
-embutido**, porque na ABNT o título é legenda acima da figura e a fonte vem
-abaixo, ambos escritos no LaTeX. Métricas em unidades diferentes não dividem o
-mesmo eixo — atrasos, retransmissões e saltos ficam nas tabelas, não no gráfico
-de efeito pareado.
-
-`reports/verification_sheet.py` lê os parâmetros que o OMNeT++ gravou num `.sca`
-real, não o que a documentação afirma; é isso que a torna uma verificação. Cada
-linha é classificada como conforme, desvio justificado ou não especificada pela
-diretriz, com a seção correspondente. Os desvios conhecidos são marcados
-explicitamente: a comparação textual classificaria `RandomWaypointMobility` como
-"Random Walk" conforme, escondendo justamente o que a planilha existe para
-revelar.
+`tests/test_deliverables.py` roda antes de qualquer campanha: confere que
+atendimento/perda seguem a definição em pontos (caso sintético com resultado
+conhecido), que as figuras saem em PDF com desenho de verdade e escalam de uma
+célula até uma matriz, e que smoke tests nunca entram na planilha.

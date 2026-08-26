@@ -296,15 +296,15 @@ confiança, número de repetições e a diferença entre braços; e um teste
 compatível com a métrica (pareado, não paramétrico ou de permutação, e análise
 específica para resultados binários com poucos eventos por execução).
 
-A análise atual produz: média por braço, diferença pareada média, desvio padrão
-da diferença, intervalo de confiança de 95% e o número de pares.
+A análise hoje produz apenas atendimento e perda por braço (proporção de
+`alertId` únicos com ACK e sem entrega). Um relatório anterior calculava média
+por braço, diferença pareada, desvio padrão, intervalo de confiança de 95% e o
+número de pares — removido temporariamente para simplificar a entrega em
+andamento; recuperável do histórico do Git
+(`analysis/reports/report_main_experiment.py`, função `summarize()`).
 
-Faltam a **mediana** e um **teste formal com estatística e p-valor**. O
-intervalo de confiança sobre a diferença pareada já permite decidir sobre
-inclusão de zero, mas não substitui o teste que o §27 pede, sobretudo para
-métricas com poucos eventos por execução.
-
-`analysis/reports/report_main_experiment.py`, função `summarize()`.
+Faltam, em qualquer versão: **mediana** e um **teste formal com estatística e
+p-valor**. Pendência a resolver antes da versão final da dissertação.
 
 ---
 
