@@ -21,8 +21,6 @@ SCALARS = {
     "alertAttemptsSent": 5,
     "attemptsReceived": 3,
     "applicationRetries": 3,
-    "deliveryDelaySum": 4,
-    "deliveryDelayCount": 1,
     "confirmationDelaySum": 5,
     "confirmationDelayCount": 1,
     "hopCountSum": 2,
@@ -31,7 +29,6 @@ SCALARS = {
     "intermediateForwardings": 1,
     "neverKnownTeamSelectionEvents": 4,
     "expiredKnownTeamSelectionEvents": 0,
-    "knownTeamNoAckTimeoutEvents": 0,
     "alertsWithoutKnownTeam": 1,
     "repositionTriggers": 2,
     "obstaclesDetected": 1,
@@ -63,7 +60,6 @@ class ExperimentMetricsReaderTests(unittest.TestCase):
         self.assertEqual(row["alert_pdr_pct"], 50)
         self.assertEqual(row["alert_loss_pct"], 50)
         self.assertEqual(row["appack_pct"], 50)
-        self.assertEqual(row["delivery_delay_mean_s"], 4)
         self.assertEqual(row["confirmation_delay_mean_s"], 5)
         self.assertEqual(row["retries_per_alert"], 1.5)
         self.assertEqual(row["attempt_pdr_pct"], 60)

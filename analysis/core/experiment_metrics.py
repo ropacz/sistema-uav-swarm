@@ -46,8 +46,6 @@ def collect(path: str) -> dict:
         "alert_attempts_sent": "alertAttemptsSent",
         "attempts_received": "attemptsReceived",
         "application_retries": "applicationRetries",
-        "delivery_delay_sum_s": "deliveryDelaySum",
-        "delivery_delay_count": "deliveryDelayCount",
         "confirmation_delay_sum_s": "confirmationDelaySum",
         "confirmation_delay_count": "confirmationDelayCount",
         "hop_count_sum": "hopCountSum",
@@ -56,7 +54,6 @@ def collect(path: str) -> dict:
         "intermediate_forwardings": "intermediateForwardings",
         "never_known_team_selection_events": "neverKnownTeamSelectionEvents",
         "expired_known_team_selection_events": "expiredKnownTeamSelectionEvents",
-        "known_team_no_ack_timeout_events": "knownTeamNoAckTimeoutEvents",
         "alerts_without_known_team": "alertsWithoutKnownTeam",
         "reposition_triggers": "repositionTriggers",
         "obstacles_detected": "obstaclesDetected",
@@ -81,9 +78,6 @@ def collect(path: str) -> dict:
             generated - values["alerts_delivered"], generated, 100
         ),
         "appack_pct": ratio(values["alerts_confirmed"], generated, 100),
-        "delivery_delay_mean_s": ratio(
-            values["delivery_delay_sum_s"], values["delivery_delay_count"]
-        ),
         "confirmation_delay_mean_s": ratio(
             values["confirmation_delay_sum_s"],
             values["confirmation_delay_count"],

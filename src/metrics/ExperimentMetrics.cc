@@ -12,6 +12,26 @@ using namespace omnetpp;
 
 namespace echosar {
 
+// Este módulo grava, por hora, só o necessário para atendimento e perda
+// (AlertRecord, escrito em writeAlertRecords) mais os escalares que os 8
+// smoke tests obrigatórios (diretriz §28) exigem — conferido um a um contra
+// analysis/validation/validate_*.py antes de remover qualquer coisa.
+//
+// Candidatos a remoção futura, quando/se os smoke tests forem revistos:
+//   hopCountSum/hopCountCount, multiHopDeliveries, intermediateForwardings
+//     -> ba-smoke-test, alert-lifecycle-smoke-test, multihop-smoke-test
+//   repositionTriggers, obstaclesDetected, baActivations,
+//   repositionsStarted/Completed, repositionDistanceSum, repositionDurationSum
+//     -> ba-smoke-test, sensor-range-smoke-test, reposition-interrupted-smoke-test
+//   neverKnownTeamSelectionEvents, expiredKnownTeamSelectionEvents,
+//   alertsWithoutKnownTeam, alertsExpired
+//     -> no-known-team-smoke-test, alert-lifecycle-smoke-test
+//   confirmationDelaySum/confirmationDelayCount
+//     -> ba-smoke-test, alert-lifecycle-smoke-test, multihop-smoke-test
+// Já removidos por não serem lidos por nenhum smoke test nem pela análise:
+// deliveryDelaySum/deliveryDelayCount, knownTeamNoAckTimeoutEvents (o sinal
+// "knownTeamNoAck" continua sendo aceito abaixo, só não é mais contado).
+
 Register_Class(AlertMetricEvent);
 Define_Module(ExperimentMetrics);
 
@@ -96,12 +116,9 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
             if (hopCount < 1 || event->value != hopCount)
                 throw cRuntimeError("Invalid hop count %.3f for alert '%s'",
                                     event->value, event->alertId.c_str());
-            auto creation = creationTimes.find(event->alertId);
-            if (creation == creationTimes.end())
+            if (!creationTimes.count(event->alertId))
                 throw cRuntimeError("Delivery for unknown alert '%s'",
                                     event->alertId.c_str());
-            deliveryDelaySum += simTime() - creation->second;
-            deliveryDelayCount++;
             hopCountSum += hopCount;
             hopCountCount++;
             if (hopCount > 1)
@@ -146,8 +163,12 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
             expiredKnownTeamSelectionEvents++;
             alertsWithoutKnownTeam.insert(event->alertId);
         }
-        else if (event->category == "knownTeamNoAck")
-            knownTeamNoAckTimeoutEvents++;
+        else if (event->category == "knownTeamNoAck") {
+            // Reconhecido e descartado: nenhum smoke test nem a planilha de
+            // atendimento/perda usa essa contagem hoje (candidato listado no
+            // topo do arquivo). Ainda precisa ser aceito aqui, senão o sinal
+            // que DroneApp::performMaintenance emite cairia no "else" abaixo.
+        }
         else
             throw cRuntimeError("Unknown operational failure '%s'",
                                 event->category.c_str());
@@ -261,8 +282,7 @@ void ExperimentMetrics::finish()
         confirmationDelayCount != static_cast<int>(confirmedAlertIds.size()) ||
         hopCountCount != static_cast<int>(deliveredAlertIds.size()) ||
         multiHopDeliveries > hopCountCount ||
-        alertsWithoutKnownTeam.size() > generatedAlertIds.size() ||
-        knownTeamNoAckTimeoutEvents > static_cast<int>(expiredAlertIds.size()))
+        alertsWithoutKnownTeam.size() > generatedAlertIds.size())
         throw cRuntimeError("ExperimentMetrics invariant violation: generated=%zu, "
                             "delivered=%zu, confirmed=%zu, expired=%zu, triggers=%d, "
                             "obstacles=%d, BA=%d, started=%d, completed=%d, distances=%zu",
@@ -279,8 +299,6 @@ void ExperimentMetrics::finish()
     recordScalar("alertAttemptsSent", sentAttemptIds.size());
     recordScalar("attemptsReceived", receivedAttemptIds.size());
     recordScalar("applicationRetries", applicationRetries);
-    recordScalar("deliveryDelaySum", deliveryDelaySum.dbl());
-    recordScalar("deliveryDelayCount", deliveryDelayCount);
     recordScalar("confirmationDelaySum", confirmationDelaySum.dbl());
     recordScalar("confirmationDelayCount", confirmationDelayCount);
     recordScalar("hopCountSum", hopCountSum);
@@ -289,7 +307,6 @@ void ExperimentMetrics::finish()
     recordScalar("intermediateForwardings", intermediateForwardings);
     recordScalar("neverKnownTeamSelectionEvents", neverKnownTeamSelectionEvents);
     recordScalar("expiredKnownTeamSelectionEvents", expiredKnownTeamSelectionEvents);
-    recordScalar("knownTeamNoAckTimeoutEvents", knownTeamNoAckTimeoutEvents);
     recordScalar("alertsWithoutKnownTeam", alertsWithoutKnownTeam.size());
     recordScalar("pdr", pdr);
     recordScalar("confirmationRate", confirmationRate);

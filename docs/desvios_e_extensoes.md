@@ -211,6 +211,12 @@ destino em várias oportunidades de envio, então estes contadores **podem exced
 o número de alertas gerados** — ler "65 eventos" como "65 alertas com falha"
 seria incorreto. São diagnósticos de exposição, não desfechos por alerta.
 
+`knownTeamNoAckTimeoutEvents` deixou de ser gravado como escalar (por hora, a
+análise só mantém atendimento e perda — ver L1). O sinal `"knownTeamNoAck"`
+continua sendo emitido por `DroneApp` e aceito por `ExperimentMetrics`, só não
+é mais contabilizado; a contagem é candidata a voltar, comentada no topo de
+`ExperimentMetrics.cc` junto com as demais.
+
 `src/metrics/ExperimentMetrics.{h,cc}`.
 
 ### E4. Restrições adicionais na viabilidade de candidatos

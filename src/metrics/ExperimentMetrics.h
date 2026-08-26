@@ -52,16 +52,19 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     std::map<std::string, omnetpp::simtime_t> creationTimes;
     std::map<std::string, omnetpp::simtime_t> repositionStartTimes;
 
-    omnetpp::simtime_t deliveryDelaySum = 0;
+    // Métricas mantidas por hora: atendimento e perda (ver AlertRecord acima
+    // e writeAlertRecords) precisam apenas de geração/entrega/confirmação por
+    // alertId. Tudo abaixo permanece só porque os 8 smoke tests obrigatórios
+    // (diretriz §28) ainda leem esses escalares — ver a lista de candidatos a
+    // remoção futura no topo de ExperimentMetrics.cc, junto com qual smoke
+    // test prende cada um.
     omnetpp::simtime_t confirmationDelaySum = 0;
     omnetpp::simtime_t repositionDurationSum = 0;
-    int deliveryDelayCount = 0;
     int confirmationDelayCount = 0;
     // Diagnósticos por evento: contam oportunidades de envio e timeouts, não
     // alertas. Podem ser maiores que o total de alertas gerados.
     int neverKnownTeamSelectionEvents = 0;
     int expiredKnownTeamSelectionEvents = 0;
-    int knownTeamNoAckTimeoutEvents = 0;
     int hopCountSum = 0;
     int hopCountCount = 0;
     int multiHopDeliveries = 0;
