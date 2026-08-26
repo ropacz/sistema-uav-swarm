@@ -78,9 +78,20 @@ void TeamApp::sendTeamUpdate()
                   Ipv4Address::ALLONES_ADDRESS, appPort);
 }
 
+namespace {
+/// O nome do pacote carrega "<Tipo>:<alertId>" para que o event log do
+/// OMNeT++ (.elog) mostre a identidade do alerta sem exigir um dissector de
+/// payload. É metadado do simulador, não entra no wire format serializado.
+bool hasTypePrefix(const char *name, const char *type)
+{
+    size_t length = strlen(type);
+    return strncmp(name, type, length) == 0 && name[length] == ':';
+}
+}
+
 void TeamApp::socketDataArrived(UdpSocket *, Packet *packet)
 {
-    if (!strcmp(packet->getName(), "VictimAlert"))
+    if (hasTypePrefix(packet->getName(), "VictimAlert"))
         handleVictimAlert(packet);
     else
         delete packet;
@@ -143,7 +154,8 @@ void TeamApp::handleVictimAlert(Packet *packet)
     ack->setTeamId(teamId.c_str());
     ack->setAckTimestamp(simTime());
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
-    socket.sendTo(new Packet("VictimAck", ack), sourceAddress, appPort);
+    socket.sendTo(new Packet(("VictimAck:" + alertId).c_str(), ack),
+                  sourceAddress, appPort);
     delete packet;
 }
 

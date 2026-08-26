@@ -68,3 +68,11 @@ make analysis-tests       # valida fórmulas e figuras com dados sintéticos, ~1
 atendimento/perda seguem a definição em pontos (caso sintético com resultado
 conhecido), que as figuras saem em PDF com desenho de verdade e escalam de uma
 célula até uma matriz, e que smoke tests nunca entram na planilha.
+
+## Auditoria independente (`audit/`)
+
+`analysis/audit/` reconstrói atendimento e perda a partir do `.elog` (event
+log do kernel do OMNeT++) e compara com o `.sca` — uma segunda fonte,
+totalmente independente do C++ que grava a planilha oficial. Ver
+[`audit/README.md`](audit/README.md) para a metodologia, quais logs foram
+usados e por quê, e o resultado da comparação nas 10 execuções auditadas.

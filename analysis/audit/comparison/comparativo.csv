@@ -1,0 +1,11 @@
+config,seed,sca_alertas,sca_atendimento_pct,sca_perda_pct,elog_alertas,elog_atendimento_pct,elog_perda_pct,so_no_sca,so_no_elog,delivered_ou_acked_diferente,so_no_sca_ids,mismatch_ids
+MainExperiment_BaOff,0,25,76.0,24.0,24,79.17,20.83,1,0,0,drone2-victim0-alert-24,
+MainExperiment_BaOff,1,25,92.0,8.0,23,100.0,0.0,2,0,0,drone2-victim0-alert-1;drone2-victim0-alert-2,
+MainExperiment_BaOff,2,25,76.0,24.0,25,76.0,24.0,0,0,0,,
+MainExperiment_BaOff,3,25,96.0,4.0,25,96.0,4.0,0,0,0,,
+MainExperiment_BaOff,4,25,64.0,36.0,23,69.57,30.43,2,0,0,drone2-victim0-alert-2;drone2-victim0-alert-7,
+MainExperiment_BaOn,0,25,76.0,24.0,24,79.17,20.83,1,0,0,drone2-victim0-alert-24,
+MainExperiment_BaOn,1,25,92.0,8.0,23,100.0,0.0,2,0,0,drone2-victim0-alert-1;drone2-victim0-alert-2,
+MainExperiment_BaOn,2,25,76.0,24.0,25,76.0,24.0,0,0,0,,
+MainExperiment_BaOn,3,25,96.0,4.0,25,96.0,4.0,0,0,0,,
+MainExperiment_BaOn,4,25,72.0,28.0,23,78.26,21.74,2,0,0,drone2-victim0-alert-2;drone2-victim0-alert-7,

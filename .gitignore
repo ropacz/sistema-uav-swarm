@@ -74,3 +74,6 @@ graphify-out/reflections/
 .claude/
 CLAUDE.md
 firebase-debug.log
+
+# Auditoria .elog: regenerável, grande (~130 MB por execução).
+analysis/audit/raw/

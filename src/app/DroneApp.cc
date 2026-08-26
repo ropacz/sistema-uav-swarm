@@ -229,13 +229,25 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         delete message;
 }
 
+namespace {
+/// O nome do pacote carrega "<Tipo>:<alertId>" para VictimAlert/VictimAck, de
+/// modo que o event log do OMNeT++ (.elog) mostre a identidade do alerta sem
+/// exigir um dissector de payload. É metadado do simulador — TeamApp.cc tem a
+/// mesma função porque cada arquivo despacha seus próprios tipos.
+bool hasTypePrefix(const char *name, const char *type)
+{
+    size_t length = strlen(type);
+    return strncmp(name, type, length) == 0 && name[length] == ':';
+}
+}
+
 void DroneApp::socketDataArrived(UdpSocket *, Packet *packet)
 {
     if (!strcmp(packet->getName(), "TeamUpdate"))
         handleTeamUpdate(packet);
     else if (!strcmp(packet->getName(), "DroneStatus"))
         handleDroneStatus(packet);
-    else if (!strcmp(packet->getName(), "VictimAck"))
+    else if (hasTypePrefix(packet->getName(), "VictimAck"))
         handleVictimAck(packet);
     else
         delete packet;
@@ -455,7 +467,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     message->setCreationTime(alert.creationTime);
     message->setAttemptNumber(alert.attempts);
     message->setTimeToLive(alertTtl);
-    socket.sendTo(new Packet("VictimAlert", message),
+    socket.sendTo(new Packet(("VictimAlert:" + alert.alertId).c_str(), message),
                   Ipv4Address(team.ipAddress.c_str()), appPort);
     alert.ackDeadline = simTime() + ackTimeout;
     alert.nextAttempt = simTime() + retryInterval;
