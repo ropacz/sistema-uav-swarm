@@ -25,7 +25,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 from analysis.core.process_results import parse_sca  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
-OUTPUT = REPOSITORY_ROOT / "analysis/tables"
+OUTPUT = REPOSITORY_ROOT / "analysis/tables/detalhado"
 REFERENCE_RUN = "MainExperiment_BaOn-0.sca"
 
 NOT_SPECIFIED = "não especificado"

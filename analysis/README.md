@@ -13,14 +13,34 @@ As saídas são separadas por natureza, e não só por domínio:
 
 ```text
 tables/
-  main_experiment/   # runs, efeitos pareados, resumo e exposição
-  robustness/        # extensão não confirmatória
-  verificacao.xlsx   # planilha de verificação da configuração executada
+  atendimento.xlsx       # uma linha por alerta, atendimento e perda
+  detalhado/
+    main_experiment/     # runs, efeitos pareados, resumo e exposição
+    robustness/          # extensão não confirmatória
+    verificacao.xlsx     # verificação da configuração executada
 figures/
-  efeito_pareado.pdf     # resultado confirmatório, com IC de 95%
-  funil_exposicao.pdf    # alcance do mecanismo por etapa
-  efeito_por_equipes.pdf # robustez à quantidade de equipes
+  detalhado/
+    efeito_pareado.pdf     # resultado confirmatório, com IC de 95%
+    funil_exposicao.pdf    # alcance do mecanismo por etapa
+    efeito_por_equipes.pdf # robustez à quantidade de equipes
 ```
+
+## Planilha de atendimento
+
+É a saída simples, e fica na raiz de `tables/`. A simulação grava um CSV por
+execução com **uma linha por `alertId`**; `reports/alert_sheet.py` junta esses
+arquivos com o contexto lido do `.sca` (seed, equipes, política) e calcula:
+
+    Atendimento(%) = alertId com ao menos um ACK / alertId únicos gerados
+    Perda(%)       = alertId sem entrega a nenhuma equipe / alertId únicos gerados
+
+A deduplicação acontece dentro da simulação: um mesmo `alertId` recebido por
+várias equipes ou retransmitido várias vezes já chega como uma única linha. Por
+isso `retryCount` conta retransmissões, e não alertas.
+
+Tudo o que exige leitura mais detalhada — efeitos pareados por métrica, IC,
+exposição do mecanismo, verificação de configuração e as figuras — ficou em
+`detalhado/`.
 
 `reports/report_main_experiment.py` é a entrada científica principal. Ele exige
 seeds pareadas, igualdade de parâmetros exceto `baEnabled` e todos os escalares

@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "omnetpp/clistener.h"
 #include "omnetpp/cmessage.h"
@@ -17,9 +18,26 @@ namespace echosar {
  * DroneApp e TeamApp emitem fatos da aplicação. Este módulo deduplica esses
  * fatos por alertId e produz uma única visão fim a fim por execução.
  */
+/// Uma linha por alerta lógico. Retransmissões e recebimentos por várias
+/// equipes não criam linhas novas: o alertId é a chave.
+struct AlertRecord {
+    std::string alertId;
+    std::string victimId;
+    std::string droneId;
+    omnetpp::simtime_t generationTime;
+    bool delivered = false;
+    std::string receivingTeamId;
+    bool acknowledged = false;
+    std::string ackTeamId;
+    int attempts = 0;
+};
+
 class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListener
 {
   protected:
+    /// Ordem de geração preservada para que o CSV seja estável entre execuções.
+    std::vector<std::string> alertOrder;
+    std::map<std::string, AlertRecord> alertRecords;
     std::set<std::string> generatedAlertIds;
     std::set<std::string> deliveredAlertIds;
     std::set<std::string> confirmedAlertIds;
@@ -70,6 +88,8 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     virtual void initialize() override;
     virtual void handleMessage(omnetpp::cMessage *message) override;
     virtual void finish() override;
+    /// Grava uma linha por alerta ao lado dos escalares da execução.
+    void writeAlertRecords() const;
     virtual void receiveSignal(omnetpp::cComponent *source,
                                omnetpp::simsignal_t signalId,
                                omnetpp::cObject *value,

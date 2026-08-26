@@ -16,6 +16,12 @@ class AlertMetricEvent : public omnetpp::cObject
     std::string category;
     omnetpp::simtime_t referenceTime;
     double value = 0;
+    /// Identidade do alerta, preenchida apenas onde é conhecida: a geração sabe
+    /// vítima e drone, a entrega e a confirmação sabem a equipe. Serve ao
+    /// registro por alerta, não à agregação.
+    std::string victimId;
+    std::string droneId;
+    std::string teamId;
 
     AlertMetricEvent(const std::string& alertId = "",
                      omnetpp::simtime_t referenceTime = omnetpp::SimTime::ZERO,

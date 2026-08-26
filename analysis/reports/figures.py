@@ -23,8 +23,8 @@ import pandas as pd  # noqa: E402
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
-TABLES = REPOSITORY_ROOT / "analysis/tables"
-OUTPUT = REPOSITORY_ROOT / "analysis/figures"
+TABLES = REPOSITORY_ROOT / "analysis/tables/detalhado"
+OUTPUT = REPOSITORY_ROOT / "analysis/figures/detalhado"
 
 # Largura útil de uma página A4 com margens ABNT (3 cm / 2 cm): ~16 cm.
 TEXT_WIDTH_IN = 6.3

@@ -21,7 +21,7 @@ from analysis.core.experiment_metrics import collect  # noqa: E402
 from analysis.core.process_results import ci95, parse_sca  # noqa: E402
 
 RESULTS = REPOSITORY_ROOT / "simulations/results/omnetpp"
-OUTPUT = REPOSITORY_ROOT / "analysis/tables/main_experiment"
+OUTPUT = REPOSITORY_ROOT / "analysis/tables/detalhado/main_experiment"
 CONTROL = "MainExperiment_BaOff"
 TREATMENT = "MainExperiment_BaOn"
 METRIC_SPECS = {

@@ -277,6 +277,8 @@ void DroneApp::startAlertCycle(ActiveVictim& victim)
     victim.pendingAlertId = alert.alertId;
     pendingAlerts.emplace(alert.alertId, alert);
     AlertMetricEvent generatedEvent(alert.alertId, alert.creationTime);
+    generatedEvent.victimId = alert.victimId;
+    generatedEvent.droneId = droneId;
     emit(alertGeneratedSignal, &generatedEvent);
     sendAttempt(pendingAlerts.at(alert.alertId));
 }
@@ -669,6 +671,7 @@ void DroneApp::handleVictimAck(Packet *packet)
             return;
         }
         AlertMetricEvent confirmedEvent(alert.alertId);
+        confirmedEvent.teamId = ack->getTeamId();
         emit(alertConfirmedSignal, &confirmedEvent);
         bool ownsReposition = reposition.owns(it->first);
         if (ownsReposition) {

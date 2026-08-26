@@ -21,7 +21,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import pandas as pd  # noqa: E402
 
-from analysis.reports import figures, verification_sheet  # noqa: E402
+from analysis.reports import alert_sheet, figures, verification_sheet  # noqa: E402
 from analysis.reports.report_main_experiment import (  # noqa: E402
     EXPOSURE_METRICS, METRIC_SPECS,
 )
@@ -119,6 +119,38 @@ class FigureTests(unittest.TestCase):
         for column, _ in figures.FUNNEL_STAGES:
             self.assertIn(column, EXPOSURE_METRICS,
                           f"{column} não é exportado como diagnóstico de exposição")
+
+
+class AlertSheetTests(unittest.TestCase):
+    """As duas taxas contam alertId únicos, não tentativas nem recebimentos."""
+
+    def frame(self) -> pd.DataFrame:
+        # Quatro alertas: um confirmado, um entregue sem ACK, dois sem entrega.
+        return pd.DataFrame([
+            {"config": "C", "numTeams": 1, "baEnabled": True, "seed": 0,
+             "alertId": "a1", "delivered": 1, "acknowledged": 1},
+            {"config": "C", "numTeams": 1, "baEnabled": True, "seed": 0,
+             "alertId": "a2", "delivered": 1, "acknowledged": 0},
+            {"config": "C", "numTeams": 1, "baEnabled": True, "seed": 0,
+             "alertId": "a3", "delivered": 0, "acknowledged": 0},
+            {"config": "C", "numTeams": 1, "baEnabled": True, "seed": 1,
+             "alertId": "a4", "delivered": 0, "acknowledged": 0},
+        ])
+
+    def test_rates_follow_the_definitions(self):
+        summary = alert_sheet.summarize(self.frame()).iloc[0]
+        self.assertEqual(summary["alertas_gerados"], 4)
+        self.assertEqual(summary["execucoes"], 2)
+        # Atendimento conta alertId com ao menos um ACK: 1 de 4.
+        self.assertAlmostEqual(summary["atendimento_pct"], 25.0)
+        # Perda conta alertId sem entrega a nenhuma equipe: 2 de 4.
+        self.assertAlmostEqual(summary["perda_pct"], 50.0)
+
+    def test_sheet_columns_are_the_requested_ones(self):
+        self.assertEqual(alert_sheet.COLUMNS, [
+            "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",
+            "generationTime", "delivered", "receivingTeamId", "acknowledged",
+            "ackTeamId", "retryCount"])
 
 
 class VerificationSheetTests(unittest.TestCase):

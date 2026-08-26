@@ -121,6 +121,9 @@ void TeamApp::handleVictimAlert(Packet *packet)
         AlertMetricEvent deliveredEvent(alertId,
                                         alert->getCreationTime(), "", hopCount,
                                         messageId);
+        deliveredEvent.victimId = alert->getVictimId();
+        deliveredEvent.droneId = alert->getSourceDroneId();
+        deliveredEvent.teamId = teamId;
         emit(alertDeliveredSignal, &deliveredEvent);
     }
 

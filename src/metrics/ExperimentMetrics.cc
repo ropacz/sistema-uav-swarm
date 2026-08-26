@@ -1,7 +1,10 @@
 #include "ExperimentMetrics.h"
 
 #include <algorithm>
+#include <fstream>
 #include <limits>
+
+#include "omnetpp/cconfiguration.h"
 
 #include "AlertMetricEvent.h"
 
@@ -55,8 +58,15 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
                             getSignalName(signalId));
 
     if (signalId == generatedSignal) {
-        if (generatedAlertIds.insert(event->alertId).second)
+        if (generatedAlertIds.insert(event->alertId).second) {
             creationTimes[event->alertId] = event->referenceTime;
+            alertOrder.push_back(event->alertId);
+            auto& record = alertRecords[event->alertId];
+            record.alertId = event->alertId;
+            record.victimId = event->victimId;
+            record.droneId = event->droneId;
+            record.generationTime = event->referenceTime;
+        }
     }
     else if (signalId == attemptSentSignal) {
         if (!generatedAlertIds.count(event->alertId))
@@ -65,8 +75,10 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
         if (event->messageId.empty())
             throw cRuntimeError("Attempt signal for alert '%s' has no messageId",
                                 event->alertId.c_str());
-        if (sentAttemptIds.insert(event->messageId).second)
+        if (sentAttemptIds.insert(event->messageId).second) {
             attemptsByAlert[event->alertId]++;
+            alertRecords[event->alertId].attempts++;
+        }
     }
     else if (signalId == deliveredSignal) {
         if (event->messageId.empty())
@@ -75,6 +87,11 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
         receivedAttemptIds.insert(event->messageId);
         // A primeira equipe que recebe o alertId define entrega e atraso fim a fim.
         if (deliveredAlertIds.insert(event->alertId).second) {
+            // A primeira equipe a receber define a entrega; recebimentos
+            // posteriores do mesmo alertId não criam nova entrega.
+            auto& record = alertRecords[event->alertId];
+            record.delivered = true;
+            record.receivingTeamId = event->teamId;
             int hopCount = static_cast<int>(event->value);
             if (hopCount < 1 || event->value != hopCount)
                 throw cRuntimeError("Invalid hop count %.3f for alert '%s'",
@@ -94,6 +111,9 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
     }
     else if (signalId == confirmedSignal) {
         if (confirmedAlertIds.insert(event->alertId).second) {
+            auto& record = alertRecords[event->alertId];
+            record.acknowledged = true;
+            record.ackTeamId = event->teamId;
             auto creation = creationTimes.find(event->alertId);
             if (creation == creationTimes.end())
                 throw cRuntimeError("Confirmation for unknown alert '%s'",
@@ -181,8 +201,34 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
     }
 }
 
+void ExperimentMetrics::writeAlertRecords() const
+{
+    std::string directory = par("alertRecordDirectory").stdstringValue();
+    if (directory.empty())
+        return;
+    auto *config = getEnvir()->getConfigEx();
+    std::string name = directory + "/" + config->getVariable("configname") + "-" +
+        config->getVariable("runnumber") + "-alerts.csv";
+    std::ofstream file(name);
+    if (!file)
+        throw cRuntimeError("Cannot write alert records to '%s'", name.c_str());
+    file << "alertId,victimId,droneId,generationTime,delivered,"
+            "receivingTeamId,acknowledged,ackTeamId,retryCount\n";
+    for (const auto& alertId : alertOrder) {
+        const auto& record = alertRecords.at(alertId);
+        // retryCount conta retransmissões, não tentativas: a primeira não é retry.
+        file << record.alertId << ',' << record.victimId << ',' << record.droneId
+             << ',' << record.generationTime.dbl()
+             << ',' << (record.delivered ? 1 : 0) << ',' << record.receivingTeamId
+             << ',' << (record.acknowledged ? 1 : 0) << ',' << record.ackTeamId
+             << ',' << std::max(0, record.attempts - 1) << '\n';
+    }
+}
+
 void ExperimentMetrics::finish()
 {
+    writeAlertRecords();
+
     int applicationRetries = 0;
     for (const auto& [alertId, attempts] : attemptsByAlert)
         applicationRetries += std::max(0, attempts - 1);
