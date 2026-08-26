@@ -49,6 +49,12 @@ desatualizadas. A nova posição é uma estimativa geométrica; não há modelo
 energético detalhado nem processamento de imagens, e o AODV do INET é utilizado
 sem modificações. Os resultados dependem do cenário e da configuração executada.
 
+A presença de obstáculo é determinada por uma verificação geométrica idealizada
+do segmento entre o drone e a última posição conhecida da equipe; a obtenção
+real dessa geometria por câmera ou outro sensor não pertence ao escopo. A
+posição usada durante a recuperação pode estar desatualizada pela mobilidade da
+equipe, e não há predição nem extrapolação de velocidade.
+
 Distância e duração de movimento representam custo operacional, não consumo de
 energia ou carga real de bateria. Uma perda não deve ser atribuída
 automaticamente a um obstáculo, e a ausência de ACK não prova que o alerta não

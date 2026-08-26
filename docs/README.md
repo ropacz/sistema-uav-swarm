@@ -6,6 +6,10 @@ experimental e dos testes obrigatórios. A rastreabilidade executável entre os
 testes da seção 28, configurações e validadores está em
 [`simulations/README.md`](../simulations/README.md#rastreabilidade-dos-testes-obrigatórios).
 
+[`desvios_e_extensoes.md`](desvios_e_extensoes.md) registra apenas o que difere
+da diretriz — desvios, extensões e lacunas, cada um com a seção do PDF, a
+justificativa e o arquivo correspondente. O que não aparece lá segue a diretriz.
+
 ## Fonte única dos parâmetros
 
 Os valores usados pela simulação pertencem exclusivamente aos arquivos em
