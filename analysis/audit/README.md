@@ -104,6 +104,10 @@ que a métrica oficial usa o sinal da aplicação — que sabe a diferença entr
 "a vítima foi atribuída" e "um pacote saiu para a rede" — e não um log que só
 enxerga o segundo.
 
+## Exemplos de mensagens e fluxo completo
+
+[`exemplos_elog.md`](exemplos_elog.md) mostra, com linhas reais do `.elog`, os quatro tipos de mensagem capturados e narra um ciclo completo: alerta, enlace obstruído, reposicionamento pelo Bat Algorithm (etapa invisível ao log — só o sinal da aplicação a vê) e confirmação.
+
 ## Como reproduzir
 
 ```bash
