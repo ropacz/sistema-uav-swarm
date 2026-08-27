@@ -87,24 +87,36 @@ def load() -> pd.DataFrame:
 
 
 def summarize(table: pd.DataFrame) -> pd.DataFrame:
-    """Uma linha por célula experimental, com as duas taxas pedidas."""
+    """Uma linha por célula experimental, com as duas taxas pedidas.
+
+    Atendimento e perda não são complementares: `confirmado` é subconjunto de
+    `entregue` (um alerta pode chegar à equipe e o ACK se perder na volta), e
+    isso não é bug — as duas taxas medem coisas diferentes (confirmação
+    fim-a-fim vs. entrega). A terceira categoria abaixo torna essa diferença
+    explícita para quem só olhar as duas figuras lado a lado.
+    """
     rows = []
     for (config, teams, enabled), group in table.groupby(
             ["config", "numTeams", "baEnabled"], sort=True):
         generated = len(group)
+        delivered = int(group["delivered"].sum())
         acknowledged = int(group["acknowledged"].sum())
         undelivered = int((group["delivered"] == 0).sum())
+        delivered_unacknowledged = delivered - acknowledged
         rows.append({
             "config": config,
             "numTeams": teams,
             "baEnabled": enabled,
             "execucoes": group["seed"].nunique(),
             "alertas_gerados": generated,
-            "alertas_entregues": int(group["delivered"].sum()),
+            "alertas_entregues": delivered,
             "alertas_confirmados": acknowledged,
             "alertas_sem_entrega": undelivered,
+            "alertas_entregues_sem_confirmacao": delivered_unacknowledged,
             "atendimento_pct": 100.0 * acknowledged / generated if generated else float("nan"),
             "perda_pct": 100.0 * undelivered / generated if generated else float("nan"),
+            "entregue_sem_confirmacao_pct":
+                100.0 * delivered_unacknowledged / generated if generated else float("nan"),
         })
     return pd.DataFrame(rows)
 
@@ -178,7 +190,12 @@ def paired_effects(table: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     table = load()
     # Um alertId é único dentro da execução; a chave global inclui o contexto.
-    duplicated = table.duplicated(subset=["config", "seed", "alertId"]).sum()
+    # numTeams entra na chave porque os cenários de robustez reaproveitam os
+    # mesmos 30 seeds em cada valor de numTeams (${teams=1,5,10,15}) — sem
+    # numTeams, alertIds deterministicos (ex.: "drone2-victim0-alert-1") do
+    # mesmo seed em execuções distintas seriam falsamente sinalizados como
+    # duplicados.
+    duplicated = table.duplicated(subset=["config", "numTeams", "seed", "alertId"]).sum()
     if duplicated:
         raise SystemExit(f"{duplicated} alertId repetidos na mesma execução")
 
@@ -200,7 +217,18 @@ def main() -> None:
         paired.to_csv(OUTPUT / "efeito_pareado.csv", index=False)
 
     figures.configure_style()
-    charts = figures.attendance_figures(summary)
+    # rate_figure indexa por numTeams dentro de um braço; se o resumo cobrir
+    # mais de uma família de cenário (ex.: OneVictim e TwoVictims, que
+    # compartilham os mesmos valores de numTeams), o índice fica duplicado e
+    # o gráfico quebra. Uma figura por família evita a mistura.
+    scenario = summary["config"].str.extract(ARM_PATTERN)["scenario"]
+    charts = []
+    for name in sorted(scenario.dropna().unique()):
+        charts += figures.attendance_figures(
+            summary[scenario == name], suffix=f"_{name}")
+    unmatched = summary[scenario.isna()]
+    if not unmatched.empty:
+        charts += figures.attendance_figures(unmatched)
 
     print(f"gerado: {workbook.relative_to(REPOSITORY_ROOT)} "
           f"({len(sheet)} alertas, {summary['execucoes'].sum()} execuções)")

@@ -102,11 +102,17 @@ def rate_figure(summary: pd.DataFrame, column: str, axis_label: str,
     return save(figure, name)
 
 
-def attendance_figures(summary: pd.DataFrame) -> list[Path]:
-    """As duas taxas pedidas, cada uma em sua figura para caber uma legenda."""
+def attendance_figures(summary: pd.DataFrame, suffix: str = "") -> list[Path]:
+    """As duas taxas pedidas, cada uma em sua figura para caber uma legenda.
+
+    `suffix` distingue os arquivos quando o resumo cobre várias famílias de
+    cenário (ex.: "_OneVictim", "_TwoVictims") — sem isso, `rate_figure`
+    indexaria por numTeams com valores repetidos entre cenários e o mesmo
+    nome de arquivo seria sobrescrito por cenário.
+    """
     return [
         rate_figure(summary, "atendimento_pct",
-                    "Atendimento (%)", "atendimento"),
+                    "Atendimento (%)", f"atendimento{suffix}"),
         rate_figure(summary, "perda_pct",
-                    "Perda (%)", "perda"),
+                    "Perda (%)", f"perda{suffix}"),
     ]

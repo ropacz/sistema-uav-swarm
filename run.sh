@@ -9,6 +9,7 @@
 #   ./run.sh --gui                 → experimento principal no Qtenv
 #   ./run.sh --info                → log INFO global (MUITO verboso: PHY/MAC/AODV inclusos)
 #   ./run.sh --build               → compila antes de rodar
+#   ./run.sh --ide                 → abre a IDE do OMNeT++ (não roda simulação)
 #
 # Todos os seeds rodam em UMA invocação do OMNeT++ (sem loop externo).
 # Status impresso a cada 30 s para confirmar que não travou.
@@ -32,16 +33,18 @@ UI=Cmdenv
 LOG_LEVEL=WARN
 EXPRESS=true
 BUILD=false
+IDE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gui)    UI=Qtenv ;;
         --info)   LOG_LEVEL=INFO; EXPRESS=false ;;
         --build)  BUILD=true ;;
+        --ide)    IDE=true ;;
         -c)       CONFIG="$2"; CONFIG_EXPLICIT=true; shift ;;
         -r)       RUN="$2";   shift ;;
         -h|--help)
-            echo "Uso: $0 [-c Config] [-r run] [--gui] [--info] [--build]"
+            echo "Uso: $0 [-c Config] [-r run] [--gui] [--info] [--build] [--ide]"
             exit 0 ;;
         *)
             echo "Opção desconhecida: $1 (use --help)" >&2
@@ -58,6 +61,12 @@ if $BUILD; then
     echo ">>> Compilando (MODE=debug)..."
     opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated \
         -c "cd '$PROJECT_DIR' && make makefiles && make -C '$PROJECT_DIR/src' MODE=debug"
+fi
+
+if $IDE; then
+    echo ">>> Abrindo a IDE do OMNeT++..."
+    opp_env run "$INET_VERSION" -w "$WORKSPACE" --no-isolated -c "omnetpp"
+    exit 0
 fi
 
 RUN_ARG=${RUN:+-r "$RUN"}
