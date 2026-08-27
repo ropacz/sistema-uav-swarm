@@ -8,6 +8,7 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/reports/figures.py \
 	analysis/reports/alert_sheet.py \
 	analysis/reports/mechanism_summary.py \
+	analysis/reports/paired_effect_ttest.py \
 	analysis/reports/scavetool_figures.py \
 	analysis/validation/validate_ba_smoke_test.py \
 	analysis/validation/validate_alert_lifecycle_smoke_test.py \
@@ -61,7 +62,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.reports.mechanism_summary, analysis.reports.scavetool_figures, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.reports.mechanism_summary, analysis.reports.paired_effect_ttest, analysis.reports.scavetool_figures, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 

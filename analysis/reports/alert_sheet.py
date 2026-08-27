@@ -121,8 +121,13 @@ def summarize(table: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def paired_effects(table: pd.DataFrame) -> pd.DataFrame:
-    """Resume diferenças BA-On − BA-Off por seed, com IC bootstrap de 95%."""
+def build_pairs(table: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha por (cenário, numTeams, seed), com o efeito BA-On − BA-Off.
+
+    Reaproveitada por `paired_effects()` (IC bootstrap) e por
+    `paired_effect_ttest.py` (IC Student-t) — a construção do par por seed é
+    a mesma nos dois; só o método de intervalo de confiança muda.
+    """
     arm = table["config"].str.extract(ARM_PATTERN)
     selected = table.loc[arm["scenario"].notna()].copy()
     if selected.empty:
@@ -152,6 +157,14 @@ def paired_effects(table: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("a campanha contém seeds sem o respectivo braço pareado")
     pairs["attendanceEffect"] = pairs["attendanceOn"] - pairs["attendanceOff"]
     pairs["lossEffect"] = pairs["lossOn"] - pairs["lossOff"]
+    return pairs
+
+
+def paired_effects(table: pd.DataFrame) -> pd.DataFrame:
+    """Resume diferenças BA-On − BA-Off por seed, com IC bootstrap de 95%."""
+    pairs = build_pairs(table)
+    if pairs.empty:
+        return pd.DataFrame()
 
     rng = np.random.default_rng(20260826)
 
