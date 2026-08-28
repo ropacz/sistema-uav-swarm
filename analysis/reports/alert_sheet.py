@@ -38,9 +38,13 @@ ARM_PATTERN = r"^(?P<scenario>.+)_Ba(?P<arm>Off|On)$"
 BOOTSTRAP_RESAMPLES = 10_000
 
 COLUMNS = [
-    "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",
-    "generationTime", "delivered", "receivingTeamId", "acknowledged",
-    "ackTeamId", "retryCount",
+    # "config" entra primeiro porque é a única coluna que distingue cenário
+    # (ex.: Scenario1_OneVictim vs Scenario1_TwoVictims) — sem ela, filtrar
+    # por numTeams/baEnabled/victimId mistura cenários que compartilham esses
+    # valores (os dois têm victim0 nos mesmos numTeams e braços).
+    "config", "seed", "numTeams", "baEnabled", "alertId", "victimId",
+    "droneId", "generationTime", "delivered", "receivingTeamId",
+    "acknowledged", "ackTeamId", "retryCount",
 ]
 
 
@@ -121,11 +125,12 @@ def summarize(table: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build_pairs(table: pd.DataFrame) -> pd.DataFrame:
-    """Uma linha por (cenário, numTeams, seed), com o efeito BA-On − BA-Off.
+def per_seed_rates(table: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha por (cenário, numTeams, seed, baEnabled): atendimento/perda
+    daquela execução isolada — antes de parear ou agregar entre seeds.
 
-    Separada de `paired_effects()` para isolar a construção do par (que não
-    muda) do cálculo do intervalo de confiança (bootstrap).
+    Separada de `build_pairs()` porque também alimenta `dispersion_summary()`
+    (média e desvio-padrão entre seeds), que não precisa do pareamento.
     """
     arm = table["config"].str.extract(ARM_PATTERN)
     selected = table.loc[arm["scenario"].notna()].copy()
@@ -145,6 +150,41 @@ def build_pairs(table: pd.DataFrame) -> pd.DataFrame:
     ).reset_index()
     runs["attendancePct"] = 100.0 * runs["acknowledged"] / runs["generated"]
     runs["lossPct"] = 100.0 * runs["undelivered"] / runs["generated"]
+    return runs
+
+
+def dispersion_summary(table: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha por (cenário, numTeams, baEnabled): média e desvio-padrão
+    do atendimento/perda **entre as seeds** daquela célula — descritivo,
+    não é o efeito pareado (isso é `paired_effects()`, outro método).
+    """
+    runs = per_seed_rates(table)
+    if runs.empty:
+        return pd.DataFrame()
+    summary = runs.groupby(
+        ["scenario", "numTeams", "baEnabled"], sort=True
+    ).agg(
+        pares=("seed", "size"),
+        # "média" (não "pct" pooled): é a média das 30 taxas por seed, uma
+        # grandeza diferente de summarize()'s atendimento_pct (razão dos
+        # totais agregados) — nomes distintos de propósito, pra não misturar.
+        atendimento_media_pct=("attendancePct", "mean"),
+        atendimento_desvio_pct=("attendancePct", "std"),
+        perda_media_pct=("lossPct", "mean"),
+        perda_desvio_pct=("lossPct", "std"),
+    ).reset_index()
+    return summary
+
+
+def build_pairs(table: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha por (cenário, numTeams, seed), com o efeito BA-On − BA-Off.
+
+    Separada de `paired_effects()` para isolar a construção do par (que não
+    muda) do cálculo do intervalo de confiança (bootstrap).
+    """
+    runs = per_seed_rates(table)
+    if runs.empty:
+        return pd.DataFrame()
 
     keys = ["scenario", "numTeams", "seed"]
     off = runs.loc[~runs["baEnabled"], keys + ["attendancePct", "lossPct"]].rename(
@@ -215,6 +255,7 @@ def main() -> None:
         ["baEnabled", "numTeams", "seed", "generationTime"]).reset_index(drop=True)
     summary = summarize(table)
     paired = paired_effects(table)
+    dispersion = dispersion_summary(table)
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
     workbook = OUTPUT / "atendimento.xlsx"
@@ -223,10 +264,14 @@ def main() -> None:
         summary.to_excel(writer, sheet_name="Resumo", index=False)
         if not paired.empty:
             paired.to_excel(writer, sheet_name="EfeitoPareado", index=False)
+        if not dispersion.empty:
+            dispersion.to_excel(writer, sheet_name="Dispersao", index=False)
     sheet.to_csv(OUTPUT / "atendimento_alertas.csv", index=False)
     summary.to_csv(OUTPUT / "atendimento_resumo.csv", index=False)
     if not paired.empty:
         paired.to_csv(OUTPUT / "efeito_pareado.csv", index=False)
+    if not dispersion.empty:
+        dispersion.to_csv(OUTPUT / "dispersao_por_seed.csv", index=False)
 
     figures.configure_style()
     # rate_figure indexa por numTeams dentro de um braço; se o resumo cobrir
@@ -243,6 +288,8 @@ def main() -> None:
         charts += figures.attendance_figures(unmatched)
     if not paired.empty:
         charts += figures.effect_figures(paired)
+    if not dispersion.empty:
+        charts += figures.dispersion_figures(dispersion)
 
     print(f"gerado: {workbook.relative_to(REPOSITORY_ROOT)} "
           f"({len(sheet)} alertas, {summary['execucoes'].sum()} execuções)")

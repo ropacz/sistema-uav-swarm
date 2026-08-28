@@ -38,7 +38,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "activevictim",
       "id": "src_app_activevictim_activevictim"
     },
@@ -471,78 +471,6 @@
       "id": "src_app_droneapp_droneapp_numinitstages"
     },
     {
-      "label": ".socketClosed()",
-      "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L104",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".socketclosed()",
-      "id": "src_app_droneapp_droneapp_socketclosed"
-    },
-    {
-      "label": ".socketErrorArrived()",
-      "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L103",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".socketerrorarrived()",
-      "id": "src_app_droneapp_droneapp_socketerrorarrived"
-    },
-    {
-      "label": "hasTypePrefix()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.cc",
-      "source_location": "L85",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "hastypeprefix()",
-      "id": "src_app_teamapp_hastypeprefix"
-    },
-    {
-      "label": ".handleCrashOperation()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L44",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".handlecrashoperation()",
-      "id": "src_app_teamapp_teamapp_handlecrashoperation"
-    },
-    {
-      "label": ".handleStartOperation()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L42",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".handlestartoperation()",
-      "id": "src_app_teamapp_teamapp_handlestartoperation"
-    },
-    {
-      "label": ".handleStopOperation()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L43",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".handlestopoperation()",
-      "id": "src_app_teamapp_teamapp_handlestopoperation"
-    },
-    {
       "label": ".numInitStages()",
       "file_type": "code",
       "source_file": "src/app/TeamApp.h",
@@ -553,42 +481,6 @@
       "community_name": "TeamApp",
       "norm_label": ".numinitstages()",
       "id": "src_app_teamapp_teamapp_numinitstages"
-    },
-    {
-      "label": ".socketClosed()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L49",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".socketclosed()",
-      "id": "src_app_teamapp_teamapp_socketclosed"
-    },
-    {
-      "label": ".socketErrorArrived()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L48",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": ".socketerrorarrived()",
-      "id": "src_app_teamapp_teamapp_socketerrorarrived"
-    },
-    {
-      "label": "TeamApp::~TeamApp()",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.cc",
-      "source_location": "L162",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "teamapp::~teamapp()",
-      "id": "src_app_teamapp_teamapp_teamapp"
     },
     {
       "label": "ExperimentMetrics::finish()",
@@ -713,14 +605,26 @@
     {
       "label": "hasTypePrefix()",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.cc",
-      "source_location": "L238",
+      "source_file": "src/app/TeamApp.cc",
+      "source_location": "L85",
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
+      "community_name": "TeamApp.cc",
       "norm_label": "hastypeprefix()",
-      "id": "src_app_droneapp_hastypeprefix"
+      "id": "src_app_teamapp_hastypeprefix"
+    },
+    {
+      "label": "TeamApp::~TeamApp()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.cc",
+      "source_location": "L162",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "TeamApp.cc",
+      "norm_label": "teamapp::~teamapp()",
+      "id": "src_app_teamapp_teamapp_teamapp"
     },
     {
       "label": ".handleCrashOperation()",
@@ -831,28 +735,16 @@
       "id": "analysis_core_experiment_metrics_ratio"
     },
     {
-      "label": "ci95()",
-      "file_type": "code",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L55",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "ci95()",
-      "id": "analysis_core_process_results_ci95"
-    },
-    {
       "label": "parse_sca()",
       "file_type": "code",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L11",
+      "source_location": "L9",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_core_process_results_parse_sca",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "parse_sca()",
-      "id": "analysis_core_process_results_parse_sca"
+      "norm_label": "parse_sca()"
     },
     {
       "label": "load_totals()",
@@ -1515,16 +1407,64 @@
       "id": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree"
     },
     {
+      "label": ".socketClosed()",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L104",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": ".socketclosed()",
+      "id": "src_app_droneapp_droneapp_socketclosed"
+    },
+    {
+      "label": ".socketErrorArrived()",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L103",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": ".socketerrorarrived()",
+      "id": "src_app_droneapp_droneapp_socketerrorarrived"
+    },
+    {
+      "label": ".socketClosed()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L49",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "UdpSocket",
+      "norm_label": ".socketclosed()",
+      "id": "src_app_teamapp_teamapp_socketclosed"
+    },
+    {
+      "label": ".socketErrorArrived()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L48",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "UdpSocket",
+      "norm_label": ".socketerrorarrived()",
+      "id": "src_app_teamapp_teamapp_socketerrorarrived"
+    },
+    {
       "label": "build_pairs()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L124",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_build_pairs",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "build_pairs()",
-      "id": "analysis_reports_alert_sheet_build_pairs"
+      "norm_label": "build_pairs()"
     },
     {
       "label": "load()",
@@ -1533,34 +1473,34 @@
       "source_location": "L69",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_load",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "load()",
-      "id": "analysis_reports_alert_sheet_load"
+      "norm_label": "load()"
     },
     {
       "label": "main()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L203",
+      "source_location": "L202",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_main",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "main()",
-      "id": "analysis_reports_alert_sheet_main"
+      "norm_label": "main()"
     },
     {
       "label": "paired_effects()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L163",
+      "source_location": "L162",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_paired_effects",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "paired_effects()",
-      "id": "analysis_reports_alert_sheet_paired_effects"
+      "norm_label": "paired_effects()"
     },
     {
       "label": "run_context()",
@@ -1569,10 +1509,10 @@
       "source_location": "L47",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_run_context",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "run_context()",
-      "id": "analysis_reports_alert_sheet_run_context"
+      "norm_label": "run_context()"
     },
     {
       "label": "summarize()",
@@ -1581,10 +1521,10 @@
       "source_location": "L89",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_summarize",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "summarize()",
-      "id": "analysis_reports_alert_sheet_summarize"
+      "norm_label": "summarize()"
     },
     {
       "label": "attendance_figures()",
@@ -1593,10 +1533,10 @@
       "source_location": "L105",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_figures_attendance_figures",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "attendance_figures()",
-      "id": "analysis_reports_figures_attendance_figures"
+      "norm_label": "attendance_figures()"
     },
     {
       "label": "configure_style()",
@@ -1605,10 +1545,34 @@
       "source_location": "L34",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_figures_configure_style",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "configure_style()",
-      "id": "analysis_reports_figures_configure_style"
+      "norm_label": "configure_style()"
+    },
+    {
+      "label": "effect_figure()",
+      "file_type": "code",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L121",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_figures_effect_figure",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "effect_figure()"
+    },
+    {
+      "label": "effect_figures()",
+      "file_type": "code",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L156",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_figures_effect_figures",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "effect_figures()"
     },
     {
       "label": "rate_figure()",
@@ -1617,10 +1581,10 @@
       "source_location": "L66",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_figures_rate_figure",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "rate_figure()",
-      "id": "analysis_reports_figures_rate_figure"
+      "norm_label": "rate_figure()"
     },
     {
       "label": "save()",
@@ -1629,58 +1593,10 @@
       "source_location": "L57",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_reports_figures_save",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "save()",
-      "id": "analysis_reports_figures_save"
-    },
-    {
-      "label": "compare()",
-      "file_type": "code",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L55",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_compare",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "compare()"
-    },
-    {
-      "label": "comparison_figure()",
-      "file_type": "code",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L74",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "comparison_figure()"
-    },
-    {
-      "label": "main()",
-      "file_type": "code",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L113",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_main",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "main()"
-    },
-    {
-      "label": "student_t_effects()",
-      "file_type": "code",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L32",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "student_t_effects()"
+      "norm_label": "save()"
     },
     {
       "label": "load_runs()",
@@ -1717,6 +1633,42 @@
       "community_name": "alert_sheet.py",
       "norm_label": "summarize()",
       "id": "analysis_reports_scavetool_figures_summarize"
+    },
+    {
+      "label": ".handleCrashOperation()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L44",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 50,
+      "community_name": "LifecycleOperation",
+      "norm_label": ".handlecrashoperation()",
+      "id": "src_app_teamapp_teamapp_handlecrashoperation"
+    },
+    {
+      "label": ".handleStartOperation()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L42",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 50,
+      "community_name": "LifecycleOperation",
+      "norm_label": ".handlestartoperation()",
+      "id": "src_app_teamapp_teamapp_handlestartoperation"
+    },
+    {
+      "label": ".handleStopOperation()",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L43",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 50,
+      "community_name": "LifecycleOperation",
+      "norm_label": ".handlestopoperation()",
+      "id": "src_app_teamapp_teamapp_handlestopoperation"
     },
     {
       "label": "RepositionFitness::RepositionFitness()",
@@ -1885,6 +1837,18 @@
       "community_name": "DroneApp.cc",
       "norm_label": "droneapp::~droneapp()",
       "id": "src_app_droneapp_droneapp_droneapp"
+    },
+    {
+      "label": "hasTypePrefix()",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.cc",
+      "source_location": "L238",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "hastypeprefix()",
+      "id": "src_app_droneapp_hastypeprefix"
     },
     {
       "label": "require()",
@@ -2526,105 +2490,6 @@
       "id": "udpsocket_icallback"
     },
     {
-      "label": "Indication",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "indication",
-      "id": "indication"
-    },
-    {
-      "label": "ApplicationBase",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "applicationbase",
-      "id": "src_app_droneapp_h_applicationbase"
-    },
-    {
-      "label": "LifecycleOperation",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "lifecycleoperation",
-      "id": "src_app_droneapp_h_lifecycleoperation"
-    },
-    {
-      "label": "set",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "set",
-      "id": "src_app_droneapp_h_set"
-    },
-    {
-      "label": "UdpSocket",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "udpsocket",
-      "id": "src_app_droneapp_h_udpsocket"
-    },
-    {
-      "label": "cMessage",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "cmessage",
-      "id": "src_app_teamapp_cc_cmessage"
-    },
-    {
-      "label": "Packet",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "packet",
-      "id": "src_app_teamapp_cc_packet"
-    },
-    {
-      "label": "TeamApp.cc",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.cc",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "teamapp.cc",
-      "id": "src_app_teamapp_cc_src_app_teamapp"
-    },
-    {
-      "label": "UdpSocket",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "udpsocket",
-      "id": "src_app_teamapp_cc_udpsocket"
-    },
-    {
       "label": "ApplicationBase",
       "file_type": "code",
       "source_file": "",
@@ -2645,28 +2510,6 @@
       "community_name": "TeamApp",
       "norm_label": "cmessage",
       "id": "src_app_teamapp_h_cmessage"
-    },
-    {
-      "label": "Indication",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "indication",
-      "id": "src_app_teamapp_h_indication"
-    },
-    {
-      "label": "LifecycleOperation",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "lifecycleoperation",
-      "id": "src_app_teamapp_h_lifecycleoperation"
     },
     {
       "label": "set",
@@ -2702,17 +2545,6 @@
       "id": "src_app_teamapp_h_simtime_t"
     },
     {
-      "label": "TeamApp.h",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "teamapp.h",
-      "id": "src_app_teamapp_h_src_app_teamapp"
-    },
-    {
       "label": "string",
       "file_type": "code",
       "source_file": "",
@@ -2722,17 +2554,6 @@
       "community_name": "TeamApp",
       "norm_label": "string",
       "id": "src_app_teamapp_h_string"
-    },
-    {
-      "label": "UdpSocket",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "udpsocket",
-      "id": "src_app_teamapp_h_udpsocket"
     },
     {
       "label": "UdpSocket::ICallback",
@@ -2790,39 +2611,6 @@
       "id": "src_app_teamapp_teamapp_appport"
     },
     {
-      "label": "handleMessageWhenUp",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L40",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "handlemessagewhenup",
-      "id": "src_app_teamapp_teamapp_handlemessagewhenup"
-    },
-    {
-      "label": "handleVictimAlert",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L54",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "handlevictimalert",
-      "id": "src_app_teamapp_teamapp_handlevictimalert"
-    },
-    {
-      "label": "initialize",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L38",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "initialize",
-      "id": "src_app_teamapp_teamapp_initialize"
-    },
-    {
       "label": "initialJitter",
       "file_type": "code",
       "source_file": "src/app/TeamApp.h",
@@ -2845,17 +2633,6 @@
       "id": "src_app_teamapp_teamapp_receivedattempts"
     },
     {
-      "label": "sendTeamUpdate",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L52",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "sendteamupdate",
-      "id": "src_app_teamapp_teamapp_sendteamupdate"
-    },
-    {
       "label": "socket",
       "file_type": "code",
       "source_file": "src/app/TeamApp.h",
@@ -2865,17 +2642,6 @@
       "community_name": "TeamApp",
       "norm_label": "socket",
       "id": "src_app_teamapp_teamapp_socket"
-    },
-    {
-      "label": "socketDataArrived",
-      "file_type": "code",
-      "source_file": "src/app/TeamApp.h",
-      "source_location": "L46",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "TeamApp",
-      "norm_label": "socketdataarrived",
-      "id": "src_app_teamapp_teamapp_socketdataarrived"
     },
     {
       "label": "teamId",
@@ -3533,24 +3299,13 @@
       "id": "run_sh__entry"
     },
     {
-      "label": "ActiveVictim.h",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "string",
-      "norm_label": "activevictim.h",
-      "id": "src_app_activevictim"
-    },
-    {
       "label": "alertSequence",
       "file_type": "code",
       "source_file": "src/app/ActiveVictim.h",
       "source_location": "L16",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "alertsequence",
       "id": "src_app_activevictim_activevictim_alertsequence"
     },
@@ -3561,7 +3316,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "nextalerttime",
       "id": "src_app_activevictim_activevictim_nextalerttime"
     },
@@ -3572,7 +3327,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "pendingalertid",
       "id": "src_app_activevictim_activevictim_pendingalertid"
     },
@@ -3583,7 +3338,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "position",
       "id": "src_app_activevictim_activevictim_position"
     },
@@ -3594,20 +3349,9 @@
       "source_location": "L13",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "victimid",
       "id": "src_app_activevictim_activevictim_victimid"
-    },
-    {
-      "label": "Coord",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "string",
-      "norm_label": "coord",
-      "id": "src_app_activevictim_h_coord"
     },
     {
       "label": "simtime_t",
@@ -3616,42 +3360,9 @@
       "source_location": "",
       "_origin": "ast",
       "community": 13,
-      "community_name": "string",
+      "community_name": "ActiveVictim",
       "norm_label": "simtime_t",
       "id": "src_app_activevictim_h_simtime_t"
-    },
-    {
-      "label": "string",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "string",
-      "norm_label": "string",
-      "id": "src_app_activevictim_h_string"
-    },
-    {
-      "label": "PendingVictimAlert.h",
-      "file_type": "code",
-      "source_file": "src/app/PendingVictimAlert.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "string",
-      "norm_label": "pendingvictimalert.h",
-      "id": "src_app_pendingvictimalert"
-    },
-    {
-      "label": "TeamLinkState.h",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "string",
-      "norm_label": "teamlinkstate.h",
-      "id": "src_app_teamlinkstate"
     },
     {
       "label": "metricas_e_arquivos_de_resultado.md",
@@ -3742,7 +3453,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L460",
+      "source_location": "L387",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_1_consultar_o_conte\u00fado_de_um_arquivo",
       "community": 14,
@@ -3754,7 +3465,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L474",
+      "source_location": "L401",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_2_filtrar_as_m\u00e9tricas_de_interesse",
       "community": 14,
@@ -3766,7 +3477,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L495",
+      "source_location": "L422",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_3_conferir_todos_os_arquivos_de_um_bra\u00e7o",
       "community": 14,
@@ -3778,7 +3489,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L512",
+      "source_location": "L439",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_4_exportar_os_dados_para_csv",
       "community": 14,
@@ -3790,7 +3501,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L456",
+      "source_location": "L383",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
       "community": 14,
@@ -3802,7 +3513,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L530",
+      "source_location": "L457",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_8_anf_an\u00e1lise_pela_ide",
       "community": 14,
@@ -3814,7 +3525,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L546",
+      "source_location": "L473",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_9_resumo_das_recomenda\u00e7\u00f5es",
       "community": 14,
@@ -3834,35 +3545,23 @@
       "norm_label": "como um escalar e gerado"
     },
     {
-      "label": "Intervalo de confian\u00e7a do efeito pareado: bootstrap, n\u00e3o Student-t",
+      "label": "Intervalo de confian\u00e7a do efeito pareado: bootstrap",
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
       "source_location": "L268",
       "_origin": "ast",
-      "id": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap_n\u00e3o_student_t",
+      "id": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap",
       "community": 14,
       "community_name": "metricas_e_arquivos_de_resultado.md",
-      "norm_label": "intervalo de confianca do efeito pareado: bootstrap, nao student-t"
-    },
-    {
-      "label": "O que `ci95()` faria, se fosse chamada (Student-t)",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L382",
-      "_origin": "ast",
-      "id": "docs_metricas_e_arquivos_de_resultado_o_que_ci95_faria_se_fosse_chamada_student_t",
-      "community": 14,
-      "community_name": "metricas_e_arquivos_de_resultado.md",
-      "norm_label": "o que `ci95()` faria, se fosse chamada (student-t)"
+      "norm_label": "intervalo de confianca do efeito pareado: bootstrap"
     },
     {
       "label": "Pareamento, isolamento de RNG e bootstrap s\u00e3o tr\u00eas coisas distintas",
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L281",
+      "source_location": "L280",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_pareamento_isolamento_de_rng_e_bootstrap_s\u00e3o_tr\u00eas_coisas_distintas",
       "community": 14,
@@ -4023,15 +3722,37 @@
       "id": "agents_testing_guidelines"
     },
     {
+      "label": "cMessage",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "TeamApp.cc",
+      "norm_label": "cmessage",
+      "id": "src_app_teamapp_cc_cmessage"
+    },
+    {
       "label": "Packet",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
+      "community_name": "TeamApp.cc",
       "norm_label": "packet",
-      "id": "packet"
+      "id": "src_app_teamapp_cc_packet"
+    },
+    {
+      "label": "TeamApp.cc",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.cc",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "TeamApp.cc",
+      "norm_label": "teamapp.cc",
+      "id": "src_app_teamapp_cc_src_app_teamapp"
     },
     {
       "label": "UdpSocket",
@@ -4040,53 +3761,64 @@
       "source_location": "",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
+      "community_name": "TeamApp.cc",
       "norm_label": "udpsocket",
-      "id": "src_app_droneapp_cc_udpsocket"
+      "id": "src_app_teamapp_cc_udpsocket"
     },
     {
-      "label": "handleDroneStatus",
+      "label": "handleMessageWhenUp",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L124",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L40",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
-      "norm_label": "handledronestatus",
-      "id": "src_app_droneapp_droneapp_handledronestatus"
+      "community_name": "TeamApp.cc",
+      "norm_label": "handlemessagewhenup",
+      "id": "src_app_teamapp_teamapp_handlemessagewhenup"
     },
     {
-      "label": "handleTeamUpdate",
+      "label": "handleVictimAlert",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L116",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L54",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
-      "norm_label": "handleteamupdate",
-      "id": "src_app_droneapp_droneapp_handleteamupdate"
+      "community_name": "TeamApp.cc",
+      "norm_label": "handlevictimalert",
+      "id": "src_app_teamapp_teamapp_handlevictimalert"
     },
     {
-      "label": "handleVictimAck",
+      "label": "initialize",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L126",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L38",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
-      "norm_label": "handlevictimack",
-      "id": "src_app_droneapp_droneapp_handlevictimack"
+      "community_name": "TeamApp.cc",
+      "norm_label": "initialize",
+      "id": "src_app_teamapp_teamapp_initialize"
+    },
+    {
+      "label": "sendTeamUpdate",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L52",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "TeamApp.cc",
+      "norm_label": "sendteamupdate",
+      "id": "src_app_teamapp_teamapp_sendteamupdate"
     },
     {
       "label": "socketDataArrived",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L101",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L46",
       "_origin": "ast",
       "community": 17,
-      "community_name": "socketDataArrived",
+      "community_name": "TeamApp.cc",
       "norm_label": "socketdataarrived",
-      "id": "src_app_droneapp_droneapp_socketdataarrived"
+      "id": "src_app_teamapp_teamapp_socketdataarrived"
     },
     {
       "label": "ApplicationBase",
@@ -4650,6 +4382,17 @@
       "id": "src_metrics_experimentmetrics_h_src_metrics_experimentmetrics"
     },
     {
+      "label": "vector",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 20,
+      "community_name": "ExperimentMetrics.h",
+      "norm_label": "vector",
+      "id": "src_metrics_experimentmetrics_h_vector"
+    },
+    {
       "label": "experiment_metrics.py",
       "file_type": "code",
       "source_file": "analysis/core/experiment_metrics.py",
@@ -4677,10 +4420,10 @@
       "source_file": "analysis/core/process_results.py",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "analysis_core_process_results",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "process_results.py",
-      "id": "analysis_core_process_results"
+      "norm_label": "process_results.py"
     },
     {
       "label": "DataFrame",
@@ -4688,10 +4431,10 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "analysis_core_process_results_py_dataframe",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "dataframe",
-      "id": "analysis_core_process_results_py_dataframe"
+      "norm_label": "dataframe"
     },
     {
       "label": "mechanism_summary.py",
@@ -4826,17 +4569,6 @@
       "id": "analysis_validation_validate_sensor_range_smoke_test"
     },
     {
-      "label": "Series",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "series",
-      "id": "series"
-    },
-    {
       "label": "Read the small, normative ExperimentMetrics contract from one SCA file.",
       "file_type": "rationale",
       "source_file": "analysis/core/experiment_metrics.py",
@@ -4884,23 +4616,12 @@
       "label": "Return attributes, scalar rows and recorded parameters from one SCA.",
       "file_type": "rationale",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L12",
+      "source_location": "L10",
       "_origin": "ast",
+      "id": "analysis_core_process_results_rationale_10",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "return attributes, scalar rows and recorded parameters from one sca.",
-      "id": "analysis_core_process_results_rationale_12"
-    },
-    {
-      "label": "Student-t approximate 95% confidence-interval half-width for a mean.",
-      "file_type": "rationale",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L56",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "student-t approximate 95% confidence-interval half-width for a mean.",
-      "id": "analysis_core_process_results_rationale_56"
+      "norm_label": "return attributes, scalar rows and recorded parameters from one sca."
     },
     {
       "label": "Um DataFrame longo (scenario, arm, name, value) com um escalar por linha.",
@@ -5648,17 +5369,6 @@
       "id": "cmodule"
     },
     {
-      "label": "map",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "SarScenarioManager",
-      "norm_label": "map",
-      "id": "src_app_droneapp_h_map"
-    },
-    {
       "label": "cMessage",
       "file_type": "code",
       "source_file": "",
@@ -5714,17 +5424,6 @@
       "id": "src_scenario_sarscenariomanager_h_map"
     },
     {
-      "label": "SarScenarioManager.h",
-      "file_type": "code",
-      "source_file": "src/scenario/SarScenarioManager.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "SarScenarioManager",
-      "norm_label": "sarscenariomanager.h",
-      "id": "src_scenario_sarscenariomanager_h_src_scenario_sarscenariomanager"
-    },
-    {
       "label": "detections",
       "file_type": "code",
       "source_file": "src/scenario/SarScenarioManager.h",
@@ -5767,17 +5466,6 @@
       "community_name": "SarScenarioManager",
       "norm_label": "numinitstages",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_numinitstages"
-    },
-    {
-      "label": "DroneLinkState.h",
-      "file_type": "code",
-      "source_file": "src/app/DroneLinkState.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "DroneLinkState",
-      "norm_label": "dronelinkstate.h",
-      "id": "src_app_dronelinkstate"
     },
     {
       "label": "lastSequence",
@@ -5910,17 +5598,6 @@
       "community_name": "optimize",
       "norm_label": "fitnessfunction",
       "id": "fitnessfunction"
-    },
-    {
-      "label": "tryReposition",
-      "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L136",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "optimize",
-      "norm_label": "tryreposition",
-      "id": "src_app_droneapp_droneapp_tryreposition"
     },
     {
       "label": "amplitude",
@@ -6438,17 +6115,6 @@
       "community_name": "scheduleTeamUpdateRelay",
       "norm_label": "scheduleteamupdaterelay",
       "id": "src_app_droneapp_droneapp_scheduleteamupdaterelay"
-    },
-    {
-      "label": "selectTargetTeam",
-      "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L134",
-      "_origin": "ast",
-      "community": 32,
-      "community_name": "scheduleTeamUpdateRelay",
-      "norm_label": "selecttargetteam",
-      "id": "src_app_droneapp_droneapp_selecttargetteam"
     },
     {
       "label": "TeamUpdateChunk",
@@ -7281,15 +6947,246 @@
       "id": "src_metrics_experimentmetrics_cc_cobject"
     },
     {
+      "label": "Indication",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "indication",
+      "id": "indication"
+    },
+    {
+      "label": "ApplicationBase",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "applicationbase",
+      "id": "src_app_droneapp_h_applicationbase"
+    },
+    {
+      "label": "LifecycleOperation",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "lifecycleoperation",
+      "id": "src_app_droneapp_h_lifecycleoperation"
+    },
+    {
+      "label": "set",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "set",
+      "id": "src_app_droneapp_h_set"
+    },
+    {
+      "label": "UdpSocket",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "udpsocket",
+      "id": "src_app_droneapp_h_udpsocket"
+    },
+    {
+      "label": "TeamApp.h",
+      "file_type": "code",
+      "source_file": "src/app/TeamApp.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 46,
+      "community_name": "TeamApp.h",
+      "norm_label": "teamapp.h",
+      "id": "src_app_teamapp_h_src_app_teamapp"
+    },
+    {
+      "label": "ActiveVictim.h",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "activevictim.h",
+      "id": "src_app_activevictim"
+    },
+    {
+      "label": "Coord",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "coord",
+      "id": "src_app_activevictim_h_coord"
+    },
+    {
+      "label": "string",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "string",
+      "id": "src_app_activevictim_h_string"
+    },
+    {
+      "label": "map",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "map",
+      "id": "src_app_droneapp_h_map"
+    },
+    {
+      "label": "DroneLinkState.h",
+      "file_type": "code",
+      "source_file": "src/app/DroneLinkState.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "dronelinkstate.h",
+      "id": "src_app_dronelinkstate"
+    },
+    {
+      "label": "PendingVictimAlert.h",
+      "file_type": "code",
+      "source_file": "src/app/PendingVictimAlert.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "pendingvictimalert.h",
+      "id": "src_app_pendingvictimalert"
+    },
+    {
+      "label": "TeamLinkState.h",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "teamlinkstate.h",
+      "id": "src_app_teamlinkstate"
+    },
+    {
+      "label": "SarScenarioManager.h",
+      "file_type": "code",
+      "source_file": "src/scenario/SarScenarioManager.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "string",
+      "norm_label": "sarscenariomanager.h",
+      "id": "src_scenario_sarscenariomanager_h_src_scenario_sarscenariomanager"
+    },
+    {
+      "label": "ActiveVictim",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "handleAssignment",
+      "norm_label": "activevictim",
+      "id": "src_app_droneapp_cc_activevictim"
+    },
+    {
+      "label": "canStartAlertCycle",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L111",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "handleAssignment",
+      "norm_label": "canstartalertcycle",
+      "id": "src_app_droneapp_droneapp_canstartalertcycle"
+    },
+    {
+      "label": "handleAssignment",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L107",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "handleAssignment",
+      "norm_label": "handleassignment",
+      "id": "src_app_droneapp_droneapp_handleassignment"
+    },
+    {
+      "label": "startAlertCycle",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L109",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "handleAssignment",
+      "norm_label": "startalertcycle",
+      "id": "src_app_droneapp_droneapp_startalertcycle"
+    },
+    {
+      "label": "VictimAssignment",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "handleAssignment",
+      "norm_label": "victimassignment",
+      "id": "victimassignment"
+    },
+    {
+      "label": "Indication",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "UdpSocket",
+      "norm_label": "indication",
+      "id": "src_app_teamapp_h_indication"
+    },
+    {
+      "label": "UdpSocket",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "UdpSocket",
+      "norm_label": "udpsocket",
+      "id": "src_app_teamapp_h_udpsocket"
+    },
+    {
       "label": "alert_sheet.py",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "alert_sheet.py",
-      "id": "analysis_reports_alert_sheet"
+      "norm_label": "alert_sheet.py"
     },
     {
       "label": "DataFrame",
@@ -7297,10 +7194,10 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_py_dataframe",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "dataframe",
-      "id": "analysis_reports_alert_sheet_py_dataframe"
+      "norm_label": "dataframe"
     },
     {
       "label": "Path",
@@ -7308,10 +7205,10 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_py_path",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "path",
-      "id": "analysis_reports_alert_sheet_py_path"
+      "norm_label": "path"
     },
     {
       "label": "figures.py",
@@ -7319,10 +7216,10 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "analysis_reports_figures",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "figures.py",
-      "id": "analysis_reports_figures"
+      "norm_label": "figures.py"
     },
     {
       "label": "DataFrame",
@@ -7330,10 +7227,10 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "analysis_reports_figures_py_dataframe",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "dataframe",
-      "id": "analysis_reports_figures_py_dataframe"
+      "norm_label": "dataframe"
     },
     {
       "label": "Path",
@@ -7341,21 +7238,10 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "analysis_reports_figures_py_path",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "path",
-      "id": "analysis_reports_figures_py_path"
-    },
-    {
-      "label": "paired_effect_ttest.py",
-      "file_type": "code",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "paired_effect_ttest.py"
+      "norm_label": "path"
     },
     {
       "label": "scavetool_figures.py",
@@ -7391,59 +7277,37 @@
       "id": "analysis_reports_scavetool_figures_py_path"
     },
     {
-      "label": "DataFrame",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "id": "dataframe",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "dataframe"
-    },
-    {
       "label": "Figure",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
+      "id": "figure",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "figure",
-      "id": "figure"
+      "norm_label": "figure"
     },
     {
-      "label": "Path",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "id": "path",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "path"
-    },
-    {
-      "label": "Uma linha por (cen\u00e1rio, numTeams, seed), com o efeito BA-On \u2212 BA-Off.\u2026",
+      "label": "Uma linha por (cen\u00e1rio, numTeams, seed), com o efeito BA-On \u2212 BA-Off. Separada\u2026",
       "file_type": "rationale",
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L125",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_rationale_125",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "uma linha por (cenario, numteams, seed), com o efeito ba-on \u2212 ba-off....",
-      "id": "analysis_reports_alert_sheet_rationale_125"
+      "norm_label": "uma linha por (cenario, numteams, seed), com o efeito ba-on \u2212 ba-off. separada..."
     },
     {
       "label": "Resume diferen\u00e7as BA-On \u2212 BA-Off por seed, com IC bootstrap de 95%.",
       "file_type": "rationale",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L164",
+      "source_location": "L163",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_rationale_163",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "resume diferencas ba-on \u2212 ba-off por seed, com ic bootstrap de 95%.",
-      "id": "analysis_reports_alert_sheet_rationale_164"
+      "norm_label": "resume diferencas ba-on \u2212 ba-off por seed, com ic bootstrap de 95%."
     },
     {
       "label": "L\u00ea seed, equipes e pol\u00edtica do .sca da mesma execu\u00e7\u00e3o.",
@@ -7451,10 +7315,10 @@
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L48",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_rationale_48",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "le seed, equipes e politica do .sca da mesma execucao.",
-      "id": "analysis_reports_alert_sheet_rationale_48"
+      "norm_label": "le seed, equipes e politica do .sca da mesma execucao."
     },
     {
       "label": "Uma linha por c\u00e9lula experimental, com as duas taxas pedidas. Atendimento e\u2026",
@@ -7462,10 +7326,10 @@
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L90",
       "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_rationale_90",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "uma linha por celula experimental, com as duas taxas pedidas. atendimento e...",
-      "id": "analysis_reports_alert_sheet_rationale_90"
+      "norm_label": "uma linha por celula experimental, com as duas taxas pedidas. atendimento e..."
     },
     {
       "label": "As duas taxas pedidas, cada uma em sua figura para caber uma legenda. `suffix`\u2026",
@@ -7473,10 +7337,32 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L106",
       "_origin": "ast",
+      "id": "analysis_reports_figures_rationale_106",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "as duas taxas pedidas, cada uma em sua figura para caber uma legenda. `suffix`...",
-      "id": "analysis_reports_figures_rationale_106"
+      "norm_label": "as duas taxas pedidas, cada uma em sua figura para caber uma legenda. `suffix`..."
+    },
+    {
+      "label": "Efeito pareado (BA-On \u2212 BA-Off) com IC 95% bootstrap, um painel por cen\u00e1rio\u2026",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L123",
+      "_origin": "ast",
+      "id": "analysis_reports_figures_rationale_123",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "efeito pareado (ba-on \u2212 ba-off) com ic 95% bootstrap, um painel por cenario..."
+    },
+    {
+      "label": "Efeito pareado (BA-On \u2212 BA-Off) com IC bootstrap, atendimento e perda.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L157",
+      "_origin": "ast",
+      "id": "analysis_reports_figures_rationale_157",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "efeito pareado (ba-on \u2212 ba-off) com ic bootstrap, atendimento e perda."
     },
     {
       "label": "Barras agrupadas de uma taxa, uma cor por bra\u00e7o e uma legenda. O eixo\u2026",
@@ -7484,43 +7370,10 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L68",
       "_origin": "ast",
+      "id": "analysis_reports_figures_rationale_68",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "barras agrupadas de uma taxa, uma cor por braco e uma legenda. o eixo...",
-      "id": "analysis_reports_figures_rationale_68"
-    },
-    {
-      "label": "Uma linha por (cen\u00e1rio, numTeams): efeito m\u00e9dio \u00b1 IC 95% via ci95().",
-      "file_type": "rationale",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L33",
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_rationale_33",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "uma linha por (cenario, numteams): efeito medio \u00b1 ic 95% via ci95()."
-    },
-    {
-      "label": "Uma linha por c\u00e9lula, os dois m\u00e9todos lado a lado, larguras dos dois IC.",
-      "file_type": "rationale",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L56",
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_rationale_56",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "uma linha por celula, os dois metodos lado a lado, larguras dos dois ic."
-    },
-    {
-      "label": "Um painel por cen\u00e1rio: efeito \u00b1 IC, bootstrap e t lado a lado por numTeams.",
-      "file_type": "rationale",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L76",
-      "_origin": "ast",
-      "id": "analysis_reports_paired_effect_ttest_rationale_76",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "um painel por cenario: efeito \u00b1 ic, bootstrap e t lado a lado por numteams."
+      "norm_label": "barras agrupadas de uma taxa, uma cor por braco e uma legenda. o eixo..."
     },
     {
       "label": "Uma entrada por execu\u00e7\u00e3o: baEnabled, numTeams e os escalares centrais.",
@@ -7534,6 +7387,50 @@
       "id": "analysis_reports_scavetool_figures_rationale_45"
     },
     {
+      "label": "LifecycleOperation",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 50,
+      "community_name": "LifecycleOperation",
+      "norm_label": "lifecycleoperation",
+      "id": "src_app_teamapp_h_lifecycleoperation"
+    },
+    {
+      "label": "DataFrame",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 51,
+      "community_name": "DataFrame",
+      "norm_label": "dataframe",
+      "id": "dataframe"
+    },
+    {
+      "label": "Path",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "Path",
+      "norm_label": "path",
+      "id": "path"
+    },
+    {
+      "label": "Series",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 53,
+      "community_name": "Series",
+      "norm_label": "series",
+      "id": "series"
+    },
+    {
       "label": "AbstractObstacleSensor",
       "file_type": "code",
       "source_file": "",
@@ -7543,17 +7440,6 @@
       "community_name": "FitnessParameters",
       "norm_label": "abstractobstaclesensor",
       "id": "abstractobstaclesensor"
-    },
-    {
-      "label": "vector",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "FitnessParameters",
-      "norm_label": "vector",
-      "id": "src_metrics_experimentmetrics_h_vector"
     },
     {
       "label": "Coord",
@@ -8194,15 +8080,15 @@
       "id": "src_mobility_bagaussmarkovmobility_h_src_mobility_bagaussmarkovmobility"
     },
     {
-      "label": "ActiveVictim",
+      "label": "Packet",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
       "community": 9,
       "community_name": "DroneApp.cc",
-      "norm_label": "activevictim",
-      "id": "src_app_droneapp_cc_activevictim"
+      "norm_label": "packet",
+      "id": "packet"
     },
     {
       "label": "cMessage",
@@ -8238,15 +8124,15 @@
       "id": "src_app_droneapp_cc_src_app_droneapp"
     },
     {
-      "label": "canStartAlertCycle",
+      "label": "UdpSocket",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L111",
+      "source_file": "",
+      "source_location": "",
       "_origin": "ast",
       "community": 9,
       "community_name": "DroneApp.cc",
-      "norm_label": "canstartalertcycle",
-      "id": "src_app_droneapp_droneapp_canstartalertcycle"
+      "norm_label": "udpsocket",
+      "id": "src_app_droneapp_cc_udpsocket"
     },
     {
       "label": "completeAlertCycle",
@@ -8282,15 +8168,15 @@
       "id": "src_app_droneapp_droneapp_finish"
     },
     {
-      "label": "handleAssignment",
+      "label": "handleDroneStatus",
       "file_type": "code",
       "source_file": "src/app/DroneApp.h",
-      "source_location": "L107",
+      "source_location": "L124",
       "_origin": "ast",
       "community": 9,
       "community_name": "DroneApp.cc",
-      "norm_label": "handleassignment",
-      "id": "src_app_droneapp_droneapp_handleassignment"
+      "norm_label": "handledronestatus",
+      "id": "src_app_droneapp_droneapp_handledronestatus"
     },
     {
       "label": "handleMessageWhenUp",
@@ -8302,6 +8188,28 @@
       "community_name": "DroneApp.cc",
       "norm_label": "handlemessagewhenup",
       "id": "src_app_droneapp_droneapp_handlemessagewhenup"
+    },
+    {
+      "label": "handleTeamUpdate",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L116",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "handleteamupdate",
+      "id": "src_app_droneapp_droneapp_handleteamupdate"
+    },
+    {
+      "label": "handleVictimAck",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L126",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "handlevictimack",
+      "id": "src_app_droneapp_droneapp_handlevictimack"
     },
     {
       "label": "initialize",
@@ -8348,6 +8256,17 @@
       "id": "src_app_droneapp_droneapp_resumemobility"
     },
     {
+      "label": "selectTargetTeam",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L134",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "selecttargetteam",
+      "id": "src_app_droneapp_droneapp_selecttargetteam"
+    },
+    {
       "label": "sendAttempt",
       "file_type": "code",
       "source_file": "src/app/DroneApp.h",
@@ -8370,15 +8289,26 @@
       "id": "src_app_droneapp_droneapp_senddronestatus"
     },
     {
-      "label": "startAlertCycle",
+      "label": "socketDataArrived",
       "file_type": "code",
       "source_file": "src/app/DroneApp.h",
-      "source_location": "L109",
+      "source_location": "L101",
       "_origin": "ast",
       "community": 9,
       "community_name": "DroneApp.cc",
-      "norm_label": "startalertcycle",
-      "id": "src_app_droneapp_droneapp_startalertcycle"
+      "norm_label": "socketdataarrived",
+      "id": "src_app_droneapp_droneapp_socketdataarrived"
+    },
+    {
+      "label": "tryReposition",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L136",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "tryreposition",
+      "id": "src_app_droneapp_droneapp_tryreposition"
     },
     {
       "label": "validateParameters",
@@ -8390,17 +8320,6 @@
       "community_name": "DroneApp.cc",
       "norm_label": "validateparameters",
       "id": "src_app_droneapp_droneapp_validateparameters"
-    },
-    {
-      "label": "VictimAssignment",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "DroneApp.cc",
-      "norm_label": "victimassignment",
-      "id": "victimassignment"
     }
   ],
   "links": [
@@ -8628,21 +8547,33 @@
       "source_location": "L81",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_load",
-      "target": "analysis_reports_alert_sheet_run_context"
+      "target": "analysis_reports_alert_sheet_run_context",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L204",
+      "source_location": "L203",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_main",
-      "target": "analysis_reports_alert_sheet_load"
+      "target": "analysis_reports_alert_sheet_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L216",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet_main",
+      "target": "analysis_reports_alert_sheet_summarize",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8652,21 +8583,9 @@
       "source_location": "L217",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_main",
-      "target": "analysis_reports_alert_sheet_summarize"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L218",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_reports_alert_sheet_main",
-      "target": "analysis_reports_alert_sheet_paired_effects"
+      "target": "analysis_reports_alert_sheet_paired_effects",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8674,7 +8593,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L232",
+      "source_location": "L231",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8686,7 +8605,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L240",
+      "source_location": "L239",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8696,13 +8615,25 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L165",
+      "source_location": "L245",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
+      "source": "analysis_reports_alert_sheet_main",
+      "target": "analysis_reports_figures_effect_figures"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L164",
+      "weight": 1.0,
+      "_origin": "ast",
       "source": "analysis_reports_alert_sheet_paired_effects",
-      "target": "analysis_reports_alert_sheet_build_pairs"
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8712,9 +8643,9 @@
       "source_location": "L52",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_run_context",
-      "target": "analysis_core_process_results_parse_sca"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8724,9 +8655,33 @@
       "source_location": "L114",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_rate_figure"
+      "target": "analysis_reports_figures_rate_figure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L153",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figure",
+      "target": "analysis_reports_figures_save",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L159",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figures",
+      "target": "analysis_reports_figures_effect_figure",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8736,9 +8691,9 @@
       "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_save"
+      "target": "analysis_reports_figures_save",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8775,114 +8730,6 @@
       "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_main",
       "target": "analysis_reports_mechanism_summary_summarize"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L110",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "target": "analysis_reports_figures_save"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L114",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_alert_sheet_load"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L115",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_alert_sheet_build_pairs"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L119",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_alert_sheet_paired_effects"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L120",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L121",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_paired_effect_ttest_compare",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L131",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_figures_configure_style"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L132",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_main",
-      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L37",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "target": "analysis_core_process_results_ci95"
     },
     {
       "relation": "calls",
@@ -13377,12 +13224,12 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L11",
+      "source_location": "L9",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results_parse_sca",
-      "target": "analysis_core_process_results_py_dataframe"
+      "target": "analysis_core_process_results_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -13392,9 +13239,21 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_py_path"
+      "target": "analysis_reports_figures_py_path",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L156",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figures",
+      "target": "analysis_reports_figures_py_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -13740,9 +13599,9 @@
       "source_location": "L27",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_core_process_results_parse_sca"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14640,9 +14499,9 @@
       "source_location": "L27",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_core_process_results"
+      "target": "analysis_core_process_results",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14667,30 +14526,6 @@
       "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
       "target": "analysis_reports_alert_sheet"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L23",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_core_process_results",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L25",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_reports_alert_sheet",
-      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14876,18 +14711,6 @@
       "relation": "references",
       "context": "parameter_type",
       "confidence": "EXTRACTED",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L55",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_core_process_results_ci95",
-      "target": "series"
-    },
-    {
-      "relation": "references",
-      "context": "parameter_type",
-      "confidence": "EXTRACTED",
       "source_file": "analysis/core/write_manifest.py",
       "source_location": "L27",
       "weight": 1.0,
@@ -14904,9 +14727,9 @@
       "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_run_context",
-      "target": "analysis_reports_alert_sheet_py_path"
+      "target": "analysis_reports_alert_sheet_py_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -14916,9 +14739,33 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_py_dataframe"
+      "target": "analysis_reports_figures_py_dataframe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L121",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figure",
+      "target": "analysis_reports_figures_py_dataframe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L156",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figures",
+      "target": "analysis_reports_figures_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -14928,9 +14775,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_py_dataframe"
+      "target": "analysis_reports_figures_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -14940,20 +14787,8 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_save",
-      "target": "figure"
-    },
-    {
-      "relation": "references",
-      "context": "parameter_type",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L74",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "target": "dataframe",
+      "target": "figure",
       "confidence_score": 1.0
     },
     {
@@ -16104,9 +15939,9 @@
       "source_location": "L124",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_build_pairs",
-      "target": "analysis_reports_alert_sheet_py_dataframe"
+      "target": "analysis_reports_alert_sheet_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16116,21 +15951,21 @@
       "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_load",
-      "target": "analysis_reports_alert_sheet_py_dataframe"
+      "target": "analysis_reports_alert_sheet_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L163",
+      "source_location": "L162",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_paired_effects",
-      "target": "analysis_reports_alert_sheet_py_dataframe"
+      "target": "analysis_reports_alert_sheet_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16140,9 +15975,21 @@
       "source_location": "L89",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_summarize",
-      "target": "analysis_reports_alert_sheet_py_dataframe"
+      "target": "analysis_reports_alert_sheet_py_dataframe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L121",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_effect_figure",
+      "target": "analysis_reports_figures_py_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16152,9 +15999,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_py_path"
+      "target": "analysis_reports_figures_py_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16164,9 +16011,9 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_save",
-      "target": "analysis_reports_figures_py_path"
+      "target": "analysis_reports_figures_py_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16191,42 +16038,6 @@
       "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_summarize",
       "target": "analysis_reports_mechanism_summary_py_dataframe"
-    },
-    {
-      "relation": "references",
-      "context": "return_type",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L55",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_compare",
-      "target": "dataframe",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "return_type",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L74",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "target": "path",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "return_type",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L32",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "target": "dataframe",
-      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16320,19 +16131,7 @@
       "source_location": "L28",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_figures"
-    },
-    {
-      "relation": "imports_from",
-      "context": "submodule_import",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L24",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
       "target": "analysis_reports_figures",
       "confidence_score": 1.0
     },
@@ -16850,23 +16649,12 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L11",
+      "source_location": "L9",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results",
-      "target": "analysis_core_process_results_parse_sca"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L55",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_core_process_results",
-      "target": "analysis_core_process_results_ci95"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16974,31 +16762,31 @@
       "source_location": "L124",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_build_pairs"
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L163",
+      "source_location": "L162",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_paired_effects"
+      "target": "analysis_reports_alert_sheet_paired_effects",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L203",
+      "source_location": "L202",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_main"
+      "target": "analysis_reports_alert_sheet_main",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17007,9 +16795,9 @@
       "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_run_context"
+      "target": "analysis_reports_alert_sheet_run_context",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17018,9 +16806,9 @@
       "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_load"
+      "target": "analysis_reports_alert_sheet_load",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17029,9 +16817,9 @@
       "source_location": "L89",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet",
-      "target": "analysis_reports_alert_sheet_summarize"
+      "target": "analysis_reports_alert_sheet_summarize",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17040,9 +16828,31 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_attendance_figures"
+      "target": "analysis_reports_figures_attendance_figures",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L121",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures",
+      "target": "analysis_reports_figures_effect_figure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L156",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures",
+      "target": "analysis_reports_figures_effect_figures",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17051,9 +16861,9 @@
       "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_configure_style"
+      "target": "analysis_reports_figures_configure_style",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17062,9 +16872,9 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_save"
+      "target": "analysis_reports_figures_save",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17073,9 +16883,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_rate_figure"
+      "target": "analysis_reports_figures_rate_figure",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17109,50 +16919,6 @@
       "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
       "target": "analysis_reports_mechanism_summary_main"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L113",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_reports_paired_effect_ttest_main",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L32",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L55",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_reports_paired_effect_ttest_compare",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L74",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest",
-      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17675,7 +17441,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L456",
+      "source_location": "L383",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17686,7 +17452,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L530",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17697,7 +17463,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L546",
+      "source_location": "L473",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17767,14 +17533,14 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_6_c\u00e1lculo_de_atendimento_perda_e_volume_de_mensagens",
-      "target": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap_n\u00e3o_student_t",
+      "target": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L281",
+      "source_location": "L280",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_6_c\u00e1lculo_de_atendimento_perda_e_volume_de_mensagens",
@@ -17785,18 +17551,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L382",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "docs_metricas_e_arquivos_de_resultado_6_c\u00e1lculo_de_atendimento_perda_e_volume_de_mensagens",
-      "target": "docs_metricas_e_arquivos_de_resultado_o_que_ci95_faria_se_fosse_chamada_student_t",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L460",
+      "source_location": "L387",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17807,7 +17562,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L474",
+      "source_location": "L401",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17818,7 +17573,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L495",
+      "source_location": "L422",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17829,7 +17584,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L512",
+      "source_location": "L439",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -19776,23 +19531,12 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L12",
+      "source_location": "L10",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_core_process_results_rationale_12",
-      "target": "analysis_core_process_results_parse_sca"
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L56",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_core_process_results_rationale_56",
-      "target": "analysis_core_process_results_ci95"
+      "source": "analysis_core_process_results_rationale_10",
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19823,20 +19567,20 @@
       "source_location": "L125",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_rationale_125",
-      "target": "analysis_reports_alert_sheet_build_pairs"
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L164",
+      "source_location": "L163",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_reports_alert_sheet_rationale_164",
-      "target": "analysis_reports_alert_sheet_paired_effects"
+      "source": "analysis_reports_alert_sheet_rationale_163",
+      "target": "analysis_reports_alert_sheet_paired_effects",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19845,9 +19589,9 @@
       "source_location": "L48",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_rationale_48",
-      "target": "analysis_reports_alert_sheet_run_context"
+      "target": "analysis_reports_alert_sheet_run_context",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19856,9 +19600,9 @@
       "source_location": "L90",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_alert_sheet_rationale_90",
-      "target": "analysis_reports_alert_sheet_summarize"
+      "target": "analysis_reports_alert_sheet_summarize",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19867,9 +19611,31 @@
       "source_location": "L106",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rationale_106",
-      "target": "analysis_reports_figures_attendance_figures"
+      "target": "analysis_reports_figures_attendance_figures",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L123",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_rationale_123",
+      "target": "analysis_reports_figures_effect_figure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/figures.py",
+      "source_location": "L157",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_figures_rationale_157",
+      "target": "analysis_reports_figures_effect_figures",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19878,9 +19644,9 @@
       "source_location": "L68",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rationale_68",
-      "target": "analysis_reports_figures_rate_figure"
+      "target": "analysis_reports_figures_rate_figure",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19914,39 +19680,6 @@
       "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_rationale_65",
       "target": "analysis_reports_mechanism_summary_summarize"
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L33",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_rationale_33",
-      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L56",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_rationale_56",
-      "target": "analysis_reports_paired_effect_ttest_compare",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "analysis/reports/paired_effect_ttest.py",
-      "source_location": "L76",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "analysis_reports_paired_effect_ttest_rationale_76",
-      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
-      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -20600,5 +20333,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "ff5ac9e8db2b847e874ecbacd50336e623e97ffc"
+  "built_at_commit": "deab34e97c1d91c836ac856bcbff1801bb3fb829"
 }

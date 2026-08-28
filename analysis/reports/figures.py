@@ -163,3 +163,66 @@ def effect_figures(paired: pd.DataFrame) -> list[Path]:
                       "efeito_perda_ic95_inf_pp", "efeito_perda_ic95_sup_pp",
                       "Efeito na perda (p.p.)", "efeito_perda"),
     ]
+
+
+def dispersion_figure(dispersion: pd.DataFrame, mean_column: str, std_column: str,
+                       axis_label: str, name: str) -> Path:
+    """Média ± desvio-padrão **entre seeds**, um painel por cenário, os dois
+    braços (BA off/on) lado a lado por numTeams — é descritivo (dispersão
+    dentro de cada braço), não o efeito pareado (`effect_figure`, outra
+    grandeza: a diferença On−Off por seed, com IC bootstrap).
+    """
+    scenarios = sorted(dispersion["scenario"].unique())
+    figure, axes_list = plt.subplots(
+        1, len(scenarios), figsize=(TEXT_WIDTH_IN, 2.8), sharey=True)
+    if len(scenarios) == 1:
+        axes_list = [axes_list]
+
+    # Mesma cor (INK) pros dois braços — o que distingue é a forma do marcador
+    # (vazado x preenchido), não o tom de cinza: com as cores do ARMS (pensadas
+    # pra preenchimento de barra, não de marcador de linha) os dois pontos
+    # ficavam cinzas quase iguais e difíceis de diferenciar.
+    MARKERS = [(False, "BA desligado", "s", "none"),
+               (True, "BA ligado", "o", INK)]
+
+    for axes, scenario in zip(axes_list, scenarios):
+        cell = dispersion[dispersion["scenario"] == scenario]
+        teams = sorted(cell["numTeams"].unique())
+        width = 0.2
+        for offset, (enabled, label, marker, face) in zip((-width, width), MARKERS):
+            rows = cell[cell["baEnabled"] == enabled].set_index("numTeams")
+            means = [rows.loc[team, mean_column] if team in rows.index else float("nan")
+                     for team in teams]
+            stds = [rows.loc[team, std_column] if team in rows.index else 0.0
+                    for team in teams]
+            positions = [index + offset for index in range(len(teams))]
+            axes.errorbar(positions, means, yerr=stds, fmt=marker, label=label,
+                          color=INK, markerfacecolor=face, markeredgecolor=INK,
+                          capsize=3, linewidth=0.8, markersize=5,
+                          markeredgewidth=0.8)
+        axes.set_xticks(range(len(teams)))
+        axes.set_xticklabels([int(value) for value in teams])
+        axes.set_xlabel("Quantidade de equipes")
+        axes.set_title(scenario, fontsize=8)
+        axes.set_ylim(0, 105)
+        axes.grid(axis="y", color=GRID, linewidth=0.6, zorder=0)
+        axes.set_axisbelow(True)
+
+    axes_list[0].set_ylabel(axis_label)
+    # Legenda acima dos painéis (não dentro da área de dados) — mesmo padrão
+    # de posição usado em `rate_figure`, aqui em coordenadas da figura porque
+    # são vários painéis lado a lado.
+    handles, labels = axes_list[0].get_legend_handles_labels()
+    figure.legend(handles, labels, frameon=False, ncols=2, loc="lower center",
+                  bbox_to_anchor=(0.5, 1.0))
+    return save(figure, name)
+
+
+def dispersion_figures(dispersion: pd.DataFrame) -> list[Path]:
+    """Média ± desvio-padrão entre seeds, atendimento e perda."""
+    return [
+        dispersion_figure(dispersion, "atendimento_media_pct", "atendimento_desvio_pct",
+                          "Atendimento (%, média ± desvio-padrão)", "atendimento_desvio"),
+        dispersion_figure(dispersion, "perda_media_pct", "perda_desvio_pct",
+                          "Perda (%, média ± desvio-padrão)", "perda_desvio"),
+    ]
