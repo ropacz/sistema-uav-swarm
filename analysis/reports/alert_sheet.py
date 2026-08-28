@@ -124,9 +124,8 @@ def summarize(table: pd.DataFrame) -> pd.DataFrame:
 def build_pairs(table: pd.DataFrame) -> pd.DataFrame:
     """Uma linha por (cenário, numTeams, seed), com o efeito BA-On − BA-Off.
 
-    Reaproveitada por `paired_effects()` (IC bootstrap) e por
-    `paired_effect_ttest.py` (IC Student-t) — a construção do par por seed é
-    a mesma nos dois; só o método de intervalo de confiança muda.
+    Separada de `paired_effects()` para isolar a construção do par (que não
+    muda) do cálculo do intervalo de confiança (bootstrap).
     """
     arm = table["config"].str.extract(ARM_PATTERN)
     selected = table.loc[arm["scenario"].notna()].copy()
@@ -242,6 +241,8 @@ def main() -> None:
     unmatched = summary[scenario.isna()]
     if not unmatched.empty:
         charts += figures.attendance_figures(unmatched)
+    if not paired.empty:
+        charts += figures.effect_figures(paired)
 
     print(f"gerado: {workbook.relative_to(REPOSITORY_ROOT)} "
           f"({len(sheet)} alertas, {summary['execucoes'].sum()} execuções)")

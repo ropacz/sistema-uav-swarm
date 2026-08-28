@@ -1,16 +1,16 @@
 # Graph Report - sistema  (2026-08-27)
 
 ## Corpus Check
-- 60 files · ~30,001 words
+- 60 files · ~30,366 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 733 nodes · 1048 edges · 43 communities (31 shown, 12 thin omitted)
+- 736 nodes · 1045 edges · 46 communities (32 shown, 14 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e404d49a`
+- Built from commit: `ff5ac9e8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -47,11 +47,14 @@
 - analysis/__init__.py
 - SarMessageSerializers.cc
 - StaticVictim
+- scheduleTeamUpdateRelay
 - reports/__init__.py
 - Auditoria: atendimento e perda via `.elog`, comparado ao `.sca`
 - validation/__init__.py
 - AlertSheetTests
 - AlertRecord
+- DataFrame
+- Path
 - Packet
 - TeamUpdateChunk
 - write_manifest.py
@@ -86,15 +89,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (43 total, 12 thin omitted)
+## Communities (46 total, 14 thin omitted)
 
 ### Community 0 - "DroneApp"
 Cohesion: 0.03
 Nodes (58): BatParameters, DroneLinkState, FitnessParameters, RepositionController, simtime_t, DroneApp, ackTimeout, activeVictims (+50 more)
 
 ### Community 1 - "TeamApp"
-Cohesion: 0.06
-Nodes (36): ApplicationBase, LifecycleOperation, set, cMessage, Packet, UdpSocket, ApplicationBase, cMessage (+28 more)
+Cohesion: 0.05
+Nodes (38): Indication, ApplicationBase, LifecycleOperation, set, UdpSocket, cMessage, Packet, UdpSocket (+30 more)
 
 ### Community 2 - "AbstractObstacleSensor"
 Cohesion: 0.09
@@ -109,8 +112,8 @@ Cohesion: 0.15
 Nodes (12): AlertMetricEvent, alertId, category, droneId, messageId, referenceTime, teamId, value (+4 more)
 
 ### Community 5 - "alert_sheet.py"
-Cohesion: 0.07
-Nodes (45): ci95(), Student-t approximate 95% confidence-interval half-width for a mean., build_pairs(), load(), main(), paired_effects(), DataFrame, Path (+37 more)
+Cohesion: 0.09
+Nodes (36): build_pairs(), load(), main(), paired_effects(), DataFrame, Path, Uma linha por (cenário, numTeams, seed), com o efeito BA-On − BA-Off.…, Resume diferenças BA-On − BA-Off por seed, com IC bootstrap de 95%. (+28 more)
 
 ### Community 6 - "FitnessParameters"
 Cohesion: 0.06
@@ -125,8 +128,8 @@ Cohesion: 0.21
 Nodes (13): GaussMarkovMobility, rad, BaGaussMarkovMobility, baOverride, elevation, elevationMean, elevationStdDev, initialize (+5 more)
 
 ### Community 9 - "DroneApp.cc"
-Cohesion: 0.18
-Nodes (20): ActiveVictim, cMessage, PendingVictimAlert, canStartAlertCycle, completeAlertCycle, expireDiscoveredEntries, finish, handleAssignment (+12 more)
+Cohesion: 0.19
+Nodes (19): ActiveVictim, cMessage, PendingVictimAlert, canStartAlertCycle, completeAlertCycle, expireDiscoveredEntries, finish, handleAssignment (+11 more)
 
 ### Community 10 - "Desvios e extensões em relação à diretriz normativa"
 Cohesion: 0.05
@@ -141,8 +144,8 @@ Cohesion: 0.23
 Nodes (9): ActiveVictim, alertSequence, nextAlertTime, pendingAlertId, position, victimId, Coord, simtime_t (+1 more)
 
 ### Community 14 - "metricas_e_arquivos_de_resultado.md"
-Cohesion: 0.11
-Nodes (18): 1. Tipos de arquivo gerados, 2. `.sca`: o arquivo das métricas finais, 3. `.vec` e `.vci`: séries temporais, 4. `.elog`: o registro detalhado dos eventos, 5. Comparação entre `.sca` e `.elog`, 6. Cálculo de atendimento, perda e volume de mensagens, 7.1 Consultar o conteúdo de um arquivo, 7.2 Filtrar as métricas de interesse (+10 more)
+Cohesion: 0.10
+Nodes (19): 1. Tipos de arquivo gerados, 2. `.sca`: o arquivo das métricas finais, 3. `.vec` e `.vci`: séries temporais, 4. `.elog`: o registro detalhado dos eventos, 5. Comparação entre `.sca` e `.elog`, 6. Cálculo de atendimento, perda e volume de mensagens, 7.1 Consultar o conteúdo de um arquivo, 7.2 Filtrar as métricas de interesse (+11 more)
 
 ### Community 15 - "RepositionController"
 Cohesion: 0.31
@@ -153,12 +156,12 @@ Cohesion: 0.25
 Nodes (7): Build, Test, and Development Commands, Coding Style & Naming Conventions, Commit & Pull Request Guidelines, graphify, Project Structure & Module Organization, Repository Guidelines, Testing Guidelines
 
 ### Community 17 - "socketDataArrived"
-Cohesion: 0.27
-Nodes (10): Packet, string, UdpSocket, handleDroneStatus, handleTeamUpdate, handleVictimAck, scheduleTeamUpdateRelay, socketDataArrived (+2 more)
+Cohesion: 0.43
+Nodes (7): Packet, UdpSocket, handleDroneStatus, handleTeamUpdate, handleVictimAck, socketDataArrived, hasTypePrefix()
 
 ### Community 18 - "DroneApp.h"
-Cohesion: 0.15
-Nodes (7): ApplicationBase, Indication, LifecycleOperation, map, set, string, UdpSocket
+Cohesion: 0.22
+Nodes (5): ApplicationBase, LifecycleOperation, map, set, string
 
 ### Community 19 - "PendingVictimAlert"
 Cohesion: 0.12
@@ -169,8 +172,8 @@ Cohesion: 0.50
 Nodes (3): cListener, cMessage, cSimpleModule
 
 ### Community 21 - "collect"
-Cohesion: 0.08
-Nodes (32): central_scalar(), collect(), DataFrame, ratio(), Read the small, normative ExperimentMetrics contract from one SCA file., Return a ratio without inventing a value when no alert was generated., Read exactly one scalar from the central collector. Missing or duplicate rows…, Return raw counters and auditable outcomes for one experimental run. (+24 more)
+Cohesion: 0.06
+Nodes (41): central_scalar(), collect(), DataFrame, ratio(), Read the small, normative ExperimentMetrics contract from one SCA file., Return a ratio without inventing a value when no alert was generated., Read exactly one scalar from the central collector. Missing or duplicate rows…, Return raw counters and auditable outcomes for one experimental run. (+33 more)
 
 ### Community 22 - "TeamLinkState"
 Cohesion: 0.22
@@ -196,6 +199,10 @@ Nodes (29): b, Chunk, ChunkSerializer, DroneStatusChunk, MemoryInputStream, Memo
 Cohesion: 0.33
 Nodes (3): cMessage, cSimpleModule, StaticVictim
 
+### Community 32 - "scheduleTeamUpdateRelay"
+Cohesion: 0.50
+Nodes (4): string, scheduleTeamUpdateRelay, selectTargetTeam, TeamUpdateChunk
+
 ### Community 34 - "Auditoria: atendimento e perda via `.elog`, comparado ao `.sca`"
 Cohesion: 0.07
 Nodes (24): 1. Drone → equipe: primeira tentativa, enlace já obstruído, 2. Degradação do enlace, sensor, Bat Algorithm — **invisível ao `.elog`**, 3. Segunda tentativa — na nova posição, 4. Equipe → drone: confirmação, As quatro mensagens do protocolo, Como ler uma linha do `.elog`, Como reproduzir, Exemplos de mensagens capturadas no `.elog` (+16 more)
@@ -213,23 +220,23 @@ Cohesion: 0.27
 Nodes (8): command_output(), main(), omnetpp_version(), Path, Write reproducibility metadata beside generated simulation results., sha256(), ManifestTests, patch
 
 ## Knowledge Gaps
-- **277 isolated node(s):** `1. Tipos de arquivo gerados`, `Como um escalar é gerado`, `3. `.vec` e `.vci`: séries temporais`, `4. `.elog`: o registro detalhado dos eventos`, `5. Comparação entre `.sca` e `.elog`` (+272 more)
+- **278 isolated node(s):** `1. Tipos de arquivo gerados`, `Como um escalar é gerado`, `3. `.vec` e `.vci`: séries temporais`, `4. `.elog`: o registro detalhado dos eventos`, `5. Comparação entre `.sca` e `.elog`` (+273 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DroneApp` connect `DroneApp` to `optimize`, `DroneApp.cc`, `socketDataArrived`, `DroneApp.h`, `ExperimentMetrics.h`?**
-  _High betweenness centrality (0.123) - this node is a cross-community bridge._
+- **Why does `DroneApp` connect `DroneApp` to `scheduleTeamUpdateRelay`, `TeamApp`, `optimize`, `DroneApp.cc`, `socketDataArrived`, `DroneApp.h`, `ExperimentMetrics.h`?**
+  _High betweenness centrality (0.122) - this node is a cross-community bridge._
 - **Why does `ExperimentMetrics` connect `ExperimentMetrics` to `ExperimentMetrics.cc`, `ExperimentMetrics.h`, `AlertRecord`, `FitnessParameters`?**
   _High betweenness centrality (0.082) - this node is a cross-community bridge._
 - **What connects `1. Tipos de arquivo gerados`, `Como um escalar é gerado`, `3. `.vec` e `.vci`: séries temporais` to the rest of the system?**
-  _277 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _278 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DroneApp` be split into smaller, more focused modules?**
   _Cohesion score 0.03389830508474576 - nodes in this community are weakly interconnected._
 - **Should `TeamApp` be split into smaller, more focused modules?**
-  _Cohesion score 0.05757575757575758 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05187074829931973 - nodes in this community are weakly interconnected._
 - **Should `AbstractObstacleSensor` be split into smaller, more focused modules?**
   _Cohesion score 0.08602150537634409 - nodes in this community are weakly interconnected._
 - **Should `optimize` be split into smaller, more focused modules?**

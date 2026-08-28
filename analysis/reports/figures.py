@@ -116,3 +116,50 @@ def attendance_figures(summary: pd.DataFrame, suffix: str = "") -> list[Path]:
         rate_figure(summary, "perda_pct",
                     "Perda (%)", f"perda{suffix}"),
     ]
+
+
+def effect_figure(paired: pd.DataFrame, column: str, ic_low: str, ic_high: str,
+                   axis_label: str, name: str) -> Path:
+    """Efeito pareado (BA-On − BA-Off) com IC 95% bootstrap, um painel por
+    cenário lado a lado — mesma ideia do `rate_figure`, mas com barra de erro
+    em vez de barras, porque aqui a grandeza é uma diferença, não uma taxa.
+    """
+    scenarios = sorted(paired["cenario"].unique())
+    figure, axes_list = plt.subplots(
+        1, len(scenarios), figsize=(TEXT_WIDTH_IN, 2.8), sharey=True)
+    if len(scenarios) == 1:
+        axes_list = [axes_list]
+
+    for axes, scenario in zip(axes_list, scenarios):
+        cell = paired[paired["cenario"] == scenario].sort_values("numTeams")
+        teams = cell["numTeams"].to_numpy()
+        positions = range(len(teams))
+        low = cell[column] - cell[ic_low]
+        high = cell[ic_high] - cell[column]
+
+        axes.errorbar(positions, cell[column], yerr=[low, high], fmt="o",
+                      color=INK, capsize=3, linewidth=0.8, markersize=4)
+        # Efeito zero é a hipótese nula: cruzar essa linha é o que decide se
+        # há evidência de diferença naquela célula.
+        axes.axhline(0, color=GRID, linewidth=0.8, zorder=0)
+        axes.set_xticks(list(positions))
+        axes.set_xticklabels([int(value) for value in teams])
+        axes.set_xlabel("Quantidade de equipes")
+        axes.set_title(scenario, fontsize=8)
+        axes.grid(axis="y", color=GRID, linewidth=0.6, zorder=0)
+        axes.set_axisbelow(True)
+
+    axes_list[0].set_ylabel(axis_label)
+    return save(figure, name)
+
+
+def effect_figures(paired: pd.DataFrame) -> list[Path]:
+    """Efeito pareado (BA-On − BA-Off) com IC bootstrap, atendimento e perda."""
+    return [
+        effect_figure(paired, "efeito_atendimento_pp",
+                      "efeito_atendimento_ic95_inf_pp", "efeito_atendimento_ic95_sup_pp",
+                      "Efeito no atendimento (p.p.)", "efeito_atendimento"),
+        effect_figure(paired, "efeito_perda_pp",
+                      "efeito_perda_ic95_inf_pp", "efeito_perda_ic95_sup_pp",
+                      "Efeito na perda (p.p.)", "efeito_perda"),
+    ]

@@ -265,18 +265,17 @@ python3 analysis/reports/mechanism_summary.py
 
 O resultado é salvo em `analysis/tables/mecanismo_resumo.csv`.
 
-### Intervalo de confiança do efeito pareado: bootstrap, não Student-t
+### Intervalo de confiança do efeito pareado: bootstrap
 
-**Correção importante:** existe uma função `ci95()` em
-`analysis/core/process_results.py` cujo docstring diz "Student-t approximate
-95% confidence-interval". Ela **não é usada em lugar nenhum do projeto** —
-nenhum script importa `ci95`, desde o commit que a criou. É código morto.
-
-O intervalo de confiança que de fato aparece na planilha (colunas
+O intervalo de confiança que aparece na planilha (colunas
 `efeito_atendimento_ic95_inf_pp`/`_sup_pp`, `efeito_perda_ic95_inf_pp`/
-`_sup_pp`) vem de outra função: `paired_effects()`, em
-`analysis/reports/alert_sheet.py`, e o método é **bootstrap percentil**, não
-Student-t.
+`_sup_pp`) vem de `paired_effects()`, em `analysis/reports/alert_sheet.py`,
+e o método é **bootstrap percentil**.
+
+Student-t foi considerado e descartado: chegou a existir uma função
+`ci95()` (`analysis/core/process_results.py`) com a aproximação de
+Student-t, mas nunca foi usada por nenhum script — foi removida. O motivo de
+ficar só com bootstrap está na próxima subseção.
 
 ### Pareamento, isolamento de RNG e bootstrap são três coisas distintas
 
@@ -371,85 +370,13 @@ visualmente de onde vem o intervalo, sem fórmula nenhuma)*
 
 **Limitação a que prestar atenção:** com `n` muito pequeno, o bootstrap só
 consegue reamostrar dentro dos valores já observados — no exemplo de 5
-seeds, existem apenas `5⁵=3.125` reamostras possíveis. Isso faz o intervalo
-bootstrap (`[0,00 ; 3,20]`) sair **mais estreito** que o de Student-t
-(`[-0,97 ; 4,17]`, calculado abaixo) para essa mesma amostra pequena — o
-bootstrap não "inventa" incerteza além do que os 5 pontos observados
-mostram. Com `n=30` (o caso real da campanha), essa limitação é bem menor,
-porque `30³⁰` reamostras possíveis já cobre o espaço de variação de forma
-muito mais densa.
-
-### O que `ci95()` faria, se fosse chamada (Student-t)
-
-Ainda que não seja usada, `ci95()` existe no código e resolve um problema
-didaticamente relacionado — vale entender, porque explica **por que** o
-bootstrap é uma alternativa válida ao invés de simplesmente "consertar" essa
-função e usá-la.
-
-A fórmula clássica de intervalo de confiança é
-
-```
-IC = média ± crítico × (desvio-padrão / √n)
-```
-
-O valor `crítico` só pode ser o da distribuição normal (`z = 1,96` para 95%)
-quando o desvio-padrão usado é o **verdadeiro** da população. Na prática, esse
-valor nunca é conhecido: ele é estimado a partir da própria amostra (`s`), e
-essa estimativa carrega erro — maior quanto menor for `n`. A distribuição t
-existe para incorporar esse erro extra: usa um valor crítico maior que `z`,
-que diminui conforme `n` cresce, até convergir para o próprio `z` quando
-`n → ∞`.
-
-A estatística t e seus graus de liberdade (ν):
-
-```
-t = (x̄ − μ) / (s/√n)          ν = n − 1
-```
-
-Com as mesmas 5 seeds hipotéticas (média 1,6; desvio-padrão amostral
-s=2,074, dividido por `n−1=4` — daí vem ν=4; erro-padrão = s/√5 = 0,927):
-
-| Método | Crítico | Intervalo | Conclusão |
-| --- | --- | --- | --- |
-| Normal (`z`, incorreto para `n` pequeno) | 1,960 | [-0,22 ; 3,42] | quase não cruza zero |
-| t, ν=4 | 2,776 | [-0,97 ; 4,17] | cruza zero claramente |
-| Bootstrap (o que o projeto realmente usa) | — | [0,00 ; 3,20] | cruza zero, no limite |
-
-Os três métodos concordam na conclusão qualitativa desse exemplo (efeito não
-é claramente diferente de zero), mas discordam na largura exata — cada um
-lida com a incerteza de `n=5` de um jeito diferente.
-
-!image.png
-*(sugestão: sobreposição das curvas de densidade da distribuição t para
-ν=1, ν=4 e ν=29 contra a densidade normal padrão — mostra as caudas mais
-pesadas da t encolhendo até quase coincidir com a normal em ν=29)*
-
-**Por que t, e não outra distribuição fechada (se fosse essa a escolha):**
-
-- **Normal (z)** — só é exata se o desvio-padrão populacional é conhecido, ou
-  `n` é grande o suficiente para `s ≈ σ`.
-- **Qui-quadrado** — modela variância, não média.
-- **F** — compara duas variâncias (ex.: ANOVA); não é o caso de uma média
-  pareada.
-- **t** — é a distribuição exata da razão "média amostral padronizada pelo
-  próprio desvio estimado da amostra".
-
-Com `n=30` (as seeds de cada célula da campanha), ν=29 e o crítico t seria
-2,045 — só ~4% maior que `z=1,960`. Com `n=5`, a diferença já é 41%.
-
-`ci95()` não usa tabela t — usa uma aproximação (expansão de Cornish-Fisher)
-que calcula o crítico t a partir do `z` normal, corrigido pelos graus de
-liberdade:
-
-```python
-z = NormalDist().inv_cdf(0.975)
-critical = z + (z**3 + z) / (4 * degrees) + \
-    (5 * z**5 + 16 * z**3 + 3 * z) / (96 * degrees**2)
-```
-
-Conferido numericamente: para ν=29, a fórmula dá 2,0451 contra o valor exato
-de tabela 2,0452 — diferença desprezível, caso algum dia essa função venha a
-ser usada.
+seeds, existem apenas `5⁵=3.125` reamostras possíveis, o que tende a
+produzir um intervalo mais estreito do que um método baseado em
+desvio-padrão (como Student-t) daria para a mesma amostra: o bootstrap não
+"inventa" incerteza além do que os pontos observados mostram. Com `n=30` (o
+caso real da campanha), essa limitação é bem menor, porque `30³⁰`
+reamostras possíveis já cobre o espaço de variação de forma muito mais
+densa — é por isso que o método é adequado aqui.
 
 ---
 

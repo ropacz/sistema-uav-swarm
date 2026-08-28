@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Funções compartilhadas para leitura e estatística de escalares OMNeT++."""
 
-import math
 import re
-from statistics import NormalDist
 
 import pandas as pd
 
@@ -50,20 +48,3 @@ def parse_sca(path: str) -> tuple[dict[str, str], pd.DataFrame, dict[str, str]]:
     # (caso padrão; só Calibration_Exposure desloca seed-set = repetition+100)
     attrs.setdefault("seedset", attrs.get("repetition", "0"))
     return attrs, pd.DataFrame(rows, columns=["module", "name", "value"]), params
-
-
-def ci95(values: pd.Series) -> float:
-    """Student-t approximate 95% confidence-interval half-width for a mean."""
-    clean = values.dropna()
-    if len(clean) < 2:
-        return math.nan          # não dá pra estimar desvio-padrão com <2 pontos
-    degrees = len(clean) - 1     # graus de liberdade da t: n-1
-    # quantil 97,5% da normal padrão (cauda de 2,5% de cada lado = 95% no meio)
-    z = NormalDist().inv_cdf(0.975)
-    # expansão de Cornish-Fisher: aproxima o quantil t a partir do z normal, corrigido
-    # pelos graus de liberdade — evita depender de scipy só pra isso
-    critical = z + (z**3 + z) / (4 * degrees) + \
-        (5 * z**5 + 16 * z**3 + 3 * z) / (96 * degrees**2)
-    # meia-largura do IC: crítico × erro-padrão (desvio-padrão amostral / √n);
-    # ddof=1 = divide por (n-1) — desvio-padrão amostral, não populacional
-    return critical * clean.std(ddof=1) / math.sqrt(len(clean))
