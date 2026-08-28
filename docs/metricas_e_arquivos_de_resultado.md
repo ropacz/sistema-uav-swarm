@@ -278,6 +278,44 @@ O intervalo de confiança que de fato aparece na planilha (colunas
 `analysis/reports/alert_sheet.py`, e o método é **bootstrap percentil**, não
 Student-t.
 
+### Pareamento, isolamento de RNG e bootstrap são três coisas distintas
+
+Vale separar com precisão o que cada peça garante, porque são fáceis de
+confundir:
+
+- **Pareamento** — comparar BA-On e BA-Off dentro da mesma seed, em vez de
+  tratar os dois braços como grupos independentes (ver seção anterior).
+- **Isolamento do fluxo aleatório do BA** — impede que os sorteios internos
+  do Bat Algorithm consumam a sequência destinada a outros processos
+  (mobilidade, backoff 802.11, AODV, jitter de aplicação). Corrige uma
+  interferência real que **já aconteceu neste projeto** — commit
+  [`a2d39ea`](https://github.com/ropacz/sistema-uav-swarm/commit/a2d39eaf2f78a6c556bc2f6fcf4106832255c3e1),
+  20/08/2026, "fix: isolate BA random stream and forbid running the
+  experiment base": o BA sorteava de `getRNG(0)`, o mesmo
+  fluxo global de tudo mais; reexecutar `Validation_BaOn` com o fluxo
+  compartilhado fazia 36 escalares divergirem, inclusive filas MAC da
+  equipe — coisas que não deveriam mudar entre os dois braços). Isso **não**
+  garante que os dois braços da mesma seed são idênticos em tudo: o BA muda
+  movimento e comunicação de fato, e essa mudança altera retransmissões e
+  descoberta de rota a partir do ponto em que o reposicionamento ocorre —
+  isso é o efeito do tratamento, não um problema a corrigir.
+- **Bootstrap** — calcula a incerteza da média das diferenças pareadas, a
+  partir da variação observada entre elas. É o método que `paired_effects()`
+  usa de fato.
+
+Nenhuma das três, isoladamente, garante que o intervalo fica mais estreito
+ou que os números anteriores (antes do isolamento de RNG) estavam errados —
+a dessincronização prejudicava o **controle** da aleatoriedade entre os
+pares, o que é diferente de provar viés nos resultados publicados antes da
+correção.
+
+**Rastreabilidade:** o isolamento do RNG do BA está em produção desde o
+commit `a2d39ea` (20/08/2026 20:40, atualmente com `num-rngs=29` — um fluxo
+dedicado por drone/equipe de mobilidade, por app de drone e para a vítima,
+em `simulations/omnetpp.ini`). A campanha `Scenario1_*` usada neste
+documento (480 execuções) foi gerada em 26–27/08/2026, 67 commits depois
+dessa correção — portanto sob o RNG já isolado.
+
 **Como o bootstrap funciona, passo a passo:**
 
 Para cada célula (cenário × numTeams), há até 30 valores — um efeito

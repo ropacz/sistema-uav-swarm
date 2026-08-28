@@ -30,6 +30,19 @@
       "id": "src_app_teamapp_teamapp"
     },
     {
+      "label": "ActiveVictim",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L12",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "activevictim",
+      "id": "src_app_activevictim_activevictim"
+    },
+    {
       "label": "RepositionController",
       "file_type": "code",
       "source_file": "src/app/RepositionController.h",
@@ -108,6 +121,19 @@
       "id": "analysis_tests_test_experiment_metrics_experimentmetricsreadertests"
     },
     {
+      "label": "TeamLinkState",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L15",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "teamlinkstate",
+      "id": "src_app_teamlinkstate_teamlinkstate"
+    },
+    {
       "label": "ExperimentMetrics",
       "file_type": "code",
       "source_file": "src/metrics/ExperimentMetrics.h",
@@ -121,17 +147,17 @@
       "id": "src_metrics_experimentmetrics_experimentmetrics"
     },
     {
-      "label": "ActiveVictim",
+      "label": "SarScenarioManager",
       "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L12",
+      "source_file": "src/scenario/SarScenarioManager.h",
+      "source_location": "L10",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
-      "norm_label": "activevictim",
-      "id": "src_app_activevictim_activevictim"
+      "community_name": "SarScenarioManager",
+      "norm_label": "sarscenariomanager",
+      "id": "src_scenario_sarscenariomanager_sarscenariomanager"
     },
     {
       "label": "DroneLinkState",
@@ -141,49 +167,10 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
+      "community": 27,
+      "community_name": "DroneLinkState",
       "norm_label": "dronelinkstate",
       "id": "src_app_dronelinkstate_dronelinkstate"
-    },
-    {
-      "label": "TeamLinkState",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L15",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "teamlinkstate",
-      "id": "src_app_teamlinkstate_teamlinkstate"
-    },
-    {
-      "label": "SarScenarioManager",
-      "file_type": "code",
-      "source_file": "src/scenario/SarScenarioManager.h",
-      "source_location": "L10",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "sarscenariomanager",
-      "id": "src_scenario_sarscenariomanager_sarscenariomanager"
-    },
-    {
-      "label": "StaticVictim",
-      "file_type": "code",
-      "source_file": "src/scenario/StaticVictim.cc",
-      "source_location": "L7",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "staticvictim",
-      "id": "src_scenario_staticvictim_staticvictim"
     },
     {
       "label": "Bat",
@@ -316,6 +303,19 @@
       "id": "src_messages_sarmessageserializers_sarcodec_victimalertchunk"
     },
     {
+      "label": "StaticVictim",
+      "file_type": "code",
+      "source_file": "src/scenario/StaticVictim.cc",
+      "source_location": "L7",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": "staticvictim",
+      "id": "src_scenario_staticvictim_staticvictim"
+    },
+    {
       "label": "AlertSheetTests",
       "file_type": "code",
       "source_file": "analysis/tests/test_deliverables.py",
@@ -327,6 +327,32 @@
       "community_name": "AlertSheetTests",
       "norm_label": "alertsheettests",
       "id": "analysis_tests_test_deliverables_alertsheettests"
+    },
+    {
+      "label": "FigureTests",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L86",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "figuretests",
+      "id": "analysis_tests_test_deliverables_figuretests"
+    },
+    {
+      "label": "ScavetoolFiguresTests",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L114",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "scavetoolfigurestests",
+      "id": "analysis_tests_test_deliverables_scavetoolfigurestests"
     },
     {
       "label": "AlertRecord",
@@ -366,32 +392,6 @@
       "community_name": "write_manifest.py",
       "norm_label": "manifesttests",
       "id": "analysis_tests_test_manifest_manifesttests"
-    },
-    {
-      "label": "FigureTests",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L86",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "figuretests",
-      "id": "analysis_tests_test_deliverables_figuretests"
-    },
-    {
-      "label": "ScavetoolFiguresTests",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L114",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "scavetoolfigurestests",
-      "id": "analysis_tests_test_deliverables_scavetoolfigurestests"
     },
     {
       "label": "AbstractObstacleSensor",
@@ -831,64 +831,16 @@
       "id": "analysis_core_experiment_metrics_ratio"
     },
     {
-      "label": "ci95()",
-      "file_type": "code",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L41",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "ci95()",
-      "id": "analysis_core_process_results_ci95"
-    },
-    {
       "label": "parse_sca()",
       "file_type": "code",
       "source_file": "analysis/core/process_results.py",
       "source_location": "L11",
       "_callable": true,
       "_origin": "ast",
+      "id": "analysis_core_process_results_parse_sca",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "parse_sca()",
-      "id": "analysis_core_process_results_parse_sca"
-    },
-    {
-      "label": "load_totals()",
-      "file_type": "code",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L41",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_load_totals",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "load_totals()"
-    },
-    {
-      "label": "main()",
-      "file_type": "code",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L98",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_main",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "main()"
-    },
-    {
-      "label": "summarize()",
-      "file_type": "code",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L64",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_summarize",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "summarize()"
+      "norm_label": "parse_sca()"
     },
     {
       "label": ".test_derives_only_auditable_run_outcomes()",
@@ -1054,33 +1006,9 @@
       "_callable": true,
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "sarscenariomanager::~sarscenariomanager()",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_sarscenariomanager"
-    },
-    {
-      "label": ".handleMessage()",
-      "file_type": "code",
-      "source_file": "src/scenario/StaticVictim.cc",
-      "source_location": "L17",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": ".handlemessage()",
-      "id": "src_scenario_staticvictim_staticvictim_handlemessage"
-    },
-    {
-      "label": ".initialize()",
-      "file_type": "code",
-      "source_file": "src/scenario/StaticVictim.cc",
-      "source_location": "L10",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": ".initialize()",
-      "id": "src_scenario_staticvictim_staticvictim_initialize"
     },
     {
       "label": "randomInSphere()",
@@ -1311,6 +1239,30 @@
       "id": "src_messages_sarmessageserializers_writetime"
     },
     {
+      "label": ".handleMessage()",
+      "file_type": "code",
+      "source_file": "src/scenario/StaticVictim.cc",
+      "source_location": "L17",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": ".handlemessage()",
+      "id": "src_scenario_staticvictim_staticvictim_handlemessage"
+    },
+    {
+      "label": ".initialize()",
+      "file_type": "code",
+      "source_file": "src/scenario/StaticVictim.cc",
+      "source_location": "L10",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": ".initialize()",
+      "id": "src_scenario_staticvictim_staticvictim_initialize"
+    },
+    {
       "label": ".frame()",
       "file_type": "code",
       "source_file": "analysis/tests/test_deliverables.py",
@@ -1369,6 +1321,78 @@
       "community_name": "AlertSheetTests",
       "norm_label": ".test_smoke_tests_never_enter_the_campaign_sheet()",
       "id": "analysis_tests_test_deliverables_alertsheettests_test_smoke_tests_never_enter_the_campaign_sheet"
+    },
+    {
+      "label": ".assertUsableFigure()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L97",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".assertusablefigure()",
+      "id": "analysis_tests_test_deliverables_figuretests_assertusablefigure"
+    },
+    {
+      "label": ".setUp()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L89",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".setup()",
+      "id": "analysis_tests_test_deliverables_figuretests_setup"
+    },
+    {
+      "label": ".test_rate_figures_scale_from_one_cell_to_the_matrix()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L104",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".test_rate_figures_scale_from_one_cell_to_the_matrix()",
+      "id": "analysis_tests_test_deliverables_figuretests_test_rate_figures_scale_from_one_cell_to_the_matrix"
+    },
+    {
+      "label": ".test_matches_the_official_pipeline_on_a_synthetic_campaign()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L138",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".test_matches_the_official_pipeline_on_a_synthetic_campaign()",
+      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_test_matches_the_official_pipeline_on_a_synthetic_campaign"
+    },
+    {
+      "label": ".test_module_scoped_params_use_the_real_scavetool_suffix()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L152",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".test_module_scoped_params_use_the_real_scavetool_suffix()",
+      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_test_module_scoped_params_use_the_real_scavetool_suffix"
+    },
+    {
+      "label": ".write_scavetool_csv()",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L117",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": ".write_scavetool_csv()",
+      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_write_scavetool_csv"
     },
     {
       "label": ".AlertMetricEvent()",
@@ -1443,6 +1467,30 @@
       "id": "analysis_tests_test_manifest_manifesttests_test_empty_git_status_means_clean_tree"
     },
     {
+      "label": "ci95()",
+      "file_type": "code",
+      "source_file": "analysis/core/process_results.py",
+      "source_location": "L55",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_core_process_results_ci95",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "ci95()"
+    },
+    {
+      "label": "build_pairs()",
+      "file_type": "code",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L124",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_build_pairs",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "build_pairs()"
+    },
+    {
       "label": "load()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
@@ -1458,7 +1506,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L190",
+      "source_location": "L203",
       "_callable": true,
       "_origin": "ast",
       "id": "analysis_reports_alert_sheet_main",
@@ -1470,7 +1518,7 @@
       "label": "paired_effects()",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L124",
+      "source_location": "L163",
       "_callable": true,
       "_origin": "ast",
       "id": "analysis_reports_alert_sheet_paired_effects",
@@ -1509,10 +1557,10 @@
       "source_location": "L105",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_figures_attendance_figures",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "attendance_figures()"
+      "norm_label": "attendance_figures()",
+      "id": "analysis_reports_figures_attendance_figures"
     },
     {
       "label": "configure_style()",
@@ -1521,10 +1569,10 @@
       "source_location": "L34",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_figures_configure_style",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "configure_style()"
+      "norm_label": "configure_style()",
+      "id": "analysis_reports_figures_configure_style"
     },
     {
       "label": "rate_figure()",
@@ -1533,10 +1581,10 @@
       "source_location": "L66",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_figures_rate_figure",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "rate_figure()"
+      "norm_label": "rate_figure()",
+      "id": "analysis_reports_figures_rate_figure"
     },
     {
       "label": "save()",
@@ -1545,10 +1593,94 @@
       "source_location": "L57",
       "_callable": true,
       "_origin": "ast",
-      "id": "analysis_reports_figures_save",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "save()"
+      "norm_label": "save()",
+      "id": "analysis_reports_figures_save"
+    },
+    {
+      "label": "load_totals()",
+      "file_type": "code",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L41",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "load_totals()",
+      "id": "analysis_reports_mechanism_summary_load_totals"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L98",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "main()",
+      "id": "analysis_reports_mechanism_summary_main"
+    },
+    {
+      "label": "summarize()",
+      "file_type": "code",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L64",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "summarize()",
+      "id": "analysis_reports_mechanism_summary_summarize"
+    },
+    {
+      "label": "compare()",
+      "file_type": "code",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L55",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_compare",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "compare()"
+    },
+    {
+      "label": "comparison_figure()",
+      "file_type": "code",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L70",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_comparison_figure",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "comparison_figure()"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L109",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_main",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "main()"
+    },
+    {
+      "label": "student_t_effects()",
+      "file_type": "code",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L32",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "student_t_effects()"
     },
     {
       "label": "load_runs()",
@@ -1585,78 +1717,6 @@
       "community_name": "alert_sheet.py",
       "norm_label": "summarize()",
       "id": "analysis_reports_scavetool_figures_summarize"
-    },
-    {
-      "label": ".assertUsableFigure()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L97",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".assertusablefigure()",
-      "id": "analysis_tests_test_deliverables_figuretests_assertusablefigure"
-    },
-    {
-      "label": ".setUp()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L89",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".setup()",
-      "id": "analysis_tests_test_deliverables_figuretests_setup"
-    },
-    {
-      "label": ".test_rate_figures_scale_from_one_cell_to_the_matrix()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L104",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".test_rate_figures_scale_from_one_cell_to_the_matrix()",
-      "id": "analysis_tests_test_deliverables_figuretests_test_rate_figures_scale_from_one_cell_to_the_matrix"
-    },
-    {
-      "label": ".test_matches_the_official_pipeline_on_a_synthetic_campaign()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L138",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".test_matches_the_official_pipeline_on_a_synthetic_campaign()",
-      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_test_matches_the_official_pipeline_on_a_synthetic_campaign"
-    },
-    {
-      "label": ".test_module_scoped_params_use_the_real_scavetool_suffix()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L152",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".test_module_scoped_params_use_the_real_scavetool_suffix()",
-      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_test_module_scoped_params_use_the_real_scavetool_suffix"
-    },
-    {
-      "label": ".write_scavetool_csv()",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L117",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": ".write_scavetool_csv()",
-      "id": "analysis_tests_test_deliverables_scavetoolfigurestests_write_scavetool_csv"
     },
     {
       "label": "RepositionFitness::RepositionFitness()",
@@ -3430,10 +3490,10 @@
         "kind": "file"
       },
       "_origin": "ast",
-      "id": "run",
       "community": 12,
       "community_name": "run.sh",
-      "norm_label": "run.sh"
+      "norm_label": "run.sh",
+      "id": "run"
     },
     {
       "label": "run.sh script",
@@ -3445,10 +3505,98 @@
         "kind": "bash_entrypoint"
       },
       "_origin": "ast",
-      "id": "run_sh__entry",
       "community": 12,
       "community_name": "run.sh",
-      "norm_label": "run.sh script"
+      "norm_label": "run.sh script",
+      "id": "run_sh__entry"
+    },
+    {
+      "label": "ActiveVictim.h",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "activevictim.h",
+      "id": "src_app_activevictim"
+    },
+    {
+      "label": "alertSequence",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L16",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "alertsequence",
+      "id": "src_app_activevictim_activevictim_alertsequence"
+    },
+    {
+      "label": "nextAlertTime",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L15",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "nextalerttime",
+      "id": "src_app_activevictim_activevictim_nextalerttime"
+    },
+    {
+      "label": "pendingAlertId",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L17",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "pendingalertid",
+      "id": "src_app_activevictim_activevictim_pendingalertid"
+    },
+    {
+      "label": "position",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L14",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "position",
+      "id": "src_app_activevictim_activevictim_position"
+    },
+    {
+      "label": "victimId",
+      "file_type": "code",
+      "source_file": "src/app/ActiveVictim.h",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "victimid",
+      "id": "src_app_activevictim_activevictim_victimid"
+    },
+    {
+      "label": "Coord",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "coord",
+      "id": "src_app_activevictim_h_coord"
+    },
+    {
+      "label": "simtime_t",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "string",
+      "norm_label": "simtime_t",
+      "id": "src_app_activevictim_h_simtime_t"
     },
     {
       "label": "string",
@@ -3457,42 +3605,31 @@
       "source_location": "",
       "_origin": "ast",
       "community": 13,
-      "community_name": "scheduleTeamUpdateRelay",
+      "community_name": "string",
       "norm_label": "string",
-      "id": "src_app_droneapp_cc_string"
+      "id": "src_app_activevictim_h_string"
     },
     {
-      "label": "scheduleTeamUpdateRelay",
+      "label": "PendingVictimAlert.h",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L118",
+      "source_file": "src/app/PendingVictimAlert.h",
+      "source_location": "L1",
       "_origin": "ast",
       "community": 13,
-      "community_name": "scheduleTeamUpdateRelay",
-      "norm_label": "scheduleteamupdaterelay",
-      "id": "src_app_droneapp_droneapp_scheduleteamupdaterelay"
+      "community_name": "string",
+      "norm_label": "pendingvictimalert.h",
+      "id": "src_app_pendingvictimalert"
     },
     {
-      "label": "selectTargetTeam",
+      "label": "TeamLinkState.h",
       "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L134",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L1",
       "_origin": "ast",
       "community": 13,
-      "community_name": "scheduleTeamUpdateRelay",
-      "norm_label": "selecttargetteam",
-      "id": "src_app_droneapp_droneapp_selecttargetteam"
-    },
-    {
-      "label": "TeamUpdateChunk",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "scheduleTeamUpdateRelay",
-      "norm_label": "teamupdatechunk",
-      "id": "teamupdatechunk"
+      "community_name": "string",
+      "norm_label": "teamlinkstate.h",
+      "id": "src_app_teamlinkstate"
     },
     {
       "label": "metricas_e_arquivos_de_resultado.md",
@@ -3583,7 +3720,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L274",
+      "source_location": "L422",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_1_consultar_o_conte\u00fado_de_um_arquivo",
       "community": 14,
@@ -3595,7 +3732,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L288",
+      "source_location": "L436",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_2_filtrar_as_m\u00e9tricas_de_interesse",
       "community": 14,
@@ -3607,7 +3744,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L309",
+      "source_location": "L457",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_3_conferir_todos_os_arquivos_de_um_bra\u00e7o",
       "community": 14,
@@ -3619,7 +3756,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L326",
+      "source_location": "L474",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_4_exportar_os_dados_para_csv",
       "community": 14,
@@ -3631,7 +3768,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L270",
+      "source_location": "L418",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
       "community": 14,
@@ -3643,7 +3780,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L344",
+      "source_location": "L492",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_8_anf_an\u00e1lise_pela_ide",
       "community": 14,
@@ -3655,7 +3792,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L360",
+      "source_location": "L508",
       "_origin": "ast",
       "id": "docs_metricas_e_arquivos_de_resultado_9_resumo_das_recomenda\u00e7\u00f5es",
       "community": 14,
@@ -3673,6 +3810,30 @@
       "community": 14,
       "community_name": "metricas_e_arquivos_de_resultado.md",
       "norm_label": "como um escalar e gerado"
+    },
+    {
+      "label": "Intervalo de confian\u00e7a do efeito pareado: bootstrap, n\u00e3o Student-t",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
+      "source_location": "L268",
+      "_origin": "ast",
+      "id": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap_n\u00e3o_student_t",
+      "community": 14,
+      "community_name": "metricas_e_arquivos_de_resultado.md",
+      "norm_label": "intervalo de confianca do efeito pareado: bootstrap, nao student-t"
+    },
+    {
+      "label": "O que `ci95()` faria, se fosse chamada (Student-t)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
+      "source_location": "L344",
+      "_origin": "ast",
+      "id": "docs_metricas_e_arquivos_de_resultado_o_que_ci95_faria_se_fosse_chamada_student_t",
+      "community": 14,
+      "community_name": "metricas_e_arquivos_de_resultado.md",
+      "norm_label": "o que `ci95()` faria, se fosse chamada (student-t)"
     },
     {
       "label": "Por que atendimento e perda n\u00e3o somam necessariamente 100%",
@@ -3839,6 +4000,17 @@
       "id": "packet"
     },
     {
+      "label": "string",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "socketDataArrived",
+      "norm_label": "string",
+      "id": "src_app_droneapp_cc_string"
+    },
+    {
       "label": "UdpSocket",
       "file_type": "code",
       "source_file": "",
@@ -3883,6 +4055,17 @@
       "id": "src_app_droneapp_droneapp_handlevictimack"
     },
     {
+      "label": "scheduleTeamUpdateRelay",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L118",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "socketDataArrived",
+      "norm_label": "scheduleteamupdaterelay",
+      "id": "src_app_droneapp_droneapp_scheduleteamupdaterelay"
+    },
+    {
       "label": "socketDataArrived",
       "file_type": "code",
       "source_file": "src/app/DroneApp.h",
@@ -3892,6 +4075,17 @@
       "community_name": "socketDataArrived",
       "norm_label": "socketdataarrived",
       "id": "src_app_droneapp_droneapp_socketdataarrived"
+    },
+    {
+      "label": "TeamUpdateChunk",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "socketDataArrived",
+      "norm_label": "teamupdatechunk",
+      "id": "teamupdatechunk"
     },
     {
       "label": "ApplicationBase",
@@ -4499,45 +4693,12 @@
       "id": "analysis_core_experiment_metrics_py_dataframe"
     },
     {
-      "label": "process_results.py",
-      "file_type": "code",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "process_results.py",
-      "id": "analysis_core_process_results"
-    },
-    {
       "label": "DataFrame",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "dataframe",
-      "id": "analysis_core_process_results_py_dataframe"
-    },
-    {
-      "label": "mechanism_summary.py",
-      "file_type": "code",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "mechanism_summary.py"
-    },
-    {
-      "label": "DataFrame",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_py_dataframe",
+      "id": "analysis_core_process_results_py_dataframe",
       "community": 21,
       "community_name": "collect",
       "norm_label": "dataframe"
@@ -4653,17 +4814,6 @@
       "id": "analysis_validation_validate_sensor_range_smoke_test"
     },
     {
-      "label": "Series",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "series",
-      "id": "series"
-    },
-    {
       "label": "Read the small, normative ExperimentMetrics contract from one SCA file.",
       "file_type": "rationale",
       "source_file": "analysis/core/experiment_metrics.py",
@@ -4713,43 +4863,10 @@
       "source_file": "analysis/core/process_results.py",
       "source_location": "L12",
       "_origin": "ast",
+      "id": "analysis_core_process_results_rationale_12",
       "community": 21,
       "community_name": "collect",
-      "norm_label": "return attributes, scalar rows and recorded parameters from one sca.",
-      "id": "analysis_core_process_results_rationale_12"
-    },
-    {
-      "label": "Student-t approximate 95% confidence-interval half-width for a mean.",
-      "file_type": "rationale",
-      "source_file": "analysis/core/process_results.py",
-      "source_location": "L42",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "student-t approximate 95% confidence-interval half-width for a mean.",
-      "id": "analysis_core_process_results_rationale_42"
-    },
-    {
-      "label": "Um DataFrame longo (scenario, arm, name, value) com um escalar por linha.",
-      "file_type": "rationale",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L42",
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_rationale_42",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "um dataframe longo (scenario, arm, name, value) com um escalar por linha."
-    },
-    {
-      "label": "Uma linha por (cen\u00e1rio, bra\u00e7o), com totais e taxas derivadas.",
-      "file_type": "rationale",
-      "source_file": "analysis/reports/mechanism_summary.py",
-      "source_location": "L65",
-      "_origin": "ast",
-      "id": "analysis_reports_mechanism_summary_rationale_65",
-      "community": 21,
-      "community_name": "collect",
-      "norm_label": "uma linha por (cenario, braco), com totais e taxas derivadas."
+      "norm_label": "return attributes, scalar rows and recorded parameters from one sca."
     },
     {
       "label": "Contract tests for the normative, central scalar reader.",
@@ -4849,6 +4966,94 @@
       "community_name": "collect",
       "norm_label": "validate rejection of an obstacle outside the configured visual range.",
       "id": "analysis_validation_validate_sensor_range_smoke_test_rationale_1"
+    },
+    {
+      "label": "Coord",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "coord",
+      "id": "src_app_teamlinkstate_h_coord"
+    },
+    {
+      "label": "simtime_t",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "simtime_t",
+      "id": "src_app_teamlinkstate_h_simtime_t"
+    },
+    {
+      "label": "string",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "string",
+      "id": "src_app_teamlinkstate_h_string"
+    },
+    {
+      "label": "ipAddress",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L16",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "ipaddress",
+      "id": "src_app_teamlinkstate_teamlinkstate_ipaddress"
+    },
+    {
+      "label": "lastSequence",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L19",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "lastsequence",
+      "id": "src_app_teamlinkstate_teamlinkstate_lastsequence"
+    },
+    {
+      "label": "lastUpdateTime",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L18",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "lastupdatetime",
+      "id": "src_app_teamlinkstate_teamlinkstate_lastupdatetime"
+    },
+    {
+      "label": "position",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L17",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "position",
+      "id": "src_app_teamlinkstate_teamlinkstate_position"
+    },
+    {
+      "label": "stale",
+      "file_type": "code",
+      "source_file": "src/app/TeamLinkState.h",
+      "source_location": "L22",
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "TeamLinkState",
+      "norm_label": "stale",
+      "id": "src_app_teamlinkstate_teamlinkstate_stale"
     },
     {
       "label": "alertOrder",
@@ -5382,108 +5587,9 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "cmodule",
       "id": "cmodule"
-    },
-    {
-      "label": "ActiveVictim.h",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "activevictim.h",
-      "id": "src_app_activevictim"
-    },
-    {
-      "label": "alertSequence",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L16",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "alertsequence",
-      "id": "src_app_activevictim_activevictim_alertsequence"
-    },
-    {
-      "label": "nextAlertTime",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L15",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "nextalerttime",
-      "id": "src_app_activevictim_activevictim_nextalerttime"
-    },
-    {
-      "label": "pendingAlertId",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L17",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "pendingalertid",
-      "id": "src_app_activevictim_activevictim_pendingalertid"
-    },
-    {
-      "label": "position",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L14",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "position",
-      "id": "src_app_activevictim_activevictim_position"
-    },
-    {
-      "label": "victimId",
-      "file_type": "code",
-      "source_file": "src/app/ActiveVictim.h",
-      "source_location": "L13",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "victimid",
-      "id": "src_app_activevictim_activevictim_victimid"
-    },
-    {
-      "label": "Coord",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "coord",
-      "id": "src_app_activevictim_h_coord"
-    },
-    {
-      "label": "simtime_t",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "simtime_t",
-      "id": "src_app_activevictim_h_simtime_t"
-    },
-    {
-      "label": "string",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "string",
-      "id": "src_app_activevictim_h_string"
     },
     {
       "label": "map",
@@ -5492,185 +5598,9 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "map",
       "id": "src_app_droneapp_h_map"
-    },
-    {
-      "label": "DroneLinkState.h",
-      "file_type": "code",
-      "source_file": "src/app/DroneLinkState.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "dronelinkstate.h",
-      "id": "src_app_dronelinkstate"
-    },
-    {
-      "label": "lastSequence",
-      "file_type": "code",
-      "source_file": "src/app/DroneLinkState.h",
-      "source_location": "L14",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "lastsequence",
-      "id": "src_app_dronelinkstate_dronelinkstate_lastsequence"
-    },
-    {
-      "label": "lastUpdateTime",
-      "file_type": "code",
-      "source_file": "src/app/DroneLinkState.h",
-      "source_location": "L13",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "lastupdatetime",
-      "id": "src_app_dronelinkstate_dronelinkstate_lastupdatetime"
-    },
-    {
-      "label": "position",
-      "file_type": "code",
-      "source_file": "src/app/DroneLinkState.h",
-      "source_location": "L12",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "position",
-      "id": "src_app_dronelinkstate_dronelinkstate_position"
-    },
-    {
-      "label": "Coord",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "coord",
-      "id": "src_app_dronelinkstate_h_coord"
-    },
-    {
-      "label": "simtime_t",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "simtime_t",
-      "id": "src_app_dronelinkstate_h_simtime_t"
-    },
-    {
-      "label": "PendingVictimAlert.h",
-      "file_type": "code",
-      "source_file": "src/app/PendingVictimAlert.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "pendingvictimalert.h",
-      "id": "src_app_pendingvictimalert"
-    },
-    {
-      "label": "TeamLinkState.h",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "teamlinkstate.h",
-      "id": "src_app_teamlinkstate"
-    },
-    {
-      "label": "Coord",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "coord",
-      "id": "src_app_teamlinkstate_h_coord"
-    },
-    {
-      "label": "simtime_t",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "simtime_t",
-      "id": "src_app_teamlinkstate_h_simtime_t"
-    },
-    {
-      "label": "string",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "string",
-      "id": "src_app_teamlinkstate_h_string"
-    },
-    {
-      "label": "ipAddress",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L16",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "ipaddress",
-      "id": "src_app_teamlinkstate_teamlinkstate_ipaddress"
-    },
-    {
-      "label": "lastSequence",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L19",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "lastsequence",
-      "id": "src_app_teamlinkstate_teamlinkstate_lastsequence"
-    },
-    {
-      "label": "lastUpdateTime",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L18",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "lastupdatetime",
-      "id": "src_app_teamlinkstate_teamlinkstate_lastupdatetime"
-    },
-    {
-      "label": "position",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L17",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "position",
-      "id": "src_app_teamlinkstate_teamlinkstate_position"
-    },
-    {
-      "label": "stale",
-      "file_type": "code",
-      "source_file": "src/app/TeamLinkState.h",
-      "source_location": "L22",
-      "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "stale",
-      "id": "src_app_teamlinkstate_teamlinkstate_stale"
     },
     {
       "label": "cMessage",
@@ -5679,7 +5609,7 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "cmessage",
       "id": "src_scenario_sarscenariomanager_cc_cmessage"
     },
@@ -5690,7 +5620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "sarscenariomanager.cc",
       "id": "src_scenario_sarscenariomanager_cc_src_scenario_sarscenariomanager"
     },
@@ -5701,7 +5631,7 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "cmessage",
       "id": "src_scenario_sarscenariomanager_h_cmessage"
     },
@@ -5712,7 +5642,7 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "csimplemodule",
       "id": "src_scenario_sarscenariomanager_h_csimplemodule"
     },
@@ -5723,7 +5653,7 @@
       "source_location": "",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "map",
       "id": "src_scenario_sarscenariomanager_h_map"
     },
@@ -5734,7 +5664,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "sarscenariomanager.h",
       "id": "src_scenario_sarscenariomanager_h_src_scenario_sarscenariomanager"
     },
@@ -5745,7 +5675,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "detections",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_detections"
     },
@@ -5756,7 +5686,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "handlemessage",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_handlemessage"
     },
@@ -5767,7 +5697,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "initialize",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_initialize"
     },
@@ -5778,42 +5708,75 @@
       "source_location": "L17",
       "_origin": "ast",
       "community": 26,
-      "community_name": "string",
+      "community_name": "SarScenarioManager",
       "norm_label": "numinitstages",
       "id": "src_scenario_sarscenariomanager_sarscenariomanager_numinitstages"
     },
     {
-      "label": "StaticVictim.cc",
+      "label": "DroneLinkState.h",
       "file_type": "code",
-      "source_file": "src/scenario/StaticVictim.cc",
+      "source_file": "src/app/DroneLinkState.h",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "staticvictim.cc",
-      "id": "src_scenario_staticvictim"
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "dronelinkstate.h",
+      "id": "src_app_dronelinkstate"
     },
     {
-      "label": "cMessage",
+      "label": "lastSequence",
+      "file_type": "code",
+      "source_file": "src/app/DroneLinkState.h",
+      "source_location": "L14",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "lastsequence",
+      "id": "src_app_dronelinkstate_dronelinkstate_lastsequence"
+    },
+    {
+      "label": "lastUpdateTime",
+      "file_type": "code",
+      "source_file": "src/app/DroneLinkState.h",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "lastupdatetime",
+      "id": "src_app_dronelinkstate_dronelinkstate_lastupdatetime"
+    },
+    {
+      "label": "position",
+      "file_type": "code",
+      "source_file": "src/app/DroneLinkState.h",
+      "source_location": "L12",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "position",
+      "id": "src_app_dronelinkstate_dronelinkstate_position"
+    },
+    {
+      "label": "Coord",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "cmessage",
-      "id": "src_scenario_staticvictim_cc_cmessage"
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "coord",
+      "id": "src_app_dronelinkstate_h_coord"
     },
     {
-      "label": "cSimpleModule",
+      "label": "simtime_t",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "community": 26,
-      "community_name": "string",
-      "norm_label": "csimplemodule",
-      "id": "src_scenario_staticvictim_cc_csimplemodule"
+      "community": 27,
+      "community_name": "DroneLinkState",
+      "norm_label": "simtime_t",
+      "id": "src_app_dronelinkstate_h_simtime_t"
     },
     {
       "label": "Indication",
@@ -5891,6 +5854,17 @@
       "community_name": "optimize",
       "norm_label": "fitnessfunction",
       "id": "fitnessfunction"
+    },
+    {
+      "label": "tryReposition",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L136",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "optimize",
+      "norm_label": "tryreposition",
+      "id": "src_app_droneapp_droneapp_tryreposition"
     },
     {
       "label": "amplitude",
@@ -6355,6 +6329,39 @@
       "id": "victimalertchunk"
     },
     {
+      "label": "StaticVictim.cc",
+      "file_type": "code",
+      "source_file": "src/scenario/StaticVictim.cc",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": "staticvictim.cc",
+      "id": "src_scenario_staticvictim"
+    },
+    {
+      "label": "cMessage",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": "cmessage",
+      "id": "src_scenario_staticvictim_cc_cmessage"
+    },
+    {
+      "label": "cSimpleModule",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 31,
+      "community_name": "StaticVictim",
+      "norm_label": "csimplemodule",
+      "id": "src_scenario_staticvictim_cc_csimplemodule"
+    },
+    {
       "label": "reports/__init__.py",
       "file_type": "code",
       "source_file": "analysis/reports/__init__.py",
@@ -6723,6 +6730,17 @@
       "id": "analysis_validation_init_rationale_1"
     },
     {
+      "label": "test_deliverables.py",
+      "file_type": "code",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "test_deliverables.py",
+      "id": "analysis_tests_test_deliverables"
+    },
+    {
       "label": "DataFrame",
       "file_type": "code",
       "source_file": "",
@@ -6734,6 +6752,28 @@
       "id": "analysis_tests_test_deliverables_py_dataframe"
     },
     {
+      "label": "Path",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "path",
+      "id": "analysis_tests_test_deliverables_py_path"
+    },
+    {
+      "label": "Segunda via de atendimento/perda: l\u00ea o CSV do opp_scavetool, n\u00e3o o .sca.",
+      "file_type": "rationale",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L115",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "segunda via de atendimento/perda: le o csv do opp_scavetool, nao o .sca.",
+      "id": "analysis_tests_test_deliverables_rationale_115"
+    },
+    {
       "label": "As duas taxas contam alertId \u00fanicos, n\u00e3o tentativas nem recebimentos.",
       "file_type": "rationale",
       "source_file": "analysis/tests/test_deliverables.py",
@@ -6743,6 +6783,17 @@
       "community_name": "AlertSheetTests",
       "norm_label": "as duas taxas contam alertid unicos, nao tentativas nem recebimentos.",
       "id": "analysis_tests_test_deliverables_rationale_25"
+    },
+    {
+      "label": "As duas figuras precisam sair em PDF com desenho de verdade.",
+      "file_type": "rationale",
+      "source_file": "analysis/tests/test_deliverables.py",
+      "source_location": "L87",
+      "_origin": "ast",
+      "community": 36,
+      "community_name": "AlertSheetTests",
+      "norm_label": "as duas figuras precisam sair em pdf com desenho de verdade.",
+      "id": "analysis_tests_test_deliverables_rationale_87"
     },
     {
       "label": "acknowledged",
@@ -7108,6 +7159,17 @@
       "id": "src_metrics_experimentmetrics_cc_cobject"
     },
     {
+      "label": "process_results.py",
+      "file_type": "code",
+      "source_file": "analysis/core/process_results.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "analysis_core_process_results",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "process_results.py"
+    },
+    {
       "label": "alert_sheet.py",
       "file_type": "code",
       "source_file": "analysis/reports/alert_sheet.py",
@@ -7146,10 +7208,10 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "analysis_reports_figures",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "figures.py"
+      "norm_label": "figures.py",
+      "id": "analysis_reports_figures"
     },
     {
       "label": "DataFrame",
@@ -7157,7 +7219,62 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "id": "analysis_reports_figures_py_dataframe",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "dataframe",
+      "id": "analysis_reports_figures_py_dataframe"
+    },
+    {
+      "label": "Path",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "path",
+      "id": "analysis_reports_figures_py_path"
+    },
+    {
+      "label": "mechanism_summary.py",
+      "file_type": "code",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "mechanism_summary.py",
+      "id": "analysis_reports_mechanism_summary"
+    },
+    {
+      "label": "DataFrame",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "dataframe",
+      "id": "analysis_reports_mechanism_summary_py_dataframe"
+    },
+    {
+      "label": "paired_effect_ttest.py",
+      "file_type": "code",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "paired_effect_ttest.py"
+    },
+    {
+      "label": "DataFrame",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_py_dataframe",
       "community": 5,
       "community_name": "alert_sheet.py",
       "norm_label": "dataframe"
@@ -7168,7 +7285,7 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "id": "analysis_reports_figures_py_path",
+      "id": "analysis_reports_paired_effect_ttest_py_path",
       "community": 5,
       "community_name": "alert_sheet.py",
       "norm_label": "path"
@@ -7207,45 +7324,56 @@
       "id": "analysis_reports_scavetool_figures_py_path"
     },
     {
-      "label": "test_deliverables.py",
-      "file_type": "code",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "test_deliverables.py",
-      "id": "analysis_tests_test_deliverables"
-    },
-    {
-      "label": "Path",
-      "file_type": "code",
-      "source_file": "",
-      "source_location": "",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "path",
-      "id": "analysis_tests_test_deliverables_py_path"
-    },
-    {
       "label": "Figure",
       "file_type": "code",
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "id": "figure",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "figure"
+      "norm_label": "figure",
+      "id": "figure"
     },
     {
-      "label": "Resume diferen\u00e7as BA-On \u2212 BA-Off por seed, com IC bootstrap de 95%.",
+      "label": "Series",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "series",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "series"
+    },
+    {
+      "label": "Student-t approximate 95% confidence-interval half-width for a mean.",
+      "file_type": "rationale",
+      "source_file": "analysis/core/process_results.py",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "analysis_core_process_results_rationale_56",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "student-t approximate 95% confidence-interval half-width for a mean."
+    },
+    {
+      "label": "Uma linha por (cen\u00e1rio, numTeams, seed), com o efeito BA-On \u2212 BA-Off.\u2026",
       "file_type": "rationale",
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L125",
       "_origin": "ast",
       "id": "analysis_reports_alert_sheet_rationale_125",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "uma linha por (cenario, numteams, seed), com o efeito ba-on \u2212 ba-off...."
+    },
+    {
+      "label": "Resume diferen\u00e7as BA-On \u2212 BA-Off por seed, com IC bootstrap de 95%.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L164",
+      "_origin": "ast",
+      "id": "analysis_reports_alert_sheet_rationale_164",
       "community": 5,
       "community_name": "alert_sheet.py",
       "norm_label": "resume diferencas ba-on \u2212 ba-off por seed, com ic bootstrap de 95%."
@@ -7278,10 +7406,10 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L106",
       "_origin": "ast",
-      "id": "analysis_reports_figures_rationale_106",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "as duas taxas pedidas, cada uma em sua figura para caber uma legenda. `suffix`..."
+      "norm_label": "as duas taxas pedidas, cada uma em sua figura para caber uma legenda. `suffix`...",
+      "id": "analysis_reports_figures_rationale_106"
     },
     {
       "label": "Barras agrupadas de uma taxa, uma cor por bra\u00e7o e uma legenda. O eixo\u2026",
@@ -7289,10 +7417,65 @@
       "source_file": "analysis/reports/figures.py",
       "source_location": "L68",
       "_origin": "ast",
-      "id": "analysis_reports_figures_rationale_68",
       "community": 5,
       "community_name": "alert_sheet.py",
-      "norm_label": "barras agrupadas de uma taxa, uma cor por braco e uma legenda. o eixo..."
+      "norm_label": "barras agrupadas de uma taxa, uma cor por braco e uma legenda. o eixo...",
+      "id": "analysis_reports_figures_rationale_68"
+    },
+    {
+      "label": "Um DataFrame longo (scenario, arm, name, value) com um escalar por linha.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "um dataframe longo (scenario, arm, name, value) com um escalar por linha.",
+      "id": "analysis_reports_mechanism_summary_rationale_42"
+    },
+    {
+      "label": "Uma linha por (cen\u00e1rio, bra\u00e7o), com totais e taxas derivadas.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/mechanism_summary.py",
+      "source_location": "L65",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "uma linha por (cenario, braco), com totais e taxas derivadas.",
+      "id": "analysis_reports_mechanism_summary_rationale_65"
+    },
+    {
+      "label": "Uma linha por (cen\u00e1rio, numTeams): efeito m\u00e9dio \u00b1 IC 95% via ci95().",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L33",
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_rationale_33",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "uma linha por (cenario, numteams): efeito medio \u00b1 ic 95% via ci95()."
+    },
+    {
+      "label": "Uma linha por c\u00e9lula, os dois m\u00e9todos lado a lado, larguras dos dois IC.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_rationale_56",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "uma linha por celula, os dois metodos lado a lado, larguras dos dois ic."
+    },
+    {
+      "label": "Um painel por cen\u00e1rio: efeito \u00b1 IC, bootstrap e t lado a lado por numTeams.",
+      "file_type": "rationale",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L72",
+      "_origin": "ast",
+      "id": "analysis_reports_paired_effect_ttest_rationale_72",
+      "community": 5,
+      "community_name": "alert_sheet.py",
+      "norm_label": "um painel por cenario: efeito \u00b1 ic, bootstrap e t lado a lado por numteams."
     },
     {
       "label": "Uma entrada por execu\u00e7\u00e3o: baEnabled, numTeams e os escalares centrais.",
@@ -7304,28 +7487,6 @@
       "community_name": "alert_sheet.py",
       "norm_label": "uma entrada por execucao: baenabled, numteams e os escalares centrais.",
       "id": "analysis_reports_scavetool_figures_rationale_45"
-    },
-    {
-      "label": "Segunda via de atendimento/perda: l\u00ea o CSV do opp_scavetool, n\u00e3o o .sca.",
-      "file_type": "rationale",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L115",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "segunda via de atendimento/perda: le o csv do opp_scavetool, nao o .sca.",
-      "id": "analysis_tests_test_deliverables_rationale_115"
-    },
-    {
-      "label": "As duas figuras precisam sair em PDF com desenho de verdade.",
-      "file_type": "rationale",
-      "source_file": "analysis/tests/test_deliverables.py",
-      "source_location": "L87",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "alert_sheet.py",
-      "norm_label": "as duas figuras precisam sair em pdf com desenho de verdade.",
-      "id": "analysis_tests_test_deliverables_rationale_87"
     },
     {
       "label": "AbstractObstacleSensor",
@@ -8142,6 +8303,17 @@
       "id": "src_app_droneapp_droneapp_resumemobility"
     },
     {
+      "label": "selectTargetTeam",
+      "file_type": "code",
+      "source_file": "src/app/DroneApp.h",
+      "source_location": "L134",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "DroneApp.cc",
+      "norm_label": "selecttargetteam",
+      "id": "src_app_droneapp_droneapp_selecttargetteam"
+    },
+    {
       "label": "sendAttempt",
       "file_type": "code",
       "source_file": "src/app/DroneApp.h",
@@ -8173,17 +8345,6 @@
       "community_name": "DroneApp.cc",
       "norm_label": "startalertcycle",
       "id": "src_app_droneapp_droneapp_startalertcycle"
-    },
-    {
-      "label": "tryReposition",
-      "file_type": "code",
-      "source_file": "src/app/DroneApp.h",
-      "source_location": "L136",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "DroneApp.cc",
-      "norm_label": "tryreposition",
-      "id": "src_app_droneapp_droneapp_tryreposition"
     },
     {
       "label": "validateParameters",
@@ -8442,7 +8603,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L191",
+      "source_location": "L204",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8454,7 +8615,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L204",
+      "source_location": "L217",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8466,7 +8627,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L205",
+      "source_location": "L218",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8479,7 +8640,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L219",
+      "source_location": "L232",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8491,7 +8652,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L227",
+      "source_location": "L240",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_main",
@@ -8501,13 +8662,25 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L165",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet_paired_effects",
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L52",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_run_context",
-      "target": "analysis_core_process_results_parse_sca"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8517,9 +8690,9 @@
       "source_location": "L114",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_rate_figure",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_rate_figure"
     },
     {
       "relation": "calls",
@@ -8529,9 +8702,9 @@
       "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_save",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_save"
     },
     {
       "relation": "calls",
@@ -8553,9 +8726,9 @@
       "source_location": "L99",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_main",
-      "target": "analysis_reports_mechanism_summary_load_totals",
-      "confidence_score": 1.0
+      "target": "analysis_reports_mechanism_summary_load_totals"
     },
     {
       "relation": "calls",
@@ -8565,8 +8738,116 @@
       "source_location": "L99",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_main",
-      "target": "analysis_reports_mechanism_summary_summarize",
+      "target": "analysis_reports_mechanism_summary_summarize"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L106",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
+      "target": "analysis_reports_figures_save"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L110",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_alert_sheet_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L111",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L115",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_alert_sheet_paired_effects",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L116",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L117",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_paired_effect_ttest_compare",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L127",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_figures_configure_style"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L128",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_main",
+      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "target": "analysis_core_process_results_ci95",
       "confidence_score": 1.0
     },
     {
@@ -13065,9 +13346,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results_parse_sca",
-      "target": "analysis_core_process_results_py_dataframe"
+      "target": "analysis_core_process_results_py_dataframe",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -13077,9 +13358,9 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_py_path",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_py_path"
     },
     {
       "relation": "references",
@@ -13416,6 +13697,66 @@
       "confidence_score": 1.0,
       "source": "analysis_core_experiment_metrics",
       "target": "analysis_core_process_results_parse_sca"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet",
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_core_process_results_ci95",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_alert_sheet_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_alert_sheet_paired_effects",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14325,9 +14666,9 @@
       "source_location": "L19",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
-      "target": "analysis_core_process_results",
-      "confidence_score": 1.0
+      "target": "analysis_core_process_results"
     },
     {
       "relation": "imports_from",
@@ -14337,7 +14678,31 @@
       "source_location": "L20",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
+      "target": "analysis_reports_alert_sheet"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_core_process_results",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
       "target": "analysis_reports_alert_sheet",
       "confidence_score": 1.0
     },
@@ -14526,12 +14891,12 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L41",
+      "source_location": "L55",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results_ci95",
-      "target": "series"
+      "target": "series",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -14565,9 +14930,9 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_attendance_figures",
-      "target": "analysis_reports_figures_py_dataframe",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_py_dataframe"
     },
     {
       "relation": "references",
@@ -14577,9 +14942,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_py_dataframe",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_py_dataframe"
     },
     {
       "relation": "references",
@@ -14589,8 +14954,20 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_save",
-      "target": "figure",
+      "target": "figure"
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
+      "target": "analysis_reports_paired_effect_ttest_py_dataframe",
       "confidence_score": 1.0
     },
     {
@@ -15738,6 +16115,18 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L124",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet_build_pairs",
+      "target": "analysis_reports_alert_sheet_py_dataframe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
       "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
@@ -15750,7 +16139,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L124",
+      "source_location": "L163",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_paired_effects",
@@ -15777,9 +16166,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rate_figure",
-      "target": "analysis_reports_figures_py_path",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_py_path"
     },
     {
       "relation": "references",
@@ -15789,9 +16178,9 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_save",
-      "target": "analysis_reports_figures_py_path",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_py_path"
     },
     {
       "relation": "references",
@@ -15801,9 +16190,9 @@
       "source_location": "L41",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_load_totals",
-      "target": "analysis_reports_mechanism_summary_py_dataframe",
-      "confidence_score": 1.0
+      "target": "analysis_reports_mechanism_summary_py_dataframe"
     },
     {
       "relation": "references",
@@ -15813,8 +16202,44 @@
       "source_location": "L64",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_summarize",
-      "target": "analysis_reports_mechanism_summary_py_dataframe",
+      "target": "analysis_reports_mechanism_summary_py_dataframe"
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_compare",
+      "target": "analysis_reports_paired_effect_ttest_py_dataframe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_comparison_figure",
+      "target": "analysis_reports_paired_effect_ttest_py_path",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "target": "analysis_reports_paired_effect_ttest_py_dataframe",
       "confidence_score": 1.0
     },
     {
@@ -15910,6 +16335,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet",
+      "target": "analysis_reports_figures",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
       "target": "analysis_reports_figures",
       "confidence_score": 1.0
     },
@@ -16430,20 +16867,20 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results",
-      "target": "analysis_core_process_results_parse_sca"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L41",
+      "source_location": "L55",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results",
-      "target": "analysis_core_process_results_ci95"
+      "target": "analysis_core_process_results_ci95",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16552,6 +16989,17 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet",
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L163",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet",
       "target": "analysis_reports_alert_sheet_paired_effects",
       "confidence_score": 1.0
     },
@@ -16559,7 +17007,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "analysis/reports/alert_sheet.py",
-      "source_location": "L190",
+      "source_location": "L203",
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet",
@@ -16606,9 +17054,9 @@
       "source_location": "L105",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_attendance_figures",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_attendance_figures"
     },
     {
       "relation": "contains",
@@ -16617,9 +17065,9 @@
       "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_configure_style",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_configure_style"
     },
     {
       "relation": "contains",
@@ -16628,9 +17076,9 @@
       "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_save",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_save"
     },
     {
       "relation": "contains",
@@ -16639,9 +17087,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures",
-      "target": "analysis_reports_figures_rate_figure",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_rate_figure"
     },
     {
       "relation": "contains",
@@ -16650,9 +17098,9 @@
       "source_location": "L41",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
-      "target": "analysis_reports_mechanism_summary_load_totals",
-      "confidence_score": 1.0
+      "target": "analysis_reports_mechanism_summary_load_totals"
     },
     {
       "relation": "contains",
@@ -16661,9 +17109,9 @@
       "source_location": "L64",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
-      "target": "analysis_reports_mechanism_summary_summarize",
-      "confidence_score": 1.0
+      "target": "analysis_reports_mechanism_summary_summarize"
     },
     {
       "relation": "contains",
@@ -16672,8 +17120,52 @@
       "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary",
-      "target": "analysis_reports_mechanism_summary_main",
+      "target": "analysis_reports_mechanism_summary_main"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L109",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_paired_effect_ttest_main",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_paired_effect_ttest_compare",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest",
+      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
       "confidence_score": 1.0
     },
     {
@@ -17197,7 +17689,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L270",
+      "source_location": "L418",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17208,7 +17700,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L344",
+      "source_location": "L492",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17219,7 +17711,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L360",
+      "source_location": "L508",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado",
@@ -17285,7 +17777,29 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L274",
+      "source_location": "L268",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_metricas_e_arquivos_de_resultado_6_c\u00e1lculo_de_atendimento_perda_e_volume_de_mensagens",
+      "target": "docs_metricas_e_arquivos_de_resultado_intervalo_de_confian\u00e7a_do_efeito_pareado_bootstrap_n\u00e3o_student_t",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
+      "source_location": "L344",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_metricas_e_arquivos_de_resultado_6_c\u00e1lculo_de_atendimento_perda_e_volume_de_mensagens",
+      "target": "docs_metricas_e_arquivos_de_resultado_o_que_ci95_faria_se_fosse_chamada_student_t",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/metricas_e_arquivos_de_resultado.md",
+      "source_location": "L422",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17296,7 +17810,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L288",
+      "source_location": "L436",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17307,7 +17821,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L309",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17318,7 +17832,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/metricas_e_arquivos_de_resultado.md",
-      "source_location": "L326",
+      "source_location": "L474",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_metricas_e_arquivos_de_resultado_7_scavetool_consulta_e_exporta\u00e7\u00e3o_pela_linha_de_comando",
@@ -17398,9 +17912,9 @@
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "run",
-      "target": "run_sh__entry",
-      "confidence_score": 1.0
+      "target": "run_sh__entry"
     },
     {
       "relation": "contains",
@@ -19268,20 +19782,20 @@
       "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "analysis_core_process_results_rationale_12",
-      "target": "analysis_core_process_results_parse_sca"
+      "target": "analysis_core_process_results_parse_sca",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "analysis/core/process_results.py",
-      "source_location": "L42",
+      "source_location": "L56",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "analysis_core_process_results_rationale_42",
-      "target": "analysis_core_process_results_ci95"
+      "source": "analysis_core_process_results_rationale_56",
+      "target": "analysis_core_process_results_ci95",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -19313,6 +19827,17 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "analysis_reports_alert_sheet_rationale_125",
+      "target": "analysis_reports_alert_sheet_build_pairs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/alert_sheet.py",
+      "source_location": "L164",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_alert_sheet_rationale_164",
       "target": "analysis_reports_alert_sheet_paired_effects",
       "confidence_score": 1.0
     },
@@ -19345,9 +19870,9 @@
       "source_location": "L106",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rationale_106",
-      "target": "analysis_reports_figures_attendance_figures",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_attendance_figures"
     },
     {
       "relation": "rationale_for",
@@ -19356,9 +19881,9 @@
       "source_location": "L68",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_figures_rationale_68",
-      "target": "analysis_reports_figures_rate_figure",
-      "confidence_score": 1.0
+      "target": "analysis_reports_figures_rate_figure"
     },
     {
       "relation": "rationale_for",
@@ -19378,9 +19903,9 @@
       "source_location": "L42",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_rationale_42",
-      "target": "analysis_reports_mechanism_summary_load_totals",
-      "confidence_score": 1.0
+      "target": "analysis_reports_mechanism_summary_load_totals"
     },
     {
       "relation": "rationale_for",
@@ -19389,8 +19914,41 @@
       "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "analysis_reports_mechanism_summary_rationale_65",
-      "target": "analysis_reports_mechanism_summary_summarize",
+      "target": "analysis_reports_mechanism_summary_summarize"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L33",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_rationale_33",
+      "target": "analysis_reports_paired_effect_ttest_student_t_effects",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_rationale_56",
+      "target": "analysis_reports_paired_effect_ttest_compare",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "analysis/reports/paired_effect_ttest.py",
+      "source_location": "L72",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "analysis_reports_paired_effect_ttest_rationale_72",
+      "target": "analysis_reports_paired_effect_ttest_comparison_figure",
       "confidence_score": 1.0
     },
     {
@@ -20045,5 +20603,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "de18d761f225d6ec6eba84c6b9931b7d25c936a2"
+  "built_at_commit": "e404d49a4ea4638589abf68e03e73250e1954aa2"
 }

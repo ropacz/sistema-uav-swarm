@@ -55,7 +55,11 @@ def student_t_effects(pairs: pd.DataFrame) -> pd.DataFrame:
 def compare(bootstrap: pd.DataFrame, student_t: pd.DataFrame) -> pd.DataFrame:
     """Uma linha por célula, os dois métodos lado a lado, larguras dos dois IC."""
     keys = ["cenario", "numTeams"]
-    merged = bootstrap.merge(student_t, on=keys, suffixes=("", "_t"), validate="one_to_one")
+    # "pares" e o efeito médio são idênticos nos dois métodos (mesmos pares de
+    # seed) — só os limites do IC diferem. Descartar do lado direito evita
+    # colunas duplicadas (ex.: "efeito_atendimento_pp_t") sem informação nova.
+    only_ci = student_t.drop(columns=["pares", "efeito_atendimento_pp", "efeito_perda_pp"])
+    merged = bootstrap.merge(only_ci, on=keys, validate="one_to_one")
     merged["atendimento_largura_bootstrap_pp"] = (
         merged["efeito_atendimento_ic95_sup_pp"] - merged["efeito_atendimento_ic95_inf_pp"])
     merged["atendimento_largura_t_pp"] = (
