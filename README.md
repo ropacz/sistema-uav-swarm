@@ -33,7 +33,7 @@ dos parâmetros permanecem exclusivamente nos arquivos em `simulations/`.
 - `src/messages`: mensagens OMNeT++ e serialização em rede;
 - `src/mobility`: Gauss–Markov 3D comandável pelo reposicionamento;
 - `src/optimization`: Bat Algorithm e função de aptidão;
-- `src/scenario`, `src/node` e `src/sensing`: cenário, composição e percepção;
+- `src/scenario`, `src/node` e `src/camera`: cenário, composição e percepção;
 - `simulations`: rede, configurações e ambientes físicos;
 - `analysis`: relatório principal, robustez e testes;
 - `docs`: diretriz normativa, índice técnico e referências externas.
@@ -51,7 +51,11 @@ sem modificações. Os resultados dependem do cenário e da configuração execu
 
 A presença de obstáculo é determinada por uma verificação geométrica idealizada
 do segmento entre o drone e a última posição conhecida da equipe; a obtenção
-real dessa geometria por câmera ou outro sensor não pertence ao escopo. A
+real dessa geometria por câmera ou outro sensor não pertence ao escopo. Assumiu-se
+detecção **omnidirecional simplificada**, sem o cone de visão real da câmera do
+Phantom 4 Pro (60° na horizontal, ±27° na vertical) nem seus pontos cegos —
+simplificação adotada para otimização de processamento, já que o foco do
+trabalho é conectividade e reposicionamento, não reconhecimento de imagem. A
 posição usada durante a recuperação pode estar desatualizada pela mobilidade da
 equipe, e não há predição nem extrapolação de velocidade.
 

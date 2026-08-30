@@ -81,31 +81,120 @@ Todos os demais valores da tabela do §13 seguem a diretriz.
 ### D4. Alcance do sensor de obstáculos — §14
 
 A diretriz sugere `obstacleSensorRange` configurável e cita 30 m como exemplo. A
-implementação **não aplica limite superior** no cenário científico.
+implementação **aplica o limite de 30 m** no cenário científico — o alcance
+frontal real do sistema visual do DJI Phantom 4 Pro (0,7–30 m), tratado de
+forma omnidirecional (ver simplificação de FOV abaixo).
 
-Os 30 m correspondem à faixa frontal do sensor de prevenção de colisões do DJI
-Phantom 4 Pro. Essa faixa não determina a capacidade de constatar que um
-edifício bloqueia um enlace de centenas de metros: um prédio que obstrui a linha
-drone–equipe está, tipicamente, longe do drone. Medido: com o limite de 30 m,
-detecção e obstrução eram quase disjuntas e `obstaclesDetected` permanecia zero
-em todas as execuções do cenário científico.
+**Decisão revista.** Uma versão anterior desta seção desabilitava o limite
+(`maximumRange = -1m`), porque um prédio que obstrui a linha drone–equipe está,
+tipicamente, longe do drone, e com 30 m detecção e obstrução eram quase
+disjuntas: medido, `obstaclesDetected` permanecia zero em todas as execuções.
+A decisão atual prioriza fidelidade ao alcance físico declarado do sensor da
+aeronave sobre exercitar o mecanismo de reposicionamento neste cenário — ver a
+consequência medida logo abaixo.
 
-O §14 já prevê essa situação e define como declará-la: *"Se a avaliação utilizar
-a geometria completa do cenário para testar posições candidatas, essa hipótese
-deve ser declarada como: Conhecimento geométrico idealizado disponibilizado ao
-mecanismo de reposicionamento."* A implementação estende a mesma hipótese à
-etapa de detecção.
+**Consequência sobre a detecção:** edifícios que bloqueiam o enlace
+drone–equipe ficam tipicamente muito além de 30 m, então `obstaclesDetected`
+permanece zero no cenário científico. Enquanto a confirmação visual era
+condição de acionamento, isso zerava também `baActivations` e o mecanismo nunca
+era exercitado. **D7 desfez esse acoplamento:** a degradação da rede aciona o
+BA, e `obstaclesDetected = 0` passou a significar apenas "nenhum obstáculo
+estava ao alcance da câmera", sem impedir o reposicionamento. O funil medido
+está em D7.
 
-**Formulação para a dissertação:** a presença de obstáculo é determinada por uma
-verificação geométrica idealizada do segmento entre o drone e a última posição
-conhecida da equipe. A obtenção real dessa geometria por câmera, LiDAR ou mapa
-cooperativo não faz parte do escopo.
+`obstaclesDetected` continua sendo diagnóstico de exposição útil, e deve ser
+lido como tal — não como contagem de reposicionamentos justificados.
 
-O parâmetro continua existindo: valor negativo desabilita o limite. Os smoke
-tests fixam 30 m e 20 m, porque o teste obrigatório §28.4 valida justamente o
-comportamento de faixa limitada.
+O §14 já prevê a hipótese alternativa (sem limite) e define como declará-la:
+*"Se a avaliação utilizar a geometria completa do cenário para testar posições
+candidatas, essa hipótese deve ser declarada como: Conhecimento geométrico
+idealizado disponibilizado ao mecanismo de reposicionamento."* Sob o limite de
+30 m essa hipótese deixa de se aplicar à etapa de *detecção* (que agora respeita
+o alcance físico do sensor); continua valendo para a *geometria* usada dentro
+do alcance — a presença de obstáculo dentro de 30 m é constatada por
+verificação geométrica idealizada do segmento, não por visão computacional.
 
-`src/sensing/AbstractObstacleSensor.{h,cc,ned}`, `simulations/omnetpp.ini`.
+O parâmetro continua configurável: valor negativo desabilita o limite (modo
+oráculo sem alcance, usado por análises que queiram isolar o mecanismo do
+funil de detecção). Os smoke tests fixam 30 m e 20 m, porque o teste
+obrigatório §28.4 valida justamente o comportamento de faixa limitada.
+
+O módulo também declara `fieldOfViewHorizontal` (60°), `fieldOfViewVertical`
+(54°, ou seja ±27°) e `measurementFrequency` (10 Hz), conforme a especificação
+DJI do sistema visual frontal/traseiro
+(`docs/references/especificacoes_dji_phantom_4_pro_v2.docx`). São parâmetros
+**declarativos**: documentam a câmera real de referência, mas não recortam a
+linha de visada avaliada.
+
+**Simplificação adicional, também assumida deliberadamente:** o oráculo trata a
+detecção como **omnidirecional**, e não como o cone frontal/traseiro real do
+Phantom 4 Pro (60° × 54°, com pontos cegos laterais e inferiores fora da faixa
+coberta pelos sensores visuais e infravermelhos). O reconhecimento do
+obstáculo em si — o algoritmo de visão computacional/ML que, num drone real,
+classificaria o que a câmera captura — é o que fica abstraído; a geometria
+da cena dentro do alcance de 30 m permanece disponível ao oráculo. A
+justificativa é a mesma do §14 citado acima, estendida ao apontamento do
+sensor: o foco do trabalho é conectividade e reposicionamento, não
+reconhecimento de imagem, e modelar orientação de câmera, blind spots e
+múltiplos sensores direcionais custaria processamento sem contribuir para a
+pergunta de pesquisa.
+
+**Impacto em dados já gravados:** os 480 runs da campanha `Scenario1_*` e as
+demais execuções já realizadas foram gerados com `maximumRange = -1m`. Sob a
+decisão atual (30 m) esses resultados não são mais reproduzíveis a partir deste
+`.ini` e a campanha precisa ser regerada antes de qualquer análise que use este
+limite. (Os resultados antigos foram apagados de `simulations/results/`.)
+
+**Correções aplicadas ao ativar o modo sensor físico:**
+
+- `inspect()` agora trunca o segmento inspecionado em `maximumRange` (quando
+  configurado) em vez de avaliar até a posição da equipe e só então comparar
+  a distância. Um obstáculo além do alcance simplesmente não é visto — a
+  câmera real não relata "há algo lá fora, fora de alcance", ela não vê nada.
+- Zona morta física (`distance < minimumRange`) deixou de anular a
+  confirmação. A câmera estereoscópica não estima distância com
+  confiabilidade abaixo do alcance mínimo, mas continua constatando que há
+  um obstáculo ali — `reason = "obstacleTooCloseToMeasure"` marca essa
+  situação, sem impedir a ativação do BA. Um drone encostado numa parede não
+  deixa de notar o obstáculo por
+  estar perto demais. Ambas as correções só se aplicam no modo sensor físico;
+  o oráculo idealizado (`maximumRange < 0`) continua sem zona morta nem
+  truncamento, como antes.
+- `fieldOfViewHorizontal`/`fieldOfViewVertical` passaram a ser lidos com
+  `doubleValueInUnit("deg")`, para não depender da unidade angular usada no
+  `.ini`. Continuam declarativos (não recortam a linha de visada): aplicar o
+  cone de visão de verdade exigiria modelar a orientação da câmera, que a
+  mobilidade Gauss–Markov 3D do drone (§3) não pilota — ver discussão
+  registrada como lacuna abaixo.
+- Descartado throttling por `measurementFrequency` (10 Hz): rastreado que
+  `DroneApp::tryReposition()` chama `inspect()` no máximo uma vez por alerta
+  (`repositionDecisionMade`), nunca em rajada para o mesmo alvo — um cache de
+  10 Hz não teria o que cachear nesta base de código.
+
+**Revisão seguinte: 30 m virou o padrão do NED, e o resultado distingue
+"livre" de "não observado":**
+
+- `maximumRange` agora tem `default(30m)` no próprio `.ned` (antes, o padrão
+  era o oráculo sem limite, `-1m`, e o `.ini` do cenário científico é que
+  sobrescrevia para 30 m). O modo oráculo continua disponível — basta
+  configurar um valor negativo — mas deixou de ser o comportamento implícito
+  do módulo.
+- `ObstacleObservation` ganhou `fullyObserved` e `observedRange`. Antes, um
+  alvo a 200 m com os primeiros 30 m livres retornava `reason =
+  "clearLineOfSight"` — indistinguível de uma LOS realmente livre até o alvo.
+  Agora: `reason = "clearWithinSensorRange"` (`fullyObserved = false`) nesse
+  caso, e `reason = "clearToTarget"` (`fullyObserved = true`) só quando o
+  alvo inteiro coube dentro do alcance observado (ou o sensor está em modo
+  oráculo). Nenhum consumidor atual (`DroneApp`) distingue os dois `reason`
+  ainda — só `confirmed` importa para o gatilho do BA —, mas a informação
+  passa a existir corretamente no sensor em vez de ser mascarada.
+- `inspect()` renomeado: segundo parâmetro passa de `teamPosition` para
+  `inspectionTarget`. O sensor não é conceitualmente restrito à equipe; pode
+  inspecionar qualquer direção (candidato do BA, trecho de movimento, etc.),
+  ainda que hoje só `DroneApp::tryReposition()` o chame com a posição da
+  equipe.
+
+`src/camera/AbstractObstacleSensor.{h,cc,ned}`, `simulations/omnetpp.ini`.
 
 ### D5. Nomes de escalares e de parâmetros — §17 e §24
 
@@ -135,6 +224,67 @@ reconstruídas a partir de soma e contagem sem perda. A consequência é que a
 **distribuição** intra-execução dos atrasos não fica disponível para análise
 posterior; apenas a média. Reativar é uma linha de configuração, ao custo de
 volume de dados.
+
+### D7. Confirmação visual deixou de ser condição para acionar o BA — §15
+
+O §15 lista a confirmação de obstáculo pelo sensor entre as condições de
+acionamento do reposicionamento. A implementação **aciona o BA pela degradação
+da rede**, usando a observação visual apenas como informação para a aptidão.
+
+O acionamento continua sendo o do §12 (ausência de ACK acima do limiar
+configurável). O que mudou é que `observation.confirmed` deixou de ser um
+portão em `DroneApp::tryReposition()`.
+
+**Motivo.** Com o sensor limitado a 30 m (D4), exigir confirmação visual
+tornava o mecanismo inalcançável: um edifício que bloqueia um enlace de
+centenas de metros está tipicamente muito além do alcance da câmera. Medido no
+cenário científico, com a confirmação obrigatória:
+
+| | confirmação obrigatória | acionamento pela rede |
+| --- | --- | --- |
+| `repositionTriggers` | 5 | 5 |
+| `obstaclesDetected` | 0 | 0 |
+| `baActivations` | **0** | **5** |
+| `repositionsCompleted` | **0** | **5** |
+| distância total | 0 m | 43,2 m |
+
+(`MainExperiment_BaOn`, seed 0.) O mecanismo avaliado pela dissertação
+simplesmente não era exercitado.
+
+**Justificativa conceitual.** Não observar obstáculo significa apenas *nenhum
+obstáculo foi observado dentro do alcance e da direção inspecionada*. Não
+significa *a comunicação não está degradada*. A degradação pode vir de
+bloqueador além dos 30 m, afastamento da equipe, interferência,
+desvanecimento, posição desatualizada da equipe ou perda de rota. Condicionar
+a resposta à identificação visual da causa exigiria que o bloqueador estivesse
+a menos de 30 m, iluminado, texturizado e na direção certa — restrições que
+não decorrem da pergunta de pesquisa.
+
+**Formulação para a dissertação:** *o Bat Algorithm responde à degradação da
+comunicação, independentemente de sua causa. As observações visuais
+disponíveis influenciam a função de aptidão, mas não constituem condição
+obrigatória para o acionamento.* O foco do trabalho é recuperação adaptativa
+da comunicação, não identificação visual da causa da perda do enlace.
+
+**O que a câmera continua fazendo.** `victimSensorEvaluated` e
+`obstaclesDetected` seguem sendo emitidos nos **dois braços**, agora como
+diagnóstico de exposição e não como portão: registram se havia obstáculo
+visível no instante do gatilho. A comparação pareada da exposição é
+preservada. Quando há detecção, o ponto observado entra no termo
+`C_obstaculo`; quando não há, esse termo é zero para todos os candidatos e não
+influencia a ordenação (`obstaclePoint` é `std::optional`).
+
+**O que faz o drone se mover.** Não é a aptidão — são as restrições de linha
+de visada em `feasible()` (E4), que tornam inviável permanecer numa posição
+obstruída. Isso é essencial: sem elas, a aptidão linear atual torna qualquer
+deslocamento desfavorável, e o BA escolheria ficar parado (a demonstração está
+em E4). Por isso as duas mudanças não podem ser separadas.
+
+Invariantes de §23 não foram afetados: existe `repositionsStarted >
+baActivations` e `obstaclesDetected > repositionTriggers`, mas nunca houve
+`baActivations ≤ obstaclesDetected`.
+
+`src/app/DroneApp.cc`, `analysis/validation/validate_sensor_range_smoke_test.py`.
 
 ---
 
@@ -229,15 +379,66 @@ acrescenta duas condições de linha de visada em `RepositionFitness::feasible()
 
 A segunda decorre da finalidade do reposicionamento: uma posição que permanece
 obstruída não cumpre o objetivo e não deveria competir apenas por penalidade de
-custo. Pelo mesmo motivo, `C_obstaculo` recebe **custo máximo** quando o
-candidato continua obstruído, em vez de apenas o decaimento exponencial do
-§16.2.
+custo.
 
 O efeito é um espaço de busca mais restrito que o da diretriz. Sua viabilidade
 deve ser avaliada pelo funil de ativações, soluções e movimentos da campanha
 corrente, sem reutilizar percentuais obtidos antes de mudanças nos RNGs.
 
-`src/optimization/RepositionFitness.cc`.
+**O modelo é híbrido, e isso precisa ser declarado.** Duas abstrações
+diferentes convivem, e confundi-las seria incorreto:
+
+1. **Detecção** — o que ativa o reposicionamento passa pelo sensor visual
+   limitado a 30 m (`AbstractObstacleSensor::inspect()`, D4). Respeita alcance
+   mínimo e máximo do Phantom 4 Pro.
+2. **Avaliação de trajetórias candidatas** — usa um predicado geométrico
+   idealizado do simulador
+   (`AbstractObstacleSensor::intersectsAnyObstacleGroundTruth()`), sem limite
+   de alcance. É precisamente o uso que o §14 autoriza: *"Se a avaliação
+   utilizar a geometria completa do cenário para testar posições candidatas,
+   essa hipótese deve ser declarada como: Conhecimento geométrico idealizado
+   disponibilizado ao mecanismo de reposicionamento."*
+
+Não há mapa persistente em nenhum dos dois casos. A finalidade da segunda
+abstração é isolar a análise da **política de reposicionamento** das
+incertezas do planejamento de trajetória, que não são objeto deste trabalho.
+
+**Formulação para a dissertação:** *a detecção inicial respeita o alcance
+nominal do sensor visual; após a ativação do reposicionamento, a viabilidade
+das posições candidatas é avaliada por um predicado geométrico idealizado do
+simulador, utilizado para isolar a análise da política de reposicionamento das
+incertezas do planejamento de trajetória.*
+
+**Medição que justifica manter a restrição.** Uma revisão propôs remover as
+duas condições de linha de visada, para que o BA não tivesse conhecimento além
+do alcance da câmera. Implementada e medida, a remoção **inutilizou o
+mecanismo**: no `BA_SmokeTest` o deslocamento caiu de 29,60 m para 0,17 m, e o
+`RepositionInterrupted_SmokeTest` passou a falhar (o movimento terminava em
+0,013 s, antes de poder ser interrompido).
+
+A causa é aritmética, não de implementação. Com os pesos do §16 e
+`linkNormalizationDistance` = 1000 m, aproximar-se 25 m da equipe melhora
+`C_enlace` em `0,60 × 25/1000` = 0,015, enquanto o mesmo movimento custa
+`0,15 × 25/25` = 0,15 em `C_movimento` — dez vezes mais do que rende. A
+repulsão do obstáculo é da mesma ordem (`0,25 × e^{-20/10}` ≈ 0,034). Sem a
+restrição de viabilidade, **permanecer parado é o ótimo da função de
+aptidão**: as condições de linha de visada são o que efetivamente obriga o
+drone a se deslocar.
+
+A alternativa seria retunar os pesos até o movimento compensar — calibração
+dirigida ao resultado observado, exatamente o que E5 registra que este
+projeto evita. A restrição foi mantida e a hipótese, declarada.
+
+`C_obstaculo` **não** repete o teste de obstrução: `cost()` só é avaliada em
+candidatos que `feasible()` já aprovou, e aquela exige linha de visada livre
+até a equipe. O termo seria constante e custaria um raycasting por avaliação.
+Fica apenas o decaimento exponencial do §16.2, como repulsão local em torno da
+superfície observada. `obstaclePoint` é opcional (`std::optional`): sem
+observação, o termo é zero para todos os candidatos e não influencia a
+ordenação — valores absolutos de aptidão não são comparáveis entre uma
+ativação com observação e outra sem.
+
+`src/optimization/RepositionFitness.cc`, `src/camera/AbstractObstacleSensor.h`.
 
 ### E5. Potência de transmissão calibrada
 
@@ -312,6 +513,59 @@ andamento; recuperável do histórico do Git
 Faltam, em qualquer versão: **mediana** e um **teste formal com estatística e
 p-valor**. Pendência a resolver antes da versão final da dissertação.
 
+### L2. Campo de visão e orientação real da câmera — D4
+
+D4 declara `fieldOfViewHorizontal`/`fieldOfViewVertical` (60°/54°, Phantom 4
+Pro) mas não os aplica: a observação continua omnidirecional. Recortar pela
+direção real do sensor exigiria saber para onde a câmera aponta, e a
+mobilidade do drone (Gauss–Markov 3D, §3) não pilota heading para mirar a
+equipe.
+
+Desde D7 isso deixou de ser bloqueante para o mecanismo: como o acionamento do
+BA não depende mais da câmera, aplicar o FOV reduziria a frequência com que
+`obstaclePoint` está disponível para a aptidão, mas não impediria o
+reposicionamento. Continua pendente por exigir um modelo de orientação que a
+mobilidade atual não fornece.
+
+Também não implementado: validação de trajetória do BA em trechos limitados
+pelo alcance do sensor (hoje `RepositionFitness::feasible()` avalia o
+deslocamento inteiro de uma vez, pelo predicado ground truth, até
+`maximumRepositionDistance`) e uma camada de desvio reativo de colisão
+independente do BA (presente nos dois braços, tipo TapFly). Ambos mudariam o
+mecanismo de reposicionamento e a comparação BaOn/BaOff além do escopo de D4 —
+pendências para decisão futura. A execução incremental é também o único
+consumidor plausível de um throttling real de `measurementFrequency` (ver D4).
+
+**Resolvido, registrado em D7:** o gatilho do BA foi desacoplado da confirmação
+da câmera. A degradação da rede aciona o reposicionamento; a observação visual
+alimenta a aptidão quando existe.
+
+**Pendente da mesma proposta:** remover também as restrições de linha de visada
+de `feasible()`, deixando o BA sem qualquer conhecimento além do observado.
+Isso exige **antes** reformular a aptidão, porque a formulação linear atual
+torna qualquer deslocamento desfavorável (demonstração em E4) — o mecanismo
+ficaria inerte. Escolher `linkNormalizationDistance` menor que 480 m só para
+produzir movimento seria indistinguível de calibração dirigida ao resultado; e
+normalizar pelo alcance de comunicação (559 m) **não resolve**, porque
+`0,60/559 = 0,001073 < 0,15/120 = 0,00125`. Alternativas a especificar e
+validar numa etapa separada: custo de enlace não linear em torno do limiar
+operacional do enlace, por exemplo `C_link(d) = 1/(1 + e^{-k(d - d_0)})`, ou
+custo de movimento quadrático, que reduz a derivada perto da origem.
+
+Já **resolvido** e registrado em E4: a proposta paralela de retirar do BA o
+acesso à geometria além de 30 m foi implementada, medida e parcialmente
+revertida — as duas condições de linha de visada em `feasible()` permanecem
+(sem elas o mecanismo fica inerte), agora nomeadas com honestidade
+(`intersectsAnyObstacleGroundTruth()`) e declaradas como hipótese do §14. O
+que se manteve daquela revisão: `cost()` não repete o raycasting (redundante
+com `feasible()`), `obstaclePoint` virou `std::optional`, e a duplicação de
+`feasible()` na inicialização do `BatAlgorithm` foi eliminada.
+
+**Sobre a definição de degradação (§12):** verificado que código e diretriz já
+concordam — o gatilho é ausência de ACK após um limiar configurável de
+tentativas, sem PDR em janela e sem RSSI. Nenhuma mudança necessária; o texto
+da dissertação não deve afirmar que PDR ou RSSI participam do acionamento.
+
 ---
 
 ## Conformidade verificada
@@ -336,7 +590,8 @@ Implementado conforme a diretriz, sem desvio:
 - **§12** gatilho por ausência de confirmação, limiar configurável, sem RSSI nem
   PDR em janela.
 - **§13** todos os valores da tabela, exceto D3; `N_limiar < N_máximo`.
-- **§15** as seis condições de acionamento do BA, com a ressalva de E2.
+- **§15** as condições de acionamento do BA, com a ressalva de E2 e o desvio
+  de D7 (a confirmação visual de obstáculo deixou de ser condição).
 - **§16** formulação da aptidão e os três pesos, somando 1 (verificado em tempo
   de execução); restrição de conectividade do §16.4.
 - **§17** todas as restrições de candidatos.

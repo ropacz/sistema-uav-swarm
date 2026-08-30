@@ -133,7 +133,11 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     /// Escolhe a equipe descoberta mais próxima; vazio significa nenhuma visível.
     std::string selectTargetTeam() const;
     /// Faz uma consulta binária do sensor e, no tratamento, executa o BA uma vez.
-    void tryReposition(PendingVictimAlert& alert);
+    /// Avalia e, se couber, inicia o reposicionamento do alerta. Retorna true
+    /// quando a decisão é definitiva (iniciada, desabilitada, sem obstáculo
+    /// observado ou sem candidato viável) e false quando a recusa é temporária
+    /// e o alerta deve tentar de novo na próxima oportunidade.
+    bool tryReposition(PendingVictimAlert& alert);
     /// Registra a distância efetiva de um reposicionamento concluído.
     void recordCompletedRepositionDistance(const PendingVictimAlert& alert);
     /// Encerra o modo de reposicionamento e retoma a mobilidade Gauss-Markov.

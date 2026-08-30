@@ -22,8 +22,14 @@ struct PendingVictimAlert {
     // de a entrada dinâmica da equipe ainda existir quando a resposta chegar.
     std::map<std::string, std::string> attemptTeamIds;
     std::map<std::string, std::string> attemptTeamAddresses;
-    // O limiar de tentativas sem ACK produz uma única decisão por alerta.
+    // O limiar de tentativas sem ACK produz uma única decisão por alerta. A
+    // decisão só é registrada quando é definitiva: uma recusa temporária
+    // (equipe momentaneamente não retida, drone ocupado com outro alerta) deixa
+    // o alerta elegível para tentar de novo no próximo ciclo sem ACK.
     bool repositionDecisionMade = false;
+    // O gatilho é contabilizado uma única vez, mesmo que a decisão exija várias
+    // oportunidades até ser definitiva.
+    bool repositionTriggerRecorded = false;
     inet::Coord repositionOrigin;
 };
 

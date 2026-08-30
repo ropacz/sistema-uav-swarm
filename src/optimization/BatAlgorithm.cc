@@ -64,14 +64,17 @@ BatResult BatAlgorithm::optimize(const Coord& center, double maxDistance,
     // amostra é pré-filtrada por área/altitude (sampleInDomain) antes de gastar
     // uma tentativa em feasible(), que também testa obstáculo/conectividade.
     for (auto& bat : bats) {
-        for (int tries = 0; tries < p.initializationAttempts; ++tries) {
+        // O resultado da última tentativa é reaproveitado: reavaliar feasible()
+        // na mesma posição devolveria o mesmo valor e dobraria o custo da
+        // inicialização.
+        bool initialized = false;
+        for (int tries = 0; tries < p.initializationAttempts && !initialized; ++tries) {
             bat.position = sampleInDomain(rng, center, maxDistance, inDomain);
-            if (feasible(bat.position))
-                break;
+            initialized = feasible(bat.position);
         }
         bat.amplitude = p.initialAmplitude;
         bat.pulseRate = p.initialPulseRate;
-        if (feasible(bat.position)) {
+        if (initialized) {
             bat.fitness = fitness(bat.position);
             if (bat.fitness < best.fitness)
                 best = {bat.position, bat.fitness, true};

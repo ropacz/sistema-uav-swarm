@@ -34,6 +34,7 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/app/DroneApp.o \
     $O/app/TeamApp.o \
+    $O/camera/AbstractObstacleSensor.o \
     $O/messages/SarMessageSerializers.o \
     $O/metrics/ExperimentMetrics.o \
     $O/mobility/BaGaussMarkovMobility.o \
@@ -41,7 +42,6 @@ OBJS = \
     $O/optimization/RepositionFitness.o \
     $O/scenario/SarScenarioManager.o \
     $O/scenario/StaticVictim.o \
-    $O/sensing/AbstractObstacleSensor.o \
     $O/messages/DroneStatus_m.o \
     $O/messages/TeamUpdate_m.o \
     $O/messages/VictimAck_m.o \
