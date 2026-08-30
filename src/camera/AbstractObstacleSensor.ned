@@ -1,11 +1,16 @@
 package echosar.camera;
 
-// Câmera de visão frontal/traseira do DJI Phantom 4 Pro (sensoriamento de
-// obstáculos). Sensor visual físico idealizado: respeita o alcance nominal
-// (0,7-30 m) por padrão, mas o reconhecimento de obstáculo em si (visão
-// computacional/ML) é abstraído por verificação geométrica — ver inspect()
-// em AbstractObstacleSensor.cc e D4 em docs/desvios_e_extensoes.md. Um modo
-// oráculo sem limite de alcance continua disponível via maximumRange < 0.
+// MODELO VISUAL IDEALIZADO COM ALCANCE LIMITADO, inspirado na visão
+// frontal/traseira do DJI Phantom 4 Pro. Respeita o alcance nominal
+// (0,7-30 m) por padrão; o reconhecimento do obstáculo em si (visão
+// computacional/ML) é abstraído por verificação geométrica.
+//
+// NÃO é uma câmera realista. Ainda não aplica campo de visão, orientação,
+// frequência efetiva de 10 Hz, iluminação, ruído nem falsos negativos —
+// dentro do alcance a detecção é perfeita e omnidirecional. Ver D4 e a
+// lacuna L2 em docs/desvios_e_extensoes.md.
+//
+// Um modo sem limite de alcance continua disponível via maximumRange < 0.
 simple AbstractObstacleSensor
 {
     parameters:

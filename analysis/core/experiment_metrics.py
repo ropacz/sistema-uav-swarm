@@ -56,12 +56,14 @@ def collect(path: str) -> dict:
         "expired_known_team_selection_events": "expiredKnownTeamSelectionEvents",
         "alerts_without_known_team": "alertsWithoutKnownTeam",
         "reposition_triggers": "repositionTriggers",
+        "sensor_evaluations": "sensorEvaluations",
         "obstacles_detected": "obstaclesDetected",
         "ba_activations": "baActivations",
         "repositions_started": "repositionsStarted",
         "repositions_completed": "repositionsCompleted",
         "reposition_distance_sum_m": "repositionDistanceSum",
         "reposition_duration_sum_s": "repositionDurationSum",
+        "effective_repositions": "effectiveRepositions",
     }
     values = {
         output_name: central_scalar(frame, scalar_name)

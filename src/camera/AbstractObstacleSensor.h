@@ -28,7 +28,7 @@ class AbstractObstacleSensor : public omnetpp::cSimpleModule
   protected:
     inet::ModuleRefByPar<inet::physicalenvironment::IPhysicalEnvironment> environment;
     double minimumRange = 0.7;
-    /// Alcance máximo do sensor físico do Phantom 4 Pro (padrão: 30 m).
+    /// Alcance máximo do modelo visual (padrão: 30 m, Phantom 4 Pro).
     /// Negativo desabilita o limite — modo oráculo geométrico idealizado,
     /// disponível para análises que queiram isolar o mecanismo do funil de
     /// detecção (ver docs/desvios_e_extensoes.md, D4), mas não é mais o

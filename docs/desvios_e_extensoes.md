@@ -260,17 +260,39 @@ a resposta à identificação visual da causa exigiria que o bloqueador estivess
 a menos de 30 m, iluminado, texturizado e na direção certa — restrições que
 não decorrem da pergunta de pesquisa.
 
-**Formulação para a dissertação:** *o Bat Algorithm responde à degradação da
-comunicação, independentemente de sua causa. As observações visuais
-disponíveis influenciam a função de aptidão, mas não constituem condição
-obrigatória para o acionamento.* O foco do trabalho é recuperação adaptativa
-da comunicação, não identificação visual da causa da perda do enlace.
+**Formulação para a dissertação:** *após o número configurado de tentativas sem
+confirmação, a aplicação inicia a avaliação de reposicionamento,
+independentemente da detecção visual de obstáculos. O modelo visual, limitado a
+30 m, fornece opcionalmente o primeiro ponto de interseção observado, utilizado
+no termo de proximidade da aptidão. A viabilidade dos candidatos é verificada
+por um avaliador geométrico idealizado do simulador, sem limite de alcance, que
+exige trajetória livre e linha de visada até a última posição conhecida da
+equipe. Consequentemente, a detecção visual não condiciona a ativação do BA,
+mas a geometria idealizada ainda condiciona a ocorrência de deslocamento
+efetivo.*
 
-**O que a câmera continua fazendo.** `victimSensorEvaluated` e
-`obstaclesDetected` seguem sendo emitidos nos **dois braços**, agora como
-diagnóstico de exposição e não como portão: registram se havia obstáculo
-visível no instante do gatilho. A comparação pareada da exposição é
-preservada. Quando há detecção, o ponto observado entra no termo
+**Ativação não implica deslocamento — não afirmar o contrário.** Toda
+degradação aciona a *avaliação*, mas nem toda avaliação produz movimento. Se a
+degradação ocorrer com a linha de visada geometricamente livre, a posição atual
+continua viável, e como a aptidão favorece permanecer parado (ver a aritmética
+em E4) o resultado pode ser um deslocamento próximo de zero — ou nenhum, se o
+candidato coincidir com a posição atual (`distance <= 1e-6` em
+`DroneApp::tryReposition()`). O deslocamento efetivo ocorre quando o avaliador
+geométrico identifica que a configuração atual não atende às restrições de
+trajetória e de linha de visada.
+
+Por isso o funil é medido em etapas separadas, e `effectiveRepositions`
+(deslocamento acima de `effectiveRepositionThreshold`, 1 m por padrão) existe
+para não ler um deslocamento de poucos centímetros como reposicionamento
+operacionalmente relevante. A distância bruta continua sendo gravada.
+
+**O que a câmera continua fazendo.** `victimSensorEvaluated` segue sendo
+emitido nos **dois braços**, agora como diagnóstico de exposição e não como
+portão. O funil passou a registrar `sensorEvaluations` (quantas vezes o modelo
+visual foi consultado) separadamente de `obstaclesDetected` (quantas vezes
+havia obstáculo dentro de 30 m): sem essa separação, "consultou e não viu nada"
+seria indistinguível de "nunca consultou", que agora são situações diferentes.
+A comparação pareada da exposição é preservada. Quando há detecção, o ponto observado entra no termo
 `C_obstaculo`; quando não há, esse termo é zero para todos os candidatos e não
 influencia a ordenação (`obstaclePoint` é `std::optional`).
 

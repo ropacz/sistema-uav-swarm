@@ -70,11 +70,23 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     int multiHopDeliveries = 0;
     int intermediateForwardings = 0;
     int repositionTriggers = 0;
+    /// Quantas vezes o modelo visual foi consultado. Separado de
+    /// obstaclesDetected porque, desde que a detecção deixou de condicionar o
+    /// BA (D7), "nenhum obstáculo detectado" e "câmera nunca consultada" são
+    /// situações distintas que o funil precisa distinguir.
+    int sensorEvaluations = 0;
     int obstaclesDetected = 0;
     int baActivations = 0;
     int repositionsStarted = 0;
     int repositionsCompleted = 0;
     double repositionDistanceSum = 0;
+    /// Reposicionamentos concluídos cujo deslocamento excedeu
+    /// effectiveRepositionThreshold. Classificação analítica: um deslocamento
+    /// de poucos centímetros é numericamente um reposicionamento, mas não um
+    /// reposicionamento operacionalmente relevante. O valor bruto continua em
+    /// repositionDistanceSum.
+    int effectiveRepositions = 0;
+    double effectiveRepositionThreshold = 1;
 
     omnetpp::simsignal_t generatedSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t attemptSentSignal = SIMSIGNAL_NULL;
