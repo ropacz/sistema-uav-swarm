@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <optional>
 
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
 #include "mobility/BaGaussMarkovMobility.h"
 #include "metrics/AlertMetricEvent.h"
-#include "sensing/AbstractObstacleSensor.h"
+#include "camera/AbstractObstacleSensor.h"
 
 using namespace omnetpp;
 using namespace inet;
@@ -519,10 +520,17 @@ void DroneApp::performMaintenance()
             alert.ackDeadline = -1;
             if (alert.attempts >= repositionAfterUnackedAttempts &&
                 !alert.repositionDecisionMade) {
-                alert.repositionDecisionMade = true;
-                AlertMetricEvent triggerEvent(alert.alertId);
-                emit(repositionTriggerSignal, &triggerEvent);
-                tryReposition(alert);
+                if (!alert.repositionTriggerRecorded) {
+                    alert.repositionTriggerRecorded = true;
+                    AlertMetricEvent triggerEvent(alert.alertId);
+                    emit(repositionTriggerSignal, &triggerEvent);
+                }
+                // Só encerra a decisão quando ela é definitiva. Uma recusa
+                // temporária mantém o alerta elegível para a próxima
+                // oportunidade, em vez de perder o reposicionamento por causa
+                // de uma condição que já passou.
+                if (tryReposition(alert))
+                    alert.repositionDecisionMade = true;
             }
         }
         // O alerta que comanda o movimento espera a tentativa imediata da chegada.
@@ -570,35 +578,42 @@ void DroneApp::expireDiscoveredEntries()
     }
 }
 
-void DroneApp::tryReposition(PendingVictimAlert& alert)
+bool DroneApp::tryReposition(PendingVictimAlert& alert)
 {
     // O BA nunca é acionado por uma equipe que jamais foi conhecida. Uma equipe
     // que era conhecida e cuja entrada expirou continua elegível enquanto sua
     // última posição estiver retida: é exatamente o caso que a recuperação trata.
+    // Ambas as recusas abaixo são temporárias: a retenção da equipe e a
+    // ocupação do drone mudam com o tempo, então o alerta continua elegível.
     auto teamIt = discoveredTeams.find(alert.targetTeamId);
     if (teamIt == discoveredTeams.end() || teamIt->second.lastUpdateTime < SIMTIME_ZERO) {
         EV_DEBUG << "Reposition skipped: target team is no longer retained\n";
-        return;
+        return false;
     }
     if (!reposition.idle()) {
         EV_DEBUG << "Reposition skipped: drone is already moving for another alert\n";
-        return;
+        return false;
     }
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
     Coord teamPosition = teamIt->second.position;
+    // A observação visual é informativa, não é condição de acionamento. Não
+    // detectar obstáculo significa apenas que nenhum obstáculo foi observado
+    // dentro do alcance da câmera — não que o enlace esteja íntegro. A
+    // degradação pode vir de bloqueador além dos 30 m, afastamento da equipe,
+    // interferência, desvanecimento ou posição desatualizada. Quem decide
+    // *quando* reposicionar é a rede (ausência de ACK acima do limiar); a
+    // câmera apenas informa *o que* foi visto. Ver docs/desvios_e_extensoes.md,
+    // D4/E4.
     ObstacleObservation observation = sensor->inspect(current, teamPosition);
     AlertMetricEvent sensorEvent(alert.alertId, simTime(),
                                  observation.confirmed ? "detected" : "notDetected");
     emit(sensorEvaluationSignal, &sensorEvent);
-    if (!observation.confirmed) {
-        EV_DEBUG << "Reposition skipped: obstacle not detected ("
-                 << observation.reason << ")\n";
-        return;
-    }
+    // A partir daqui a decisão é definitiva: o sensor foi consultado uma vez
+    // para este alerta, como o gatilho prevê.
     if (!baEnabled)
-        return;
+        return true;
 
     AlertMetricEvent baEvent(alert.alertId);
     emit(baActivationSignal, &baEvent);
@@ -613,8 +628,17 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
         });
     if (preserveConnectivity)
         connectivityConstraintsApplied++;
-    RepositionFitness fitness(fitnessParameters, sensor, current,
-                              teamPosition, observation.nearestSurfacePoint,
+    // Modelo híbrido (D4/E4, §14): o ponto de obstáculo entra na aptidão só se
+    // a câmera realmente o observou dentro de 30 m — sem observação, o termo
+    // de obstáculo é zero e a aptidão fica com enlace e deslocamento. A
+    // viabilidade das candidatas é testada pelo avaliador geométrico
+    // idealizado do simulador, que é o que continua excluindo a posição atual
+    // quando ela permanece obstruída.
+    std::optional<Coord> obstaclePoint;
+    if (observation.confirmed)
+        obstaclePoint = observation.nearestSurfacePoint;
+    RepositionFitness fitness(fitnessParameters, sensor, current, teamPosition,
+                              obstaclePoint,
                               neighborPositions, preserveConnectivity, simTime());
     BatResult result = BatAlgorithm::optimize(
         current, fitnessParameters.maximumRepositionDistance,
@@ -629,7 +653,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
             << " valid=" << result.valid << "\n";
     if (!result.valid) {
         EV_DEBUG << "Reposition skipped: BA found no feasible solution\n";
-        return;
+        return true;
     }
     if (preserveConnectivity && std::any_of(
             neighborPositions.begin(), neighborPositions.end(),
@@ -645,7 +669,7 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
     double distance = current.distance(result.position);
     if (distance <= 1e-6) {
         EV_DEBUG << "Reposition skipped: BA candidate equals current position\n";
-        return;
+        return true;
     }
     alert.repositionOrigin = current;
     // O trajeto é executado gradualmente pela mobilidade, que devolve o instante
@@ -656,12 +680,13 @@ void DroneApp::tryReposition(PendingVictimAlert& alert)
                                            fitnessParameters.descentSpeed);
     if (travelTime <= 0) {
         EV_DEBUG << "Reposition skipped: mobility reported no movement\n";
-        return;
+        return true;
     }
     reposition.begin(alert.alertId);
     AlertMetricEvent startedEvent(alert.alertId, simTime(), "started", distance);
     emit(repositionEventSignal, &startedEvent);
     scheduleAt(simTime() + travelTime, movementCompleteTimer);
+    return true;
 }
 
 void DroneApp::recordCompletedRepositionDistance(const PendingVictimAlert& alert)

@@ -37,6 +37,10 @@ Define_Module(ExperimentMetrics);
 
 void ExperimentMetrics::initialize()
 {
+    effectiveRepositionThreshold = par("effectiveRepositionThreshold");
+    if (effectiveRepositionThreshold < 0)
+        throw cRuntimeError("effectiveRepositionThreshold must not be negative");
+
     generatedSignal = registerSignal("victimAlertGenerated");
     attemptSentSignal = registerSignal("victimAlertAttemptSent");
     deliveredSignal = registerSignal("victimAlertDelivered");
@@ -176,6 +180,7 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
     else if (signalId == repositionTriggerSignal)
         repositionTriggers++;
     else if (signalId == sensorSignal) {
+        sensorEvaluations++;
         if (event->category == "detected")
             obstaclesDetected++;
     }
@@ -217,6 +222,9 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
                                     event->alertId.c_str());
             if (measuredRepositionAlertIds.insert(event->alertId).second) {
                 repositionDistanceSum += event->value;
+                // Classificação analítica; o valor bruto acima é preservado.
+                if (event->value > effectiveRepositionThreshold)
+                    effectiveRepositions++;
             }
         }
     }
@@ -280,7 +288,11 @@ void ExperimentMetrics::finish()
         confirmedAlertIds.size() + expiredAlertIds.size() > generatedAlertIds.size() ||
         repositionsCompleted > repositionsStarted ||
         repositionsStarted > baActivations ||
-        obstaclesDetected > repositionTriggers ||
+        // O funil da câmera: consultada no máximo uma vez por gatilho, e a
+        // detecção é um subconjunto das consultas.
+        sensorEvaluations > repositionTriggers ||
+        obstaclesDetected > sensorEvaluations ||
+        effectiveRepositions > repositionsCompleted ||
         measuredRepositionAlertIds != completedRepositionAlertIds ||
         confirmationDelayCount != static_cast<int>(confirmedAlertIds.size()) ||
         hopCountCount != static_cast<int>(deliveredAlertIds.size()) ||
@@ -314,11 +326,13 @@ void ExperimentMetrics::finish()
     recordScalar("pdr", pdr);
     recordScalar("confirmationRate", confirmationRate);
     recordScalar("repositionTriggers", repositionTriggers);
+    recordScalar("sensorEvaluations", sensorEvaluations);
     recordScalar("obstaclesDetected", obstaclesDetected);
     recordScalar("baActivations", baActivations);
     recordScalar("repositionsStarted", repositionsStarted);
     recordScalar("repositionsCompleted", repositionsCompleted);
     recordScalar("repositionDistanceSum", repositionDistanceSum);
+    recordScalar("effectiveRepositions", effectiveRepositions);
     recordScalar("repositionDurationSum", repositionDurationSum.dbl());
 }
 

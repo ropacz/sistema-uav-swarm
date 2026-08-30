@@ -1,6 +1,6 @@
 package echosar.node;
 
-import echosar.sensing.AbstractObstacleSensor;
+import echosar.camera.AbstractObstacleSensor;
 import inet.node.aodv.AodvRouter;
 
 module SarDrone extends AodvRouter

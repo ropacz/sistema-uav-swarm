@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "sensing/AbstractObstacleSensor.h"
+#include "camera/AbstractObstacleSensor.h"
 
 using inet::Coord;
 
@@ -13,7 +13,7 @@ RepositionFitness::RepositionFitness(const FitnessParameters& parameters,
                                      const AbstractObstacleSensor *sensor,
                                      const Coord& current,
                                      const Coord& teamPosition,
-                                     const Coord& obstaclePoint,
+                                     const std::optional<Coord>& obstaclePoint,
                                      const std::vector<Coord>& neighborPositions,
                                      bool preserveConnectivity,
                                      omnetpp::simtime_t now) :
@@ -42,18 +42,26 @@ double RepositionFitness::travelTime(const Coord& from, const Coord& to) const
 
 double RepositionFitness::cost(const Coord& candidate) const
 {
-    // Usa apenas qualidade estimada; o RSSI futuro não é conhecido pelo BA.
-    double linkCost = std::clamp(
+    // A distância até a última posição conhecida da equipe é uma aproximação
+    // geométrica da qualidade esperada do enlace — não uma estimativa de RSSI,
+    // que o BA não conhece.
+    double teamDistanceCost = std::clamp(
         candidate.distance(teamPosition) / parameters.linkNormalizationDistance, 0.0, 1.0);
-    double proximity =
-        std::exp(-candidate.distance(obstaclePoint) / parameters.obstacleSigma);
-    // Um candidato que permanece obstruído recebe custo máximo de obstáculo,
-    // por mais distante que esteja da superfície detectada.
-    double obstacleCost = std::max(
-        proximity, sensor->intersectsAnyObstacle(candidate, teamPosition) ? 1.0 : 0.0);
+    // Repulsão local em torno da única superfície que a câmera observou. Sem
+    // observação o termo é constante e não influencia a ordenação dos
+    // candidatos — valores absolutos de aptidão não são comparáveis entre uma
+    // ativação com observação e outra sem.
+    //
+    // Não há aqui o teste de "candidato ainda obstruído": ele seria redundante,
+    // porque cost() só é avaliada em candidatos que feasible() já aprovou, e
+    // aquela exige linha de visada livre até a equipe. Repeti-lo custaria um
+    // raycasting por avaliação para um valor que é sempre o mesmo.
+    double obstacleCost = obstaclePoint.has_value()
+        ? std::exp(-candidate.distance(*obstaclePoint) / parameters.obstacleSigma)
+        : 0.0;
     double movementCost = std::clamp(
         candidate.distance(current) / parameters.maximumRepositionDistance, 0.0, 1.0);
-    return parameters.wLink * linkCost + parameters.wObstacle * obstacleCost +
+    return parameters.wLink * teamDistanceCost + parameters.wObstacle * obstacleCost +
            parameters.wMove * movementCost;
 }
 
@@ -67,8 +75,13 @@ bool RepositionFitness::inDomain(const Coord& candidate) const
 bool RepositionFitness::feasible(const Coord& candidate) const
 {
     if (!inDomain(candidate) ||
-        candidate.distance(current) > parameters.maximumRepositionDistance ||
-        candidate.distance(obstaclePoint) < parameters.obstacleSafetyMargin)
+        candidate.distance(current) > parameters.maximumRepositionDistance)
+        return false;
+    // Afastamento mínimo da superfície observada. Vale só em torno desse ponto:
+    // não é garantia de que o trajeto inteiro esteja livre, porque a câmera não
+    // enxerga além de maximumRange.
+    if (obstaclePoint.has_value() &&
+        candidate.distance(*obstaclePoint) < parameters.obstacleSafetyMargin)
         return false;
     if (now + travelTime(current, candidate) > parameters.flightTimeLimit)
         return false;
@@ -76,11 +89,14 @@ bool RepositionFitness::feasible(const Coord& candidate) const
     // do movimento. Um drone já isolado não é impedido de buscar uma saída.
     if (preserveConnectivity && !predictsNeighbor(candidate))
         return false;
-    // O trajeto do drone deve ser livre e a posição final precisa de linha de
-    // visada até a equipe estimada. Uma posição ainda obstruída não cumpre a
-    // finalidade do reposicionamento e não deve competir apenas por penalidade.
-    return !sensor->intersectsAnyObstacle(current, candidate) &&
-           !sensor->intersectsAnyObstacle(candidate, teamPosition);
+    // Avaliador geométrico idealizado do simulador (§14; D4/E4): o trajeto do
+    // drone deve ser livre e a posição final precisa de linha de visada até a
+    // equipe estimada. Uma posição ainda obstruída não cumpre a finalidade do
+    // reposicionamento e não deve competir apenas por penalidade de custo.
+    // Não é o que a câmera enxerga — a detecção que ativou o mecanismo essa
+    // sim respeitou o alcance de 30 m.
+    return !sensor->intersectsAnyObstacleGroundTruth(current, candidate) &&
+           !sensor->intersectsAnyObstacleGroundTruth(candidate, teamPosition);
 }
 
 } // namespace echosar

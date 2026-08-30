@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "inet/common/geometry/common/Coord.h"
@@ -18,7 +19,9 @@ struct FitnessParameters {
     double wMove = 0.15;
     // Escala do decaimento exponencial da penalidade de proximidade.
     double obstacleSigma = 10;
-    // Distância mínima entre um candidato e a superfície detectada.
+    // Distância mínima entre um candidato e a única superfície observada pela
+    // câmera. É uma repulsão local em torno desse ponto, não prova de que a
+    // trajetória inteira esteja livre — o sensor só enxerga até maximumRange.
     double obstacleSafetyMargin = 1;
     // Distância de referência para normalizar o custo de enlace.
     double linkNormalizationDistance = 1000;
@@ -36,8 +39,15 @@ struct FitnessParameters {
 ///
 /// Separada da aplicação porque responde a uma pergunta própria — quanto custa
 /// e se é alcançável uma posição — e porque assim pode ser exercitada sem uma
-/// pilha de rede montada. A geometria vem do sensor; a aptidão nunca consulta
-/// o rádio nem conhece o RSSI futuro.
+/// pilha de rede montada.
+///
+/// **Modelo híbrido, deliberado.** A *detecção* que ativa o reposicionamento
+/// respeita o alcance físico da câmera (30 m, via `inspect()`); a *avaliação
+/// de posições candidatas* usa um predicado geométrico idealizado do simulador
+/// (`intersectsAnyObstacleGroundTruth()`), autorizado pelo §14 da diretriz e
+/// declarado em D4/E4. O objetivo é isolar a análise da política de
+/// reposicionamento das incertezas do planejamento de trajetória. Não há mapa
+/// persistente. A aptidão nunca consulta o rádio nem conhece o RSSI futuro.
 class RepositionFitness
 {
   public:
@@ -45,14 +55,18 @@ class RepositionFitness
                       const AbstractObstacleSensor *sensor,
                       const inet::Coord& current,
                       const inet::Coord& teamPosition,
-                      const inet::Coord& obstaclePoint,
+                      const std::optional<inet::Coord>& obstaclePoint,
                       const std::vector<inet::Coord>& neighborPositions,
                       bool preserveConnectivity,
                       omnetpp::simtime_t now);
 
     /// Custo normalizado do candidato: enlace, obstáculo e deslocamento.
+    /// Só é avaliado depois de feasible(); por isso não repete o raycasting
+    /// que aquela já fez.
     double cost(const inet::Coord& candidate) const;
-    /// Limites de área, altitude, alcance, margem, trajeto livre e autonomia.
+    /// Limites de área, altitude, alcance, margem local, autonomia e — pelo
+    /// avaliador geométrico idealizado — trajeto livre e linha de visada até
+    /// a equipe estimada.
     bool feasible(const inet::Coord& candidate) const;
     /// Só área e altitude — sem geometria de obstáculo. Barato o bastante para
     /// o gerador de candidatos do BA descartar amostras triviais antes de
@@ -63,10 +77,12 @@ class RepositionFitness
 
   private:
     const FitnessParameters& parameters;
+    /// Usado só por feasible(), e só pelo predicado ground truth.
     const AbstractObstacleSensor *sensor;
     inet::Coord current;
     inet::Coord teamPosition;
-    inet::Coord obstaclePoint;
+    /// Única superfície observada pela câmera nesta ativação, se houve alguma.
+    std::optional<inet::Coord> obstaclePoint;
     std::vector<inet::Coord> neighborPositions;
     bool preserveConnectivity;
     omnetpp::simtime_t now;

@@ -1,4 +1,10 @@
-"""Validate the complete, minimal BA control chain with central scalars."""
+"""Validate the complete, minimal BA control chain with central scalars.
+
+Cobre o caminho *com* obstáculo visível: a câmera observa a superfície dentro
+do alcance e o ponto observado entra no termo de obstáculo da aptidão. O
+caminho complementar — degradação da rede aciona o BA *sem* obstáculo visto —
+é coberto por validate_sensor_range_smoke_test.py.
+"""
 
 from pathlib import Path
 import sys
@@ -66,7 +72,8 @@ def main() -> None:
         raise SystemExit("BA smoke test FALHOU:\n- " + "\n- ".join(failures))
 
     print("BA smoke test OK")
-    print("  timeout sem ACK -> sensor binário -> BA -> movimento: confirmado")
+    print("  timeout sem ACK -> BA -> movimento: confirmado")
+    print("  obstáculo observado dentro do alcance entra na aptidão")
     print("  tentativa imediata na chegada -> ACK: confirmado")
     print(f"  distância real: {row['reposition_distance_sum_m']:.2f} m")
     print(f"  duração do reposicionamento: {row['reposition_duration_sum_s']:.2f} s")
