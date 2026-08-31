@@ -64,6 +64,12 @@ def collect(path: str) -> dict:
         "reposition_distance_sum_m": "repositionDistanceSum",
         "reposition_duration_sum_s": "repositionDurationSum",
         "effective_repositions": "effectiveRepositions",
+        "recovery_probe_checks": "recoveryProbeChecks",
+        "recovery_probes_sent": "recoveryProbesSent",
+        "recovery_probes_confirmed": "recoveryProbesConfirmed",
+        "recovery_probes_failed": "recoveryProbesFailed",
+        "recovery_probes_unreachable": "recoveryProbesUnreachable",
+        "recovery_probes_abandoned": "recoveryProbesAbandoned",
     }
     values = {
         output_name: central_scalar(frame, scalar_name)
@@ -106,6 +112,19 @@ def collect(path: str) -> dict:
         "reposition_duration_mean_s": ratio(
             values["reposition_duration_sum_s"],
             values["repositions_completed"],
+        ),
+        # Fração das verificações que liberaram o alerta. O denominador são as
+        # verificações abertas, não as sondagens emitidas: o que interessa é
+        # quantos reposicionamentos o portão conseguiu confirmar.
+        "recovery_probe_confirm_pct": ratio(
+            values["recovery_probes_confirmed"],
+            values["recovery_probe_checks"],
+            100,
+        ),
+        # Sondagens gastas por verificação: acima de 1 indica reenvio, e é o
+        # custo que o mecanismo cobra para poupar o alerta pesado.
+        "recovery_probes_per_check": ratio(
+            values["recovery_probes_sent"], values["recovery_probe_checks"]
         ),
     })
     return values

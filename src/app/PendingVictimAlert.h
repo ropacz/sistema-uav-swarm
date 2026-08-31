@@ -31,6 +31,19 @@ struct PendingVictimAlert {
     // oportunidades até ser definitiva.
     bool repositionTriggerRecorded = false;
     inet::Coord repositionOrigin;
+    // Miniatura capturada uma única vez, no início do ciclo. Identificador e
+    // instante ficam fixos para que toda tentativa reenvie a mesma imagem, e
+    // não uma foto nova a cada retransmissão. Vazio quando a captura está
+    // desabilitada.
+    std::string photoId;
+    omnetpp::simtime_t photoCaptureTime = -1;
+    // Sondagem de recuperação em curso. Enquanto pendente, o alerta não é
+    // transmitido: o objetivo é justamente não gastar o pacote pesado antes de
+    // saber se o reposicionamento restabeleceu o enlace.
+    bool probePending = false;
+    std::string probeId;
+    int probeAttempts = 0;
+    omnetpp::simtime_t probeDeadline = -1;
 };
 
 } // namespace echosar

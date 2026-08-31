@@ -51,6 +51,7 @@ void ExperimentMetrics::initialize()
     sensorSignal = registerSignal("victimSensorEvaluated");
     baActivationSignal = registerSignal("victimBaActivated");
     repositionSignal = registerSignal("victimRepositionEvent");
+    recoveryProbeSignal = registerSignal("victimRecoveryProbe");
 
     // Assinar no módulo raiz permite observar todos os UAVs e equipes sem
     // acoplar as aplicações diretamente ao coletor.
@@ -65,6 +66,7 @@ void ExperimentMetrics::initialize()
     network->subscribe(sensorSignal, this);
     network->subscribe(baActivationSignal, this);
     network->subscribe(repositionSignal, this);
+    network->subscribe(recoveryProbeSignal, this);
 }
 
 void ExperimentMetrics::handleMessage(cMessage *message)
@@ -186,6 +188,23 @@ void ExperimentMetrics::receiveSignal(cComponent *, simsignal_t signalId,
     }
     else if (signalId == baActivationSignal)
         baActivations++;
+    else if (signalId == recoveryProbeSignal) {
+        if (event->category == "started")
+            recoveryProbeChecks++;
+        else if (event->category == "sent")
+            recoveryProbesSent++;
+        else if (event->category == "confirmed")
+            recoveryProbesConfirmed++;
+        else if (event->category == "failed")
+            recoveryProbesFailed++;
+        else if (event->category == "unreachable")
+            recoveryProbesUnreachable++;
+        else if (event->category == "abandoned")
+            recoveryProbesAbandoned++;
+        else
+            throw cRuntimeError("Unknown recovery probe category '%s'",
+                                event->category.c_str());
+    }
     else if (signalId == repositionSignal) {
         // Há no máximo uma decisão por alerta, portanto alertId identifica o ciclo.
         if (event->category == "started") {
@@ -268,6 +287,9 @@ void ExperimentMetrics::finish()
     double confirmationRate = generated > 0
         ? confirmedAlertIds.size() / generated : undefined;
 
+    int recoveryProbeOutcomes = recoveryProbesConfirmed + recoveryProbesFailed +
+        recoveryProbesUnreachable + recoveryProbesAbandoned;
+
     auto isSubset = [](const auto& subset, const auto& superset) {
         return std::includes(superset.begin(), superset.end(),
                              subset.begin(), subset.end());
@@ -293,6 +315,18 @@ void ExperimentMetrics::finish()
         sensorEvaluations > repositionTriggers ||
         obstaclesDetected > sensorEvaluations ||
         effectiveRepositions > repositionsCompleted ||
+        // O funil da sondagem: uma verificação por reposicionamento concluído,
+        // cada uma com um único desfecho. Contar mais desfechos que aberturas
+        // seria contagem dupla e é sempre erro. A igualdade só é exigida onde
+        // os alertas também precisam ter fechado: uma execução truncada pode
+        // terminar com a última verificação ainda em curso.
+        recoveryProbeChecks > repositionsCompleted ||
+        recoveryProbeOutcomes > recoveryProbeChecks ||
+        (par("requireClosedAlerts").boolValue() &&
+            recoveryProbeOutcomes != recoveryProbeChecks) ||
+        // Confirmar ou esgotar exige ter perguntado; desistir e não ter destino
+        // não exigem, então ficam fora desta cota.
+        recoveryProbesConfirmed + recoveryProbesFailed > recoveryProbesSent ||
         measuredRepositionAlertIds != completedRepositionAlertIds ||
         confirmationDelayCount != static_cast<int>(confirmedAlertIds.size()) ||
         hopCountCount != static_cast<int>(deliveredAlertIds.size()) ||
@@ -334,6 +368,12 @@ void ExperimentMetrics::finish()
     recordScalar("repositionDistanceSum", repositionDistanceSum);
     recordScalar("effectiveRepositions", effectiveRepositions);
     recordScalar("repositionDurationSum", repositionDurationSum.dbl());
+    recordScalar("recoveryProbeChecks", recoveryProbeChecks);
+    recordScalar("recoveryProbesSent", recoveryProbesSent);
+    recordScalar("recoveryProbesConfirmed", recoveryProbesConfirmed);
+    recordScalar("recoveryProbesFailed", recoveryProbesFailed);
+    recordScalar("recoveryProbesUnreachable", recoveryProbesUnreachable);
+    recordScalar("recoveryProbesAbandoned", recoveryProbesAbandoned);
 }
 
 } // namespace echosar

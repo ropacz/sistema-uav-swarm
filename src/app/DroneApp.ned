@@ -14,6 +14,16 @@ simple DroneApp like IApp
         int appPort = default(5000);
         // Tamanho experimental do payload VictimAlert, sem cabeçalhos da pilha.
         int victimAlertPayloadBytes = default(320);
+        // Bytes da miniatura anexada ao alerta, somados ao payload acima. Zero
+        // envia o alerta sem foto e reproduz os cenários anteriores à câmera.
+        // O teto prático não é o MTU e sim a duração da transmissão: no PHY
+        // 802.11b a 1 Mbps do cenário, acima de ~768 B o quadro ultrapassa o
+        // maxTransmissionDuration do RadioMedium e a simulação aborta.
+        int victimAlertPhotoBytes = default(0);
+        // Dimensões declaradas da miniatura. São metadados do anexo: o custo no
+        // enlace vem de victimAlertPhotoBytes, não daqui.
+        int victimAlertPhotoWidth = default(160);
+        int victimAlertPhotoHeight = default(120);
         // Formato e validade dos anúncios usados para conhecer drones vizinhos.
         int droneStatusPayloadBytes;
         double droneStatusInterval @unit(s);
@@ -82,6 +92,24 @@ simple DroneApp like IApp
         // TTL IPv4 aplicado aos pacotes UDP da aplicação.
         int applicationIpTtl = default(32);
 
+        // Sondagem de recuperação
+        // Após concluir o deslocamento, confirma o enlace com um pacote leve
+        // antes de gastar a transmissão do alerta completo. Falso mantém o
+        // comportamento anterior: o alerta é enviado direto na chegada.
+        bool recoveryProbeEnabled = default(false);
+        // Payload da sondagem, sem cabeçalhos da pilha. Só faz sentido se for
+        // muito menor que o alerta que ela protege. O piso não é livre: o
+        // corpo codificado carrega probeId, alertId, drone e equipe, e o
+        // serializer aborta se não couber — 128 B dão folga para os
+        // identificadores dos cenários atuais.
+        int recoveryProbePayloadBytes = default(128);
+        // Espera pela resposta antes de contar a sondagem como perdida.
+        double recoveryProbeTimeout @unit(s) = default(1s);
+        // Sondagens sem resposta antes de desistir da verificação. Esgotado o
+        // limite, o alerta volta ao retry normal e é transmitido mesmo sem
+        // confirmação: a sondagem economiza transmissões, não bloqueia entrega.
+        int recoveryProbeMaxAttempts = default(2);
+
         // Função de aptidão: os três pesos devem somar 1
         // Peso do custo estimado de comunicação com a equipe.
         double wLink = default(0.60);
@@ -128,6 +156,7 @@ simple DroneApp like IApp
         @signal[victimSensorEvaluated](type=echosar::AlertMetricEvent);
         @signal[victimBaActivated](type=echosar::AlertMetricEvent);
         @signal[victimRepositionEvent](type=echosar::AlertMetricEvent);
+        @signal[victimRecoveryProbe](type=echosar::AlertMetricEvent);
         @display("i=misc/drone");
     gates:
         input socketIn @labels(UdpControlInfo/up);

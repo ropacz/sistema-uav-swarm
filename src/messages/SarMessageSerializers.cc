@@ -1,10 +1,12 @@
 #include "messages/DroneStatus_m.h"
 #include "messages/TeamUpdate_m.h"
 #include "messages/VictimAck_m.h"
+#include "messages/RecoveryProbe_m.h"
 #include "messages/VictimAlert_m.h"
 
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "inet/common/packet/serializer/ChunkSerializer.h"
 #include "inet/common/packet/serializer/ChunkSerializerRegistry.h"
@@ -13,11 +15,12 @@ namespace echosar {
 
 // Wire format: "ECHO" | version | type | body length | typed fields | padding.
 // Integers and IEEE-754 doubles use network byte order (big endian).
-static constexpr uint8_t WIRE_VERSION = 5;
+static constexpr uint8_t WIRE_VERSION = 6;
 static constexpr uint8_t TEAM_UPDATE_TYPE = 1;
 static constexpr uint8_t VICTIM_ALERT_TYPE = 2;
 static constexpr uint8_t VICTIM_ACK_TYPE = 3;
 static constexpr uint8_t DRONE_STATUS_TYPE = 4;
+static constexpr uint8_t RECOVERY_PROBE_TYPE = 5;
 
 static void writeString(inet::MemoryOutputStream& stream, const char *value)
 {
@@ -51,6 +54,25 @@ static double readDouble(inet::MemoryInputStream& stream)
     uint64_t bits = stream.readUint64Be();
     double value;
     std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+static void writeBlob(inet::MemoryOutputStream& stream,
+        const std::vector<uint8_t>& value)
+{
+    if (value.size() > UINT16_MAX)
+        throw omnetpp::cRuntimeError("ECHOSAR wire blob is too long");
+    stream.writeUint16Be(static_cast<uint16_t>(value.size()));
+    stream.writeBytes(value);
+}
+
+static std::vector<uint8_t> readBlob(inet::MemoryInputStream& stream)
+{
+    uint16_t length = stream.readUint16Be();
+    std::vector<uint8_t> value;
+    value.reserve(length);
+    for (uint16_t i = 0; i < length; ++i)
+        value.push_back(stream.readByte());
     return value;
 }
 
@@ -150,6 +172,15 @@ struct SarCodec<VictimAlertChunk>
         writeTime(stream, chunk->getCreationTime());
         stream.writeUint32Be(static_cast<uint32_t>(chunk->getAttemptNumber()));
         writeTime(stream, chunk->getTimeToLive());
+        writeString(stream, chunk->getPhotoId());
+        stream.writeUint16Be(chunk->getPhotoWidth());
+        stream.writeUint16Be(chunk->getPhotoHeight());
+        writeTime(stream, chunk->getPhotoCaptureTime());
+        std::vector<uint8_t> photo;
+        photo.reserve(chunk->getPhotoDataArraySize());
+        for (size_t i = 0; i < chunk->getPhotoDataArraySize(); ++i)
+            photo.push_back(chunk->getPhotoData(i));
+        writeBlob(stream, photo);
     }
 
     static void decode(inet::MemoryInputStream& stream,
@@ -166,6 +197,42 @@ struct SarCodec<VictimAlertChunk>
         chunk->setCreationTime(readTime(stream));
         chunk->setAttemptNumber(static_cast<int32_t>(stream.readUint32Be()));
         chunk->setTimeToLive(readTime(stream));
+        chunk->setPhotoId(readString(stream).c_str());
+        chunk->setPhotoWidth(stream.readUint16Be());
+        chunk->setPhotoHeight(stream.readUint16Be());
+        chunk->setPhotoCaptureTime(readTime(stream));
+        std::vector<uint8_t> photo = readBlob(stream);
+        chunk->setPhotoDataArraySize(photo.size());
+        for (size_t i = 0; i < photo.size(); ++i)
+            chunk->setPhotoData(i, photo[i]);
+    }
+};
+
+template<>
+struct SarCodec<RecoveryProbeChunk>
+{
+    static constexpr uint8_t TYPE = RECOVERY_PROBE_TYPE;
+
+    static void encode(inet::MemoryOutputStream& stream,
+            const inet::Ptr<const RecoveryProbeChunk>& chunk)
+    {
+        writeString(stream, chunk->getProbeId());
+        writeString(stream, chunk->getAlertId());
+        writeString(stream, chunk->getSourceDroneId());
+        writeString(stream, chunk->getTargetTeamId());
+        writeTime(stream, chunk->getSendTime());
+        stream.writeUint8(chunk->getReply() ? 1 : 0);
+    }
+
+    static void decode(inet::MemoryInputStream& stream,
+            const inet::Ptr<RecoveryProbeChunk>& chunk)
+    {
+        chunk->setProbeId(readString(stream).c_str());
+        chunk->setAlertId(readString(stream).c_str());
+        chunk->setSourceDroneId(readString(stream).c_str());
+        chunk->setTargetTeamId(readString(stream).c_str());
+        chunk->setSendTime(readTime(stream));
+        chunk->setReply(stream.readUint8() != 0);
     }
 };
 
@@ -265,6 +332,7 @@ using TeamUpdateChunkSerializer = SarChunkSerializer<TeamUpdateChunk>;
 using DroneStatusChunkSerializer = SarChunkSerializer<DroneStatusChunk>;
 using VictimAckChunkSerializer = SarChunkSerializer<VictimAckChunk>;
 using VictimAlertChunkSerializer = SarChunkSerializer<VictimAlertChunk>;
+using RecoveryProbeChunkSerializer = SarChunkSerializer<RecoveryProbeChunk>;
 
 } // namespace echosar
 
@@ -274,5 +342,6 @@ Register_Serializer(echosar::TeamUpdateChunk, echosar::TeamUpdateChunkSerializer
 Register_Serializer(echosar::DroneStatusChunk, echosar::DroneStatusChunkSerializer);
 Register_Serializer(echosar::VictimAckChunk, echosar::VictimAckChunkSerializer);
 Register_Serializer(echosar::VictimAlertChunk, echosar::VictimAlertChunkSerializer);
+Register_Serializer(echosar::RecoveryProbeChunk, echosar::RecoveryProbeChunkSerializer);
 
 } // namespace inet

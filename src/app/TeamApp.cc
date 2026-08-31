@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <string>
 
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/networklayer/common/HopLimitTag_m.h"
@@ -24,6 +25,7 @@ void TeamApp::initialize(int stage)
         appPort = par("appPort");
         teamUpdatePayloadBytes = par("teamUpdatePayloadBytes");
         victimAckPayloadBytes = par("victimAckPayloadBytes");
+        recoveryProbePayloadBytes = par("recoveryProbePayloadBytes");
         updateInterval = par("teamUpdateInterval");
         initialJitter = par("initialJitter");
         ackStartTime = par("ackStartTime");
@@ -32,6 +34,7 @@ void TeamApp::initialize(int stage)
             teamId = getParentModule()->getFullName();
         if (teamId.empty() || appPort <= 0 || appPort > 65535 ||
             teamUpdatePayloadBytes <= 0 || victimAckPayloadBytes <= 0 ||
+            recoveryProbePayloadBytes <= 0 ||
             updateInterval <= 0 || initialJitter < 0 || ackStartTime < 0 ||
             applicationIpTtl <= 0 || applicationIpTtl > 255)
             throw cRuntimeError("Invalid team identity, timing, or IP TTL parameter");
@@ -93,6 +96,8 @@ void TeamApp::socketDataArrived(UdpSocket *, Packet *packet)
 {
     if (hasTypePrefix(packet->getName(), "VictimAlert"))
         handleVictimAlert(packet);
+    else if (hasTypePrefix(packet->getName(), "RecoveryProbe"))
+        handleRecoveryProbe(packet);
     else
         delete packet;
 }
@@ -114,7 +119,14 @@ void TeamApp::handleVictimAlert(Packet *packet)
         hopLimit->getHopLimit() > applicationIpTtl ||
         alert->getAttemptNumber() <= 0 ||
         alert->getTimeToLive() <= SIMTIME_ZERO ||
-        alert->getCreationTime() > simTime();
+        alert->getCreationTime() > simTime() ||
+        // Um anexo só é aceito identificado e datado dentro do ciclo do
+        // alerta: uma miniatura anônima ou vinda do futuro não pode ser
+        // associada à vítima que ela deveria mostrar.
+        (alert->getPhotoDataArraySize() > 0 &&
+         (std::string(alert->getPhotoId()).empty() ||
+          alert->getPhotoCaptureTime() < alert->getCreationTime() ||
+          alert->getPhotoCaptureTime() > simTime()));
     if (invalid) {
         delete packet;
         return;
@@ -155,6 +167,38 @@ void TeamApp::handleVictimAlert(Packet *packet)
     ack->setAckTimestamp(simTime());
     auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
     socket.sendTo(new Packet(("VictimAck:" + alertId).c_str(), ack),
+                  sourceAddress, appPort);
+    delete packet;
+}
+
+void TeamApp::handleRecoveryProbe(Packet *packet)
+{
+    auto probe = packet->peekAtFront<RecoveryProbeChunk>();
+    // Só a ida endereçada a esta equipe é respondida: devolver uma resposta
+    // faria a equipe ecoar o próprio eco.
+    if (probe->getReply() ||
+        std::string(probe->getTargetTeamId()) != teamId ||
+        std::string(probe->getProbeId()).empty() ||
+        std::string(probe->getSourceDroneId()).empty() ||
+        probe->getSendTime() > simTime()) {
+        delete packet;
+        return;
+    }
+    // A janela de injeção de falha (ackStartTime) não se aplica aqui: ela
+    // suprime a confirmação da aplicação, enquanto a sondagem mede se o
+    // enlace transporta um pacote. Suprimir as duas juntas confundiria os dois
+    // mecanismos que o cenário separa de propósito.
+    auto reply = makeShared<RecoveryProbeChunk>();
+    reply->setChunkLength(B(recoveryProbePayloadBytes));
+    reply->setProbeId(probe->getProbeId());
+    reply->setAlertId(probe->getAlertId());
+    reply->setSourceDroneId(probe->getSourceDroneId());
+    reply->setTargetTeamId(teamId.c_str());
+    reply->setSendTime(probe->getSendTime());
+    reply->setReply(true);
+    auto sourceAddress = packet->getTag<L3AddressInd>()->getSrcAddress();
+    socket.sendTo(new Packet((std::string("RecoveryProbe:") +
+                              probe->getAlertId()).c_str(), reply),
                   sourceAddress, appPort);
     delete packet;
 }

@@ -10,6 +10,9 @@ simple TeamApp like IApp
         int appPort = default(5000);
         int teamUpdatePayloadBytes = default(160);
         int victimAckPayloadBytes;
+        // Payload da resposta à sondagem de recuperação. Deve acompanhar o
+        // recoveryProbePayloadBytes do drone: as duas metades do eco.
+        int recoveryProbePayloadBytes = default(128);
         double teamUpdateInterval @unit(s) = default(1s);
         double initialJitter @unit(s) = default(this.teamUpdateInterval);
         int applicationIpTtl = default(32);

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <optional>
+#include <vector>
 
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
@@ -30,6 +31,45 @@ void require(bool satisfied, const char *requirement)
     if (!satisfied)
         throw cRuntimeError("Invalid parameter: %s", requirement);
 }
+
+/// Constrói o conteúdo sintético de uma miniatura. O corpo depende apenas do
+/// photoId, portanto é idêntico em todas as tentativas do mesmo alerta e
+/// reprodutível entre execuções. Nenhum fluxo aleatório do simulador é
+/// consultado: usar rand() ou um RNG do módulo deslocaria os sorteios de
+/// mobilidade e do BA e quebraria a comparabilidade entre cenários.
+std::vector<uint8_t> synthesizePhoto(const std::string& photoId, size_t byteCount)
+{
+    // Marcadores JFIF de início e fim. Não há codificador por trás deles: são
+    // o que torna o anexo reconhecível como imagem em uma inspeção de pacote.
+    static const uint8_t marker[] = {0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10,
+                                     'J', 'F', 'I', 'F', 0x00, 0x01, 0x01,
+                                     0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00};
+    static const uint8_t trailer[] = {0xFF, 0xD9};
+
+    // FNV-1a sobre o identificador semeia um xorshift64: ambos têm resultado
+    // definido pelo padrão, sem depender de std::hash, cujo valor varia entre
+    // implementações e tornaria o conteúdo dependente do compilador.
+    uint64_t state = 1469598103934665603ULL;
+    for (unsigned char c : photoId) {
+        state ^= c;
+        state *= 1099511628211ULL;
+    }
+    if (state == 0)
+        state = 0x9E3779B97F4A7C15ULL;
+
+    std::vector<uint8_t> photo(byteCount);
+    for (size_t i = 0; i < byteCount; ++i) {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        photo[i] = static_cast<uint8_t>(state >> 24);
+    }
+    size_t markerSize = std::min(sizeof(marker), byteCount);
+    std::copy(marker, marker + markerSize, photo.begin());
+    if (byteCount >= markerSize + sizeof(trailer))
+        std::copy(trailer, trailer + sizeof(trailer), photo.end() - sizeof(trailer));
+    return photo;
+}
 }
 
 void DroneApp::validateParameters() const
@@ -40,6 +80,32 @@ void DroneApp::validateParameters() const
     require(!droneId.empty(), "droneId must not be empty");
     require(appPort > 0 && appPort <= 65535, "appPort must be a valid UDP port");
     require(victimAlertPayloadBytes > 0, "victimAlertPayloadBytes must be positive");
+    // Zero desabilita o anexo. Abaixo do cabeçalho JFIF a miniatura não teria
+    // sequer os marcadores, e acima de 32 KiB o corpo não caberia no campo de
+    // comprimento do wire format.
+    require(victimAlertPhotoBytes == 0 ||
+            (victimAlertPhotoBytes >= 64 && victimAlertPhotoBytes <= 32768),
+            "victimAlertPhotoBytes must be zero or between 64 and 32768");
+    require(victimAlertPhotoWidth > 0 && victimAlertPhotoWidth <= 65535,
+            "victimAlertPhotoWidth must be 1..65535");
+    require(victimAlertPhotoHeight > 0 && victimAlertPhotoHeight <= 65535,
+            "victimAlertPhotoHeight must be 1..65535");
+    // As exigências abaixo só valem para quem liga a sondagem: um mecanismo
+    // desabilitado não pode rejeitar a configuração de um cenário que não o usa.
+    if (recoveryProbeEnabled) {
+        require(recoveryProbePayloadBytes > 0,
+                "recoveryProbePayloadBytes must be positive");
+        // Uma sondagem que custasse o mesmo que o alerta não economizaria nada.
+        require(recoveryProbePayloadBytes < victimAlertPayloadBytes,
+                "recoveryProbePayloadBytes must be smaller than victimAlertPayloadBytes");
+        require(recoveryProbeMaxAttempts > 0,
+                "recoveryProbeMaxAttempts must be positive");
+        require(recoveryProbeTimeout > 0, "recoveryProbeTimeout must be positive");
+        // A verificação inteira precisa caber entre duas tentativas do alerta,
+        // ou ela atrasaria o retry que deveria apenas anteceder.
+        require(recoveryProbeTimeout * recoveryProbeMaxAttempts <= retryInterval,
+                "recoveryProbeTimeout times recoveryProbeMaxAttempts must fit in retryInterval");
+    }
     require(droneStatusPayloadBytes > 0, "droneStatusPayloadBytes must be positive");
     require(applicationIpTtl > 0 && applicationIpTtl <= 255, "applicationIpTtl must be 1..255");
 
@@ -110,6 +176,13 @@ void DroneApp::initialize(int stage)
             droneId = getParentModule()->getFullPath();
         appPort = par("appPort");
         victimAlertPayloadBytes = par("victimAlertPayloadBytes");
+        victimAlertPhotoBytes = par("victimAlertPhotoBytes");
+        victimAlertPhotoWidth = par("victimAlertPhotoWidth");
+        victimAlertPhotoHeight = par("victimAlertPhotoHeight");
+        recoveryProbeEnabled = par("recoveryProbeEnabled");
+        recoveryProbePayloadBytes = par("recoveryProbePayloadBytes");
+        recoveryProbeTimeout = par("recoveryProbeTimeout");
+        recoveryProbeMaxAttempts = par("recoveryProbeMaxAttempts");
         droneStatusPayloadBytes = par("droneStatusPayloadBytes");
         droneStatusInterval = par("droneStatusInterval");
         droneStatusInitialOffset = par("droneStatusInitialOffset");
@@ -169,6 +242,7 @@ void DroneApp::initialize(int stage)
         sensorEvaluationSignal = registerSignal("victimSensorEvaluated");
         baActivationSignal = registerSignal("victimBaActivated");
         repositionEventSignal = registerSignal("victimRepositionEvent");
+        recoveryProbeSignal = registerSignal("victimRecoveryProbe");
     }
     else if (stage == INITSTAGE_APPLICATION_LAYER) {
         // A tabela de equipes começa vazia. IP, posição e presença são
@@ -207,11 +281,18 @@ void DroneApp::handleMessageWhenUp(cMessage *message)
         if (!completedAlert)
             throw cRuntimeError("Movement completed without an active alert");
 
-        // Envia ainda na posição escolhida e só depois retoma o Gauss-Markov.
+        // Age ainda na posição escolhida e só depois retoma o Gauss-Markov.
         reposition.release();
         if (simTime() - completedAlert->creationTime < alertTtl &&
-            completedAlert->attempts < maxAttempts)
-            sendAttempt(*completedAlert);
+            completedAlert->attempts < maxAttempts) {
+            // A chegada é exatamente o instante em que não se sabe se o
+            // deslocamento resolveu: sondar aqui evita queimar o alerta
+            // completo contra um enlace que continua obstruído.
+            if (recoveryProbeEnabled)
+                startRecoveryProbe(*completedAlert);
+            else
+                sendAttempt(*completedAlert);
+        }
         resumeMobility();
     }
     else if (message == droneStatusTimer) {
@@ -251,6 +332,8 @@ void DroneApp::socketDataArrived(UdpSocket *, Packet *packet)
         handleDroneStatus(packet);
     else if (hasTypePrefix(packet->getName(), "VictimAck"))
         handleVictimAck(packet);
+    else if (hasTypePrefix(packet->getName(), "RecoveryProbe"))
+        handleRecoveryProbe(packet);
     else
         delete packet;
 }
@@ -297,6 +380,12 @@ void DroneApp::startAlertCycle(ActiveVictim& victim)
     alert.nextAttempt = simTime();
     alert.alertId = droneId + "-" + victim.victimId + "-alert-" +
         std::to_string(++victim.alertSequence);
+    if (victimAlertPhotoBytes > 0) {
+        // A foto é da vítima observada agora, não de cada retransmissão: fixar
+        // identidade e instante aqui mantém a mesma imagem em todo o ciclo.
+        alert.photoId = alert.alertId + "-photo";
+        alert.photoCaptureTime = alert.creationTime;
+    }
     victim.pendingAlertId = alert.alertId;
     pendingAlerts.emplace(alert.alertId, alert);
     AlertMetricEvent generatedEvent(alert.alertId, alert.creationTime);
@@ -308,6 +397,14 @@ void DroneApp::startAlertCycle(ActiveVictim& victim)
 
 void DroneApp::completeAlertCycle(const PendingVictimAlert& alert)
 {
+    if (alert.probePending) {
+        // O alerta terminou (por ACK ou por expiração) com uma verificação
+        // ainda aberta: a resposta, se vier, chegará tarde demais para mudar
+        // qualquer coisa. Sem este desfecho a verificação sumiria do funil, e
+        // "sondagens emitidas" passaria a não bater com os desfechos contados.
+        AlertMetricEvent abandonedEvent(alert.alertId, simTime(), "abandoned");
+        emit(recoveryProbeSignal, &abandonedEvent);
+    }
     auto victimIt = activeVictims.find(alert.victimId);
     if (victimIt == activeVictims.end() ||
         victimIt->second.pendingAlertId != alert.alertId)
@@ -466,7 +563,10 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     alert.attemptTeamIds[messageId] = alert.targetTeamId;
     alert.attemptTeamAddresses[messageId] = team.ipAddress;
     auto message = makeShared<VictimAlertChunk>();
-    message->setChunkLength(B(victimAlertPayloadBytes));
+    // A miniatura soma ao payload: o alerta com foto ocupa no enlace os bytes
+    // do formato textual mais os da imagem.
+    message->setChunkLength(B(victimAlertPayloadBytes +
+                              (alert.photoId.empty() ? 0 : victimAlertPhotoBytes)));
     message->setAlertId(alert.alertId.c_str());
     message->setMessageId(messageId.c_str());
     message->setVictimId(alert.victimId.c_str());
@@ -478,6 +578,7 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     message->setCreationTime(alert.creationTime);
     message->setAttemptNumber(alert.attempts);
     message->setTimeToLive(alertTtl);
+    attachVictimPhoto(message, alert);
     socket.sendTo(new Packet(("VictimAlert:" + alert.alertId).c_str(), message),
                   Ipv4Address(team.ipAddress.c_str()), appPort);
     alert.ackDeadline = simTime() + ackTimeout;
@@ -486,9 +587,136 @@ void DroneApp::sendAttempt(PendingVictimAlert& alert)
     emit(alertAttemptSentSignal, &attemptEvent);
 }
 
+void DroneApp::attachVictimPhoto(const inet::Ptr<VictimAlertChunk>& message,
+                                 const PendingVictimAlert& alert) const
+{
+    if (alert.photoId.empty()) {
+        // Alerta sem anexo: dimensões zeradas evitam que o receptor leia
+        // metadados de uma imagem que não foi enviada.
+        message->setPhotoId("");
+        message->setPhotoWidth(0);
+        message->setPhotoHeight(0);
+        message->setPhotoCaptureTime(SIMTIME_ZERO);
+        message->setPhotoDataArraySize(0);
+        return;
+    }
+    message->setPhotoId(alert.photoId.c_str());
+    message->setPhotoWidth(static_cast<uint16_t>(victimAlertPhotoWidth));
+    message->setPhotoHeight(static_cast<uint16_t>(victimAlertPhotoHeight));
+    message->setPhotoCaptureTime(alert.photoCaptureTime);
+    std::vector<uint8_t> photo =
+        synthesizePhoto(alert.photoId, static_cast<size_t>(victimAlertPhotoBytes));
+    message->setPhotoDataArraySize(photo.size());
+    for (size_t i = 0; i < photo.size(); ++i)
+        message->setPhotoData(i, photo[i]);
+}
+
+void DroneApp::startRecoveryProbe(PendingVictimAlert& alert)
+{
+    alert.probePending = true;
+    alert.probeAttempts = 0;
+    // "started" abre a verificação no funil. Sem ele o coletor não teria como
+    // saber quantas verificações existiram: "sent" conta pacotes, e uma
+    // verificação pode não chegar a emitir nenhum.
+    AlertMetricEvent startedEvent(alert.alertId, simTime(), "started");
+    emit(recoveryProbeSignal, &startedEvent);
+    if (!sendRecoveryProbe(alert)) {
+        // Sem equipe endereçável não há o que sondar. O alerta volta ao retry
+        // normal, que já trata a ausência de destino como falha operacional.
+        finishRecoveryProbe(alert, "unreachable");
+    }
+}
+
+bool DroneApp::sendRecoveryProbe(PendingVictimAlert& alert)
+{
+    std::string targetTeamId = selectTargetTeam();
+    if (targetTeamId.empty())
+        return false;
+    const auto& team = discoveredTeams.at(targetTeamId);
+    alert.probeAttempts++;
+    // O sequencial global impede que a resposta atrasada de uma sondagem
+    // anterior seja aceita como confirmação da sondagem atual. O alertId não
+    // entra aqui: ele já viaja em campo próprio, e repeti-lo dentro do
+    // identificador só engordaria um pacote que existe para ser barato.
+    alert.probeId = droneId + "-probe-" +
+        std::to_string(++recoveryProbeSequence);
+    alert.probeDeadline = simTime() + recoveryProbeTimeout;
+
+    auto probe = makeShared<RecoveryProbeChunk>();
+    probe->setChunkLength(B(recoveryProbePayloadBytes));
+    probe->setProbeId(alert.probeId.c_str());
+    probe->setAlertId(alert.alertId.c_str());
+    probe->setSourceDroneId(droneId.c_str());
+    probe->setTargetTeamId(targetTeamId.c_str());
+    probe->setSendTime(simTime());
+    probe->setReply(false);
+    socket.sendTo(new Packet(("RecoveryProbe:" + alert.alertId).c_str(), probe),
+                  Ipv4Address(team.ipAddress.c_str()), appPort);
+    AlertMetricEvent sentEvent(alert.alertId, simTime(), "sent");
+    emit(recoveryProbeSignal, &sentEvent);
+    return true;
+}
+
+void DroneApp::finishRecoveryProbe(PendingVictimAlert& alert, const char *outcome)
+{
+    alert.probePending = false;
+    alert.probeId.clear();
+    alert.probeDeadline = -1;
+    AlertMetricEvent outcomeEvent(alert.alertId, simTime(), outcome);
+    emit(recoveryProbeSignal, &outcomeEvent);
+}
+
+void DroneApp::expireRecoveryProbes()
+{
+    for (auto& [id, alert] : pendingAlerts) {
+        if (!alert.probePending || simTime() < alert.probeDeadline)
+            continue;
+        if (alert.probeAttempts < recoveryProbeMaxAttempts) {
+            if (sendRecoveryProbe(alert))
+                continue;
+            // A equipe sumiu no meio da verificação. É a mesma situação que
+            // "unreachable" na abertura, e não uma sondagem sem resposta:
+            // misturar as duas esconderia a diferença entre "o enlace não
+            // respondeu" e "não havia para quem perguntar".
+            finishRecoveryProbe(alert, "unreachable");
+            continue;
+        }
+        // Esgotada a verificação, o alerta não fica retido: a sondagem existe
+        // para poupar transmissões, não para impedir uma entrega que ainda
+        // poderia ocorrer. O retry normal reassume no mesmo ciclo.
+        finishRecoveryProbe(alert, "failed");
+    }
+}
+
+void DroneApp::handleRecoveryProbe(Packet *packet)
+{
+    auto probe = packet->peekAtFront<RecoveryProbeChunk>();
+    // O drone só trata a volta; a ida endereçada a ele seria um eco indevido.
+    if (!probe->getReply() ||
+        std::string(probe->getSourceDroneId()) != droneId) {
+        delete packet;
+        return;
+    }
+    auto it = pendingAlerts.find(probe->getAlertId());
+    // Uma resposta de sondagem já encerrada, ou de um alerta que expirou
+    // enquanto ela viajava, não reabre nada.
+    if (it == pendingAlerts.end() || !it->second.probePending ||
+        it->second.probeId != probe->getProbeId()) {
+        delete packet;
+        return;
+    }
+    auto& alert = it->second;
+    finishRecoveryProbe(alert, "confirmed");
+    delete packet;
+    // O enlace respondeu agora: é o melhor instante para gastar o alerta.
+    if (simTime() - alert.creationTime < alertTtl && alert.attempts < maxAttempts)
+        sendAttempt(alert);
+}
+
 void DroneApp::performMaintenance()
 {
     expireDiscoveredEntries();
+    expireRecoveryProbes();
 
     for (auto it = pendingAlerts.begin(); it != pendingAlerts.end(); ) {
         auto& alert = it->second;
@@ -533,8 +761,11 @@ void DroneApp::performMaintenance()
                     alert.repositionDecisionMade = true;
             }
         }
-        // O alerta que comanda o movimento espera a tentativa imediata da chegada.
+        // O alerta que comanda o movimento espera a tentativa imediata da
+        // chegada, e a sondagem pendente retém o pacote pesado até saber se o
+        // enlace voltou.
         if (simTime() >= alert.nextAttempt && alert.attempts < maxAttempts &&
+            !alert.probePending &&
             !(reposition.moving() && reposition.owns(alert.alertId)))
             sendAttempt(alert);
         ++it;

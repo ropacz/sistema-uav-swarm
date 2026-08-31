@@ -43,6 +43,7 @@ OBJS = \
     $O/scenario/SarScenarioManager.o \
     $O/scenario/StaticVictim.o \
     $O/messages/DroneStatus_m.o \
+    $O/messages/RecoveryProbe_m.o \
     $O/messages/TeamUpdate_m.o \
     $O/messages/VictimAck_m.o \
     $O/messages/VictimAlert_m.o \
@@ -51,6 +52,7 @@ OBJS = \
 # Message files
 MSGFILES = \
     messages/DroneStatus.msg \
+    messages/RecoveryProbe.msg \
     messages/TeamUpdate.msg \
     messages/VictimAck.msg \
     messages/VictimAlert.msg \

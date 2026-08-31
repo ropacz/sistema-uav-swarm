@@ -39,6 +39,12 @@ SCALARS = {
     "repositionDistanceSum": 12.5,
     "repositionDurationSum": 3.5,
     "effectiveRepositions": 1,
+    "recoveryProbeChecks": 2,
+    "recoveryProbesSent": 2,
+    "recoveryProbesConfirmed": 1,
+    "recoveryProbesFailed": 1,
+    "recoveryProbesUnreachable": 0,
+    "recoveryProbesAbandoned": 0,
 }
 
 
@@ -70,6 +76,33 @@ class ExperimentMetricsReaderTests(unittest.TestCase):
         self.assertEqual(row["multi_hop_delivery_rate_pct"], 100)
         self.assertEqual(row["reposition_distance_mean_m"], 12.5)
         self.assertEqual(row["reposition_duration_mean_s"], 3.5)
+
+    def test_recovery_probe_funnel_is_read_against_the_checks(self) -> None:
+        """As taxas da sondagem usam verificações abertas, não pacotes enviados.
+
+        São grandezas diferentes: uma verificação pode custar várias sondagens,
+        ou nenhuma. Dividir pelo número de pacotes daria uma taxa que cai só
+        porque o mecanismo reenviou, sem que nenhum portão a mais tenha falhado.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.sca"
+            write_sca(path, {"recoveryProbeChecks": 2, "recoveryProbesSent": 3,
+                             "recoveryProbesConfirmed": 1})
+            row = collect(str(path))
+        self.assertEqual(row["recovery_probe_confirm_pct"], 50)
+        self.assertEqual(row["recovery_probes_per_check"], 1.5)
+
+    def test_recovery_probe_rates_are_undefined_without_any_check(self) -> None:
+        # Sem reposicionamento não há verificação: a taxa é indefinida, e não
+        # zero — zero afirmaria que o portão falhou, quando ele nem existiu.
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.sca"
+            write_sca(path, {"recoveryProbeChecks": 0, "recoveryProbesSent": 0,
+                             "recoveryProbesConfirmed": 0,
+                             "recoveryProbesFailed": 0})
+            row = collect(str(path))
+        self.assertTrue(math.isnan(row["recovery_probe_confirm_pct"]))
+        self.assertTrue(math.isnan(row["recovery_probes_per_check"]))
 
     def test_zero_generated_alerts_produce_undefined_ratios(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

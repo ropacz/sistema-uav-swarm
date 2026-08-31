@@ -9,6 +9,7 @@
 #include "inet/common/lifecycle/LifecycleOperation.h"
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
 #include "messages/DroneStatus_m.h"
+#include "messages/RecoveryProbe_m.h"
 #include "messages/TeamUpdate_m.h"
 #include "messages/VictimAck_m.h"
 #include "messages/VictimAlert_m.h"
@@ -57,6 +58,16 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int applicationIpTtl = 32;
     int appPort = 5000;
     int64_t victimAlertPayloadBytes = 320;
+    int64_t victimAlertPhotoBytes = 0;
+    int64_t recoveryProbePayloadBytes = 128;
+    omnetpp::simtime_t recoveryProbeTimeout;
+    int recoveryProbeMaxAttempts = 2;
+    bool recoveryProbeEnabled = false;
+    /// Sequencial local que torna único o probeId de cada sondagem, para que
+    /// uma resposta atrasada da tentativa anterior não confirme a atual.
+    int64_t recoveryProbeSequence = 0;
+    int victimAlertPhotoWidth = 160;
+    int victimAlertPhotoHeight = 120;
     int64_t droneStatusPayloadBytes = 0;
     int64_t droneStatusSequence = 0;
     int64_t droneStatusUpdatesAccepted = 0;
@@ -80,6 +91,7 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     omnetpp::simsignal_t sensorEvaluationSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t baActivationSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t repositionEventSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t recoveryProbeSignal = SIMSIGNAL_NULL;
 
     /// Libera timers e encerra o socket sem deixar mensagens pendentes.
     virtual ~DroneApp();
@@ -128,8 +140,26 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void performMaintenance();
     /// Monta e envia uma nova tentativa do VictimAlert para a equipe selecionada.
     void sendAttempt(PendingVictimAlert& alert);
+    /// Anexa a miniatura da vítima ao alerta, ou a deixa vazia quando a captura
+    /// está desabilitada. Reconstrói sempre o mesmo conteúdo para um dado
+    /// photoId, portanto todas as tentativas reenviam a imagem da captura.
+    void attachVictimPhoto(const inet::Ptr<VictimAlertChunk>& message,
+                           const PendingVictimAlert& alert) const;
     /// Divulga identidade e posição para a estimativa local de conectividade.
     void sendDroneStatus();
+    /// Abre a verificação do enlace ao fim do deslocamento: enquanto ela estiver
+    /// pendente o alerta não é transmitido.
+    void startRecoveryProbe(PendingVictimAlert& alert);
+    /// Emite uma sondagem para a equipe atualmente selecionada. Retorna falso
+    /// quando não há equipe endereçável, caso em que a verificação é encerrada.
+    bool sendRecoveryProbe(PendingVictimAlert& alert);
+    /// Reavalia as sondagens sem resposta: reenvia enquanto houver tentativas e,
+    /// esgotadas, devolve o alerta ao retry normal.
+    void expireRecoveryProbes();
+    /// Trata a resposta da equipe e libera a transmissão do alerta.
+    void handleRecoveryProbe(inet::Packet *packet);
+    /// Encerra a verificação registrando seu desfecho.
+    void finishRecoveryProbe(PendingVictimAlert& alert, const char *outcome);
     /// Escolhe a equipe descoberta mais próxima; vazio significa nenhuma visível.
     std::string selectTargetTeam() const;
     /// Faz uma consulta binária do sensor e, no tratamento, executa o BA uma vez.

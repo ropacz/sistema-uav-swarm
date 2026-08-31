@@ -9,6 +9,7 @@
 #include "messages/TeamUpdate_m.h"
 #include "messages/VictimAlert_m.h"
 #include "messages/VictimAck_m.h"
+#include "messages/RecoveryProbe_m.h"
 
 namespace echosar {
 
@@ -25,6 +26,7 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int applicationIpTtl = 32;
     int64_t teamUpdatePayloadBytes = 160;
     int64_t victimAckPayloadBytes = 96;
+    int64_t recoveryProbePayloadBytes = 128;
     int64_t updateSequence = 0;
     std::set<std::string> receivedAttempts;
 
@@ -52,6 +54,8 @@ class TeamApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     void sendTeamUpdate();
     /// Valida e deduplica a tentativa, registra a entrega e envia VictimAck.
     void handleVictimAlert(inet::Packet *packet);
+    /// Devolve a sondagem de recuperação ao drone que a emitiu.
+    void handleRecoveryProbe(inet::Packet *packet);
 };
 
 } // namespace echosar

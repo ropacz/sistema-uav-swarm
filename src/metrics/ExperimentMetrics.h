@@ -87,6 +87,19 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     /// repositionDistanceSum.
     int effectiveRepositions = 0;
     double effectiveRepositionThreshold = 1;
+    /// Funil da sondagem de recuperação. Uma verificação é aberta por
+    /// reposicionamento concluído (recoveryProbeChecks) e fecha em exatamente
+    /// um dos quatro desfechos. recoveryProbesSent conta pacotes, não
+    /// verificações: uma verificação emite de zero (equipe já ausente) a
+    /// recoveryProbeMaxAttempts sondagens antes de fechar.
+    int recoveryProbeChecks = 0;
+    int recoveryProbesSent = 0;
+    int recoveryProbesConfirmed = 0;
+    int recoveryProbesFailed = 0;
+    int recoveryProbesUnreachable = 0;
+    /// Verificação encerrada porque o alerta terminou antes dela — ACK de uma
+    /// tentativa anterior, ou expiração do TTL.
+    int recoveryProbesAbandoned = 0;
 
     omnetpp::simsignal_t generatedSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t attemptSentSignal = SIMSIGNAL_NULL;
@@ -98,6 +111,7 @@ class ExperimentMetrics : public omnetpp::cSimpleModule, public omnetpp::cListen
     omnetpp::simsignal_t sensorSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t baActivationSignal = SIMSIGNAL_NULL;
     omnetpp::simsignal_t repositionSignal = SIMSIGNAL_NULL;
+    omnetpp::simsignal_t recoveryProbeSignal = SIMSIGNAL_NULL;
 
     using omnetpp::cListener::finish;
     virtual void initialize() override;

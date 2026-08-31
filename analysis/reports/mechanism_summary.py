@@ -32,9 +32,12 @@ SCALARS = [
     "multiHopDeliveries", "intermediateForwardings",
     "neverKnownTeamSelectionEvents", "expiredKnownTeamSelectionEvents",
     "alertsWithoutKnownTeam",
-    "repositionTriggers", "obstaclesDetected", "baActivations",
-    "repositionsStarted", "repositionsCompleted",
-    "repositionDistanceSum", "repositionDurationSum",
+    "repositionTriggers", "sensorEvaluations", "obstaclesDetected",
+    "baActivations", "repositionsStarted", "repositionsCompleted",
+    "repositionDistanceSum", "repositionDurationSum", "effectiveRepositions",
+    "recoveryProbeChecks", "recoveryProbesSent", "recoveryProbesConfirmed",
+    "recoveryProbesFailed", "recoveryProbesUnreachable",
+    "recoveryProbesAbandoned",
 ]
 
 
