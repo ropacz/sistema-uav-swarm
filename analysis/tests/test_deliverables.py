@@ -54,9 +54,9 @@ class AlertSheetTests(unittest.TestCase):
 
     def test_sheet_columns_are_the_requested_ones(self):
         self.assertEqual(alert_sheet.COLUMNS, [
-            "seed", "numTeams", "baEnabled", "alertId", "victimId", "droneId",
-            "generationTime", "delivered", "receivingTeamId", "acknowledged",
-            "ackTeamId", "retryCount"])
+            "config", "seed", "numTeams", "baEnabled", "alertId", "victimId",
+            "droneId", "generationTime", "delivered", "receivingTeamId",
+            "acknowledged", "ackTeamId", "retryCount"])
 
     def test_paired_effects_use_seed_level_differences(self):
         rows = []

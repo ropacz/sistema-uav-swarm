@@ -31,12 +31,14 @@ SCALARS = {
     "expiredKnownTeamSelectionEvents": 0,
     "alertsWithoutKnownTeam": 1,
     "repositionTriggers": 2,
+    "sensorEvaluations": 2,
     "obstaclesDetected": 1,
     "baActivations": 1,
     "repositionsStarted": 1,
     "repositionsCompleted": 1,
     "repositionDistanceSum": 12.5,
     "repositionDurationSum": 3.5,
+    "effectiveRepositions": 1,
 }
 
 
