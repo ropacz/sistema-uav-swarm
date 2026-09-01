@@ -12,6 +12,9 @@ Quatro execuções isolam cada caminho da indicação:
                ramo do RSSI, com as recepções diretas continuando.
 * Silent     — a equipe se afasta para fora de alcance: a indicação sobe pelo
                ramo do prazo sem recepção direta, sem passar pelo RSSI.
+* Walled     — uma parede de concreto entre os nós: a degradação vem de
+               obstrução de fato, e não de um degrau de potência, com as
+               recepções diretas continuando.
 """
 
 from pathlib import Path
@@ -40,6 +43,15 @@ EXPECTED_MEAN_EXCESS_LOSS = {
 }
 EXCESS_LOSS_TOLERANCE_DB = 0.5
 
+# A atenuação da parede não é um valor fechado: sai do modelo dielétrico do
+# INET, não de aritmética do cenário. O que precisa valer é o enquadramento —
+# acima do limiar de 6 dB, e longe o bastante do orçamento de enlace para que a
+# recepção continue. Fixar o valor exato prenderia o teste à tabela de
+# materiais do INET sem ganho de garantia.
+EXPECTED_EXCESS_LOSS_RANGE = {
+    "ObstructionWalled_SmokeTest": (6.0, 15.0),
+}
+
 EXPECTED = {
     "ObstructionClear_SmokeTest": {
         "directRssiSamples": 60,
@@ -67,6 +79,15 @@ EXPECTED = {
         "forwardedTeamUpdatesIgnoredForRssi": 0,
         "rssiDegradationIndications": 0,
         "directUpdateTimeoutIndications": 1,
+        "possibleObstructionIndications": 1,
+    },
+    # A parede atenua sem derromper: as 60 recepções continuam, e a indicação
+    # vem do RSSI, não da ausência delas. É o que separa este caso do Silent.
+    "ObstructionWalled_SmokeTest": {
+        "directRssiSamples": 60,
+        "forwardedTeamUpdatesIgnoredForRssi": 0,
+        "rssiDegradationIndications": 1,
+        "directUpdateTimeoutIndications": 0,
         "possibleObstructionIndications": 1,
     },
 }
@@ -102,12 +123,20 @@ def main() -> None:
         # desligado nenhum destes cenários pode mover o drone.
         samples = scalar(frame, DRONE, "directRssiSamples")
         mean_excess = scalar(frame, DRONE, "directRssiExcessLossSum") / samples
-        target = EXPECTED_MEAN_EXCESS_LOSS[config]
-        if abs(mean_excess - target) > EXCESS_LOSS_TOLERANCE_DB:
-            failures.append(
-                f"{config}: Delta médio esperado {target:g} dB "
-                f"(+-{EXCESS_LOSS_TOLERANCE_DB:g}), obtido {mean_excess:.4f} dB"
-            )
+        if config in EXPECTED_EXCESS_LOSS_RANGE:
+            low, high = EXPECTED_EXCESS_LOSS_RANGE[config]
+            if not low < mean_excess < high:
+                failures.append(
+                    f"{config}: Delta médio esperado entre {low:g} e {high:g} dB, "
+                    f"obtido {mean_excess:.4f} dB"
+                )
+        else:
+            target = EXPECTED_MEAN_EXCESS_LOSS[config]
+            if abs(mean_excess - target) > EXCESS_LOSS_TOLERANCE_DB:
+                failures.append(
+                    f"{config}: Delta médio esperado {target:g} dB "
+                    f"(+-{EXCESS_LOSS_TOLERANCE_DB:g}), obtido {mean_excess:.4f} dB"
+                )
         suppressions = scalar(frame, DRONE, "obstructionGateSuppressions")
         if suppressions != 0:
             failures.append(
@@ -122,6 +151,7 @@ def main() -> None:
     print("Obstruction indication smoke test OK")
     print("  enlace limpo: atenuação excedente abaixo de 0,5 dB, S = 0")
     print("  degrau de 10 dB: Delta médio reproduz o valor analítico, S = 1")
+    print("  parede de concreto: degradação por obstrução real, enlace vivo, S = 1")
     print("  equipe fora de alcance: indicação pelo prazo sem recepção, S = 1")
     print("  repasses não entram na janela de RSSI e o eco local não é contado")
 

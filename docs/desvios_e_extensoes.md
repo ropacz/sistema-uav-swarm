@@ -547,8 +547,34 @@ referência junto.
 
 Verificação em `obstruction-indication-smoke-test`, que separa os ramos: enlace
 limpo a 100 m (Δ abaixo de 0,5 dB, `S = 0`), potência reduzida em 10 dB com a
-referência inalterada (Δ = 10 dB, `S = 1` pelo RSSI) e equipe afastada para
-fora de alcance (`S = 1` pelo prazo, sem passar pelo RSSI).
+referência inalterada (Δ = 10 dB, `S = 1` pelo RSSI), parede de concreto de
+0,50 m a 20 m (Δ = 8,4 dB com as recepções continuando, `S = 1` por obstrução
+de fato) e equipe afastada para fora de alcance (`S = 1` pelo prazo, sem passar
+pelo RSSI).
+
+**O limiar de 6 dB está no fio da navalha em relação à geometria da campanha.**
+Caracterização do `DielectricObstacleLoss` a 20 m, com folga de ~29 dB até a
+sensibilidade:
+
+| Concreto | Δ medido | Ramo acionado |
+| --- | --- | --- |
+| 0,30 m | 5,27 dB | nenhum — abaixo do limiar |
+| 0,35 m | 6,04 dB | RSSI |
+| 0,50 m | 8,36 dB | RSSI |
+| 1,50 m | 23,74 dB | RSSI |
+| 2,00 m | — | nenhum: sem recepção direta alguma |
+
+As paredes de `professor-scenario-obstacles.xml` têm **0,30 m** de concreto, ou
+seja, ficam logo abaixo do limiar sob incidência normal. Só cruzam os 6 dB por
+incidência oblíqua ou por travessia de duas faces do mesmo edifício. Isso
+explica a observação da campanha: `rssiDegradationIndications` fica em 0–1 por
+drone, enquanto `directUpdateTimeoutIndications` domina — obstrução severa
+costuma derrubar a recepção antes de atenuá-la de forma mensurável.
+
+Madeira, tijolo e vidro são praticamente planos na espessura neste modelo
+(dominados pela reflexão na interface) e nunca alcançam o limiar: 0,73, 0,80 e
+1,03 dB respectivamente, de 0,02 m a 0,30 m. Um cenário que dependa do ramo do
+RSSI precisa de concreto.
 
 `src/app/DroneApp.{h,cc,ned}`, `src/app/TeamLinkState.h`,
 `simulations/validation/smoke-tests.ini`,

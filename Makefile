@@ -119,6 +119,7 @@ obstruction-indication-smoke-test:
 	./run.sh -c ObstructionSensitive_SmokeTest -r 0
 	./run.sh -c ObstructionDegraded_SmokeTest -r 0
 	./run.sh -c ObstructionSilent_SmokeTest -r 0
+	./run.sh -c ObstructionWalled_SmokeTest -r 0
 	python3 analysis/validation/validate_obstruction_indication_smoke_test.py
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
