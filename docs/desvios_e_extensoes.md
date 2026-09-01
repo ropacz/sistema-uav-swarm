@@ -119,12 +119,20 @@ oráculo sem alcance, usado por análises que queiram isolar o mecanismo do
 funil de detecção). Os smoke tests fixam 30 m e 20 m, porque o teste
 obrigatório §28.4 valida justamente o comportamento de faixa limitada.
 
-O módulo também declara `fieldOfViewHorizontal` (60°), `fieldOfViewVertical`
-(54°, ou seja ±27°) e `measurementFrequency` (10 Hz), conforme a especificação
-DJI do sistema visual frontal/traseiro
-(`docs/references/especificacoes_dji_phantom_4_pro_v2.docx`). São parâmetros
-**declarativos**: documentam a câmera real de referência, mas não recortam a
-linha de visada avaliada.
+**O módulo deixou de se apresentar como câmera.** Ele declarava
+`fieldOfViewHorizontal` (60°), `fieldOfViewVertical` (54°) e
+`measurementFrequency` (10 Hz), conforme a especificação DJI do sistema visual
+frontal/traseiro
+(`docs/references/especificacoes_dji_phantom_4_pro_v2.docx`), sem aplicar
+nenhum dos três. Parâmetro declarativo que não recorta nada não documenta uma
+limitação: ele sugere um realismo que o código não tem, e um leitor razoável
+concluiria que a inspeção respeita o cone de visão. Como não respeitava — a
+verificação era instantânea, omnidirecional e sem custo de apontamento, isto
+é, um gimbal perfeito implícito — os três parâmetros foram **removidos**.
+
+O que resta é o que sempre foi: um **verificador geométrico direcional da
+obstrução** por raycast sobre um segmento, com faixa de validade declarada
+(0,7-30 m). Use esse termo no texto; não use "detecção por câmera".
 
 **Simplificação adicional, também assumida deliberadamente:** o oráculo trata a
 detecção como **omnidirecional**, e não como o cone frontal/traseiro real do
@@ -151,25 +159,48 @@ limite. (Os resultados antigos foram apagados de `simulations/results/`.)
   configurado) em vez de avaliar até a posição da equipe e só então comparar
   a distância. Um obstáculo além do alcance simplesmente não é visto — a
   câmera real não relata "há algo lá fora, fora de alcance", ela não vê nada.
-- Zona morta física (`distance < minimumRange`) deixou de anular a
-  confirmação. A câmera estereoscópica não estima distância com
-  confiabilidade abaixo do alcance mínimo, mas continua constatando que há
-  um obstáculo ali — `reason = "obstacleTooCloseToMeasure"` marca essa
-  situação, sem impedir a ativação do BA. Um drone encostado numa parede não
-  deixa de notar o obstáculo por
-  estar perto demais. Ambas as correções só se aplicam no modo sensor físico;
-  o oráculo idealizado (`maximumRange < 0`) continua sem zona morta nem
-  truncamento, como antes.
-- `fieldOfViewHorizontal`/`fieldOfViewVertical` passaram a ser lidos com
-  `doubleValueInUnit("deg")`, para não depender da unidade angular usada no
-  `.ini`. Continuam declarativos (não recortam a linha de visada): aplicar o
-  cone de visão de verdade exigiria modelar a orientação da câmera, que a
-  mobilidade Gauss–Markov 3D do drone (§3) não pilota — ver discussão
-  registrada como lacuna abaixo.
-- Descartado throttling por `measurementFrequency` (10 Hz): rastreado que
-  `DroneApp::tryReposition()` chama `inspect()` no máximo uma vez por alerta
-  (`repositionDecisionMade`), nunca em rajada para o mesmo alvo — um cache de
-  10 Hz não teria o que cachear nesta base de código.
+- Zona morta física (`distance < minimumRange`): a versão anterior marcava
+  `reason = "obstacleTooCloseToMeasure"` e mesmo assim devolvia
+  `confirmed = true` **com a distância exata calculada pelo simulador**. Isto
+  é, afirmava que a distância não podia ser medida e entregava a medida. Pior:
+  o BA recebia `nearestSurfacePoint`, que é mais informação que a distância —
+  a localização da superfície — sob o rótulo de observação.
+  Corrigido separando as duas perguntas em `ObstacleObservation`: `detected`
+  (há superfície) e `distanceValid` (a distância e o ponto podem ser
+  consumidos). Abaixo de `minimumRange` o modelo agora não afirma nada:
+  `detected = false`, `distanceValid = false`, `distance = NaN`, nenhum ponto
+  de superfície, e `reason = "outsideCalibratedRange"` mantém a recusa
+  auditável. É a escolha conservadora — a alternativa seria
+  `detected = true, distanceValid = false` ("percebo presença, não meço
+  distância"), que continua disponível como mudança de uma linha caso se
+  decida que a presença é observável fora da faixa calibrada.
+  Só se aplica no modo com faixa; o oráculo (`maximumRange < 0`) segue sem
+  limite inferior nem truncamento.
+- Removidos `fieldOfViewHorizontal`, `fieldOfViewVertical` e
+  `measurementFrequency` (ver acima). Aplicar o cone de visão de verdade
+  exigiria modelar a orientação da câmera, que a mobilidade Gauss–Markov 3D
+  do drone (§3) não pilota; e o throttling a 10 Hz não teria o que limitar,
+  porque `DroneApp::tryReposition()` chama `inspect()` no máximo uma vez por
+  alerta (`repositionDecisionMade`), nunca em rajada.
+- **Trajetória deixou de tratar o drone como um ponto.** `feasible()` validava
+  o trajeto com `intersectsAnyObstacleGroundTruth(current, candidate)` — a
+  linha central pura — e aplicava `obstacleSafetyMargin` apenas ao ponto
+  final, contra a única superfície observada. Uma candidata era aceita com o
+  eixo de voo passando rente à parede: livre pelo centro, hélices dentro do
+  obstáculo. Agora o trajeto exige um **corredor livre** de raio
+  `droneRadius + obstacleSafetyMargin` (padrão 0,35 m + 1 m) ao longo de todo
+  o segmento, via `clearCorridorGroundTruth()`. A linha de visada até a equipe
+  continua sendo testada como segmento fino, e deve continuar: ali a pergunta
+  é de propagação — se o sinal atravessa —, não de colisão.
+  O corredor é amostrado pelo eixo mais quatro raios paralelos deslocados em
+  duas direções perpendiculares; um obstáculo fino o bastante para passar
+  entre os cinco raios escapa. Um cilindro exato exigiria consulta de
+  distância ponto-superfície, que a interface de formas do INET não expõe.
+  **Impacto medido** (BA_SmokeTest, seed 0): com o corredor zerado
+  (`droneRadius = 0m`, `obstacleSafetyMargin = 0m`) o deslocamento reproduz
+  29,60 m, idêntico ao comportamento anterior — a extensão é controlada. Com o
+  padrão de 1,35 m vai a 29,71 m; com corredor de 4 m, a 44,68 m; com 9 m,
+  nenhuma candidata é viável e o reposicionamento não ocorre.
 
 **Revisão seguinte: 30 m virou o padrão do NED, e o resultado distingue
 "livre" de "não observado":**
@@ -603,11 +634,19 @@ p-valor**. Pendência a resolver antes da versão final da dissertação.
 
 ### L2. Campo de visão e orientação real da câmera — D4
 
-D4 declara `fieldOfViewHorizontal`/`fieldOfViewVertical` (60°/54°, Phantom 4
-Pro) mas não os aplica: a observação continua omnidirecional. Recortar pela
-direção real do sensor exigiria saber para onde a câmera aponta, e a
+O modelo não é uma câmera e não deve ser descrito como uma. A verificação é
+direcional (um segmento), instantânea e omnidirecional quanto ao apontamento —
+qualquer direção pode ser inspecionada a qualquer momento, o que equivale a um
+gimbal perfeito de resposta nula. Uma câmera real observa um **volume** dado
+por orientação e campo de visão, a uma taxa finita, e nota obstáculo que
+aparece na imagem sem cruzar o eixo inspecionado.
+
+Os parâmetros declarativos que insinuavam o contrário foram removidos (ver
+D4): declarar 60°/54°/10 Hz sem aplicá-los era pior que não declarar nada.
+Recortar pela direção real exigiria saber para onde a câmera aponta, e a
 mobilidade do drone (Gauss–Markov 3D, §3) não pilota heading para mirar a
-equipe.
+equipe. Enquanto isso não existir, o termo correto no texto é **verificação
+geométrica direcional da obstrução**, não "detecção por câmera".
 
 Desde D7 isso deixou de ser bloqueante para o mecanismo: como o acionamento do
 BA não depende mais da câmera, aplicar o FOV reduziria a frequência com que
@@ -621,8 +660,12 @@ deslocamento inteiro de uma vez, pelo predicado ground truth, até
 `maximumRepositionDistance`) e uma camada de desvio reativo de colisão
 independente do BA (presente nos dois braços, tipo TapFly). Ambos mudariam o
 mecanismo de reposicionamento e a comparação BaOn/BaOff além do escopo de D4 —
-pendências para decisão futura. A execução incremental é também o único
-consumidor plausível de um throttling real de `measurementFrequency` (ver D4).
+pendências para decisão futura.
+
+**Resolvido parcialmente:** a trajetória deixou de ser avaliada como linha
+central e passa por um corredor de raio `droneRadius + obstacleSafetyMargin`
+(ver D4). O que continua pendente é a *amostragem exata* do corredor — hoje
+cinco raios paralelos, não um cilindro — e a validação incremental por trechos.
 
 **Resolvido, registrado em D7:** o gatilho do BA foi desacoplado da confirmação
 da câmera. A degradação da rede aciona o reposicionamento; a observação visual

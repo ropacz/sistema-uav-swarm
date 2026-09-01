@@ -1,5 +1,6 @@
 #include "AbstractObstacleSensor.h"
 
+#include <cmath>
 #include <limits>
 
 #include "inet/common/IVisitor.h"
@@ -23,20 +24,6 @@ void AbstractObstacleSensor::initialize()
         throw cRuntimeError("minimumRange must not be negative");
     if (maximumRange >= 0 && maximumRange <= minimumRange)
         throw cRuntimeError("maximumRange must exceed minimumRange, or be negative for no limit");
-
-    // Parâmetros declarativos da câmera de referência: validados para recusar
-    // configuração incoerente, mas ainda não aplicados à inspeção (D4, L2).
-    // Os ângulos são lidos explicitamente em graus para não depender da
-    // unidade angular usada no .ini.
-    double fieldOfViewHorizontal = par("fieldOfViewHorizontal").doubleValueInUnit("deg");
-    double fieldOfViewVertical = par("fieldOfViewVertical").doubleValueInUnit("deg");
-    double measurementFrequency = par("measurementFrequency").doubleValueInUnit("Hz");
-    if (fieldOfViewHorizontal <= 0 || fieldOfViewHorizontal > 360)
-        throw cRuntimeError("fieldOfViewHorizontal must be in (0, 360] degrees");
-    if (fieldOfViewVertical <= 0 || fieldOfViewVertical > 180)
-        throw cRuntimeError("fieldOfViewVertical must be in (0, 180] degrees");
-    if (measurementFrequency <= 0)
-        throw cRuntimeError("measurementFrequency must be positive");
 }
 
 namespace {
@@ -90,30 +77,59 @@ ObstacleObservation AbstractObstacleSensor::inspect(const Coord& dronePosition,
     // físico, padrão), a câmera não enxerga além do seu alcance: o segmento
     // inspecionado é truncado ali. Se o alvo estiver mais distante, o
     // restante do caminho simplesmente não foi observado — não é "livre".
-    bool fullyObserved = maximumRange < 0 || targetDistance <= maximumRange;
+    result.fullyObserved = maximumRange < 0 || targetDistance <= maximumRange;
     Coord sensorEnd = inspectionTarget;
-    if (!fullyObserved)
+    if (!result.fullyObserved)
         sensorEnd = dronePosition + direction * (maximumRange / targetDistance);
     IntersectionVisitor visitor(dronePosition, sensorEnd);
     environment->visitObjects(&visitor, LineSegment(dronePosition, sensorEnd));
     if (!visitor.closest) {
         // Distinguir os dois sentidos de "sem obstáculo": o trecho além do
         // alcance não foi observado, e não pode ser reportado como livre.
-        result.reason = fullyObserved ? "clearToTarget" : "clearWithinSensorRange";
+        result.reason = result.fullyObserved ? "clearToTarget" : "clearWithinSensorRange";
+        return result;
+    }
+    // Fora da faixa de validade declarada o modelo não afirma nada. Reportar
+    // "detectado" aqui e ainda devolver o ponto de superfície entregaria ao BA
+    // a geometria exata do simulador sob o rótulo de uma observação — que é
+    // justamente o que a faixa mínima existe para negar. A recusa fica
+    // registrada em reason, então some da detecção sem sumir da auditoria.
+    // Só se aplica no modo com faixa; o oráculo idealizado (maximumRange < 0)
+    // não tem limite inferior.
+    if (maximumRange >= 0 && visitor.closestDistance < minimumRange) {
+        result.reason = "outsideCalibratedRange";
         return result;
     }
     result.nearestSurfacePoint = visitor.closestPoint;
     result.distance = visitor.closestDistance;
-    result.confirmed = true;
-    // Zona morta física: abaixo do alcance mínimo mensurável, a câmera
-    // estereoscópica não estima distância com confiabilidade, mas continua
-    // enxergando que há um obstáculo ali — um drone encostado numa parede não
-    // deixa de notar o obstáculo por estar perto demais, então a confirmação
-    // vale nos dois casos. Só se aplica no modo sensor físico; o oráculo
-    // idealizado (maximumRange < 0) não tem zona morta.
-    bool insideDeadZone = maximumRange >= 0 && result.distance < minimumRange;
-    result.reason = insideDeadZone ? "obstacleTooCloseToMeasure" : "obstacleConfirmed";
+    result.detected = true;
+    result.distanceValid = true;
+    result.reason = "obstacleConfirmed";
     return result;
+}
+
+bool AbstractObstacleSensor::clearCorridorGroundTruth(const Coord& a, const Coord& b,
+                                                     double clearance) const
+{
+    if (intersectsAnyObstacleGroundTruth(a, b))
+        return false;
+    Coord axis = b - a;
+    double length = axis.length();
+    // Sem eixo ou sem folga pedida, o corredor degenera na própria linha
+    // central, que o teste acima já cobriu.
+    if (length == 0 || clearance <= 0)
+        return true;
+    Coord unit = axis / length;
+    // Qualquer vetor não paralelo ao eixo serve de semente para a base
+    // perpendicular; escolher pelo menor componente evita o produto vetorial
+    // degenerado quando o eixo é quase vertical.
+    Coord seed = std::abs(unit.z) < 0.9 ? Coord(0, 0, 1) : Coord(1, 0, 0);
+    Coord u = (unit % seed).getNormalized() * clearance;
+    Coord v = (unit % u).getNormalized() * clearance;
+    for (const Coord& offset : {u, -u, v, -v})
+        if (intersectsAnyObstacleGroundTruth(a + offset, b + offset))
+            return false;
+    return true;
 }
 
 bool AbstractObstacleSensor::intersectsAnyObstacleGroundTruth(const Coord& a, const Coord& b) const

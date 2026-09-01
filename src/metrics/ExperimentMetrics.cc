@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <limits>
 
 #include "omnetpp/cconfiguration.h"
 
@@ -30,7 +29,12 @@ namespace echosar {
 //     -> ba-smoke-test, alert-lifecycle-smoke-test, multihop-smoke-test
 // Já removidos por não serem lidos por nenhum smoke test nem pela análise:
 // deliveryDelaySum/deliveryDelayCount, knownTeamNoAckTimeoutEvents (o sinal
-// "knownTeamNoAck" continua sendo aceito abaixo, só não é mais contado).
+// "knownTeamNoAck" continua sendo aceito abaixo, só não é mais contado), e os
+// escalares derivados pdr/confirmationRate. Estes dois eram pior que inertes:
+// duplicavam, já divididos, as taxas que analysis/core/experiment_metrics.py
+// recalcula dos contadores brutos justamente para manter o relatório
+// auditável. Quem lesse o escalar pronto pularia esse recálculo, e as duas
+// fontes poderiam divergir sem nada acusar.
 
 Register_Class(AlertMetricEvent);
 Define_Module(ExperimentMetrics);
@@ -281,12 +285,6 @@ void ExperimentMetrics::finish()
     for (const auto& [alertId, attempts] : attemptsByAlert)
         applicationRetries += std::max(0, attempts - 1);
 
-    const double undefined = std::numeric_limits<double>::quiet_NaN();
-    double generated = generatedAlertIds.size();
-    double pdr = generated > 0 ? deliveredAlertIds.size() / generated : undefined;
-    double confirmationRate = generated > 0
-        ? confirmedAlertIds.size() / generated : undefined;
-
     int recoveryProbeOutcomes = recoveryProbesConfirmed + recoveryProbesFailed +
         recoveryProbesUnreachable + recoveryProbesAbandoned;
 
@@ -357,8 +355,6 @@ void ExperimentMetrics::finish()
     recordScalar("neverKnownTeamSelectionEvents", neverKnownTeamSelectionEvents);
     recordScalar("expiredKnownTeamSelectionEvents", expiredKnownTeamSelectionEvents);
     recordScalar("alertsWithoutKnownTeam", alertsWithoutKnownTeam.size());
-    recordScalar("pdr", pdr);
-    recordScalar("confirmationRate", confirmationRate);
     recordScalar("repositionTriggers", repositionTriggers);
     recordScalar("sensorEvaluations", sensorEvaluations);
     recordScalar("obstaclesDetected", obstaclesDetected);

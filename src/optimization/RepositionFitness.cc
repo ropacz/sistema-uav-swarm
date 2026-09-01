@@ -77,9 +77,8 @@ bool RepositionFitness::feasible(const Coord& candidate) const
     if (!inDomain(candidate) ||
         candidate.distance(current) > parameters.maximumRepositionDistance)
         return false;
-    // Afastamento mínimo da superfície observada. Vale só em torno desse ponto:
-    // não é garantia de que o trajeto inteiro esteja livre, porque a câmera não
-    // enxerga além de maximumRange.
+    // Afastamento mínimo da superfície observada. É repulsão em torno desse
+    // ponto; a garantia de trajeto livre vem do corredor testado no fim.
     if (obstaclePoint.has_value() &&
         candidate.distance(*obstaclePoint) < parameters.obstacleSafetyMargin)
         return false;
@@ -89,13 +88,23 @@ bool RepositionFitness::feasible(const Coord& candidate) const
     // do movimento. Um drone já isolado não é impedido de buscar uma saída.
     if (preserveConnectivity && !predictsNeighbor(candidate))
         return false;
-    // Avaliador geométrico idealizado do simulador (§14; D4/E4): o trajeto do
-    // drone deve ser livre e a posição final precisa de linha de visada até a
-    // equipe estimada. Uma posição ainda obstruída não cumpre a finalidade do
-    // reposicionamento e não deve competir apenas por penalidade de custo.
-    // Não é o que a câmera enxerga — a detecção que ativou o mecanismo essa
-    // sim respeitou o alcance de 30 m.
-    return !sensor->intersectsAnyObstacleGroundTruth(current, candidate) &&
+    // Avaliador geométrico idealizado do simulador (§14; D4/E4). São duas
+    // perguntas de natureza diferente, e por isso duas geometrias diferentes:
+    //
+    // O trajeto é uma questão de colisão, e o drone tem volume. Exige um
+    // corredor livre de raio droneRadius + obstacleSafetyMargin em torno do
+    // eixo — testar só a linha central aceitaria uma rota que passa rente à
+    // parede e leva as hélices junto.
+    //
+    // A linha de visada até a equipe é uma questão de propagação, e o que
+    // importa ali é o eixo: um segmento fino é a geometria certa, porque a
+    // pergunta é se o sinal atravessa, não se o drone cabe.
+    //
+    // Nada disso é o que o verificador observa — a detecção que ativou o
+    // mecanismo essa sim respeitou a faixa de validade declarada.
+    return sensor->clearCorridorGroundTruth(
+               current, candidate,
+               parameters.droneRadius + parameters.obstacleSafetyMargin) &&
            !sensor->intersectsAnyObstacleGroundTruth(candidate, teamPosition);
 }
 

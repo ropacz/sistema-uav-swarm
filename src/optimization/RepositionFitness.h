@@ -13,16 +13,21 @@ class AbstractObstacleSensor;
 /// Parâmetros da aptidão e das restrições de viabilidade do reposicionamento.
 /// Todos vêm da configuração e permanecem constantes durante uma ativação.
 struct FitnessParameters {
-    // Pesos da soma ponderada; devem ser não negativos e somar 1.
+    // Pesos relativos do custo de enlace, obstáculo e deslocamento.
     double wLink = 0.60;
     double wObstacle = 0.25;
     double wMove = 0.15;
+
+
     // Escala do decaimento exponencial da penalidade de proximidade.
     double obstacleSigma = 10;
-    // Distância mínima entre um candidato e a única superfície observada pela
-    // câmera. É uma repulsão local em torno desse ponto, não prova de que a
-    // trajetória inteira esteja livre — o sensor só enxerga até maximumRange.
+    // Folga exigida em torno da trajetória e do ponto de obstáculo observado.
+    // Aplicada ao corredor inteiro, não só ao ponto final.
     double obstacleSafetyMargin = 1;
+    // Raio físico do drone. Somado a obstacleSafetyMargin define o corredor
+    // que a trajetória precisa ter livre: um eixo de voo que passa rente à
+    // parede é livre pela linha central e ainda assim colide com as hélices.
+    double droneRadius = 0.35;
     // Distância de referência para normalizar o custo de enlace.
     double linkNormalizationDistance = 1000;
     // Alcance geométrico aproximado para preservar ao menos um vizinho conhecido.
@@ -42,9 +47,10 @@ struct FitnessParameters {
 /// pilha de rede montada.
 ///
 /// **Modelo híbrido, deliberado.** A *detecção* que ativa o reposicionamento
-/// respeita o alcance físico da câmera (30 m, via `inspect()`); a *avaliação
-/// de posições candidatas* usa um predicado geométrico idealizado do simulador
-/// (`intersectsAnyObstacleGroundTruth()`), autorizado pelo §14 da diretriz e
+/// respeita a faixa de validade declarada (0,7-30 m, via `inspect()`); a
+/// *avaliação de posições candidatas* usa os predicados geométricos
+/// idealizados do simulador (`clearCorridorGroundTruth()` e
+/// `intersectsAnyObstacleGroundTruth()`), autorizados pelo §14 da diretriz e
 /// declarado em D4/E4. O objetivo é isolar a análise da política de
 /// reposicionamento das incertezas do planejamento de trajetória. Não há mapa
 /// persistente. A aptidão nunca consulta o rádio nem conhece o RSSI futuro.
@@ -65,8 +71,8 @@ class RepositionFitness
     /// que aquela já fez.
     double cost(const inet::Coord& candidate) const;
     /// Limites de área, altitude, alcance, margem local, autonomia e — pelo
-    /// avaliador geométrico idealizado — trajeto livre e linha de visada até
-    /// a equipe estimada.
+    /// avaliador geométrico idealizado — corredor de voo livre em torno da
+    /// trajetória e linha de visada até a equipe estimada.
     bool feasible(const inet::Coord& candidate) const;
     /// Só área e altitude — sem geometria de obstáculo. Barato o bastante para
     /// o gerador de candidatos do BA descartar amostras triviais antes de
