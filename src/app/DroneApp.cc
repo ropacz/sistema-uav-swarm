@@ -82,11 +82,25 @@ void DroneApp::validateParameters() const
     require(appPort > 0 && appPort <= 65535, "appPort must be a valid UDP port");
     require(victimAlertPayloadBytes > 0, "victimAlertPayloadBytes must be positive");
     // Zero desabilita o anexo. Abaixo do cabeçalho JFIF a miniatura não teria
-    // sequer os marcadores, e acima de 32 KiB o corpo não caberia no campo de
-    // comprimento do wire format.
-    require(victimAlertPhotoBytes == 0 ||
-            (victimAlertPhotoBytes >= 64 && victimAlertPhotoBytes <= 32768),
-            "victimAlertPhotoBytes must be zero or between 64 and 32768");
+    // sequer os marcadores.
+    require(victimAlertPhotoBytes == 0 || victimAlertPhotoBytes >= 64,
+            "victimAlertPhotoBytes must be zero or at least 64");
+    // O teto não é o MTU nem a duração do quadro: acima da MTU o IP fragmenta e
+    // o alerta atravessa em vários quadros. Quem limita são os campos de
+    // comprimento de 16 bits da pilha, e o mais apertado é o do IPv4 — 65535 B
+    // de datagrama menos 20 B de cabeçalho IP e 8 B de UDP deixam 65507 B.
+    //
+    // Medido: o INET não aplica esse limite, só o do UDP (65527 B), e entrega
+    // normalmente um datagrama de 65527 B. Isso não autoriza usá-lo. Passar de
+    // 65507 produz um datagrama que nenhuma pilha IPv4 real transporta, e o
+    // modelo perderia correspondência com o protocolo que diz simular.
+    //
+    // O limite do wire format próprio fica folgado nessa faixa: corpo e blob
+    // são uint16, e o corpo codificado é sempre menor que a soma declarada,
+    // porque o serializer aborta se os metadados não couberem em
+    // victimAlertPayloadBytes — esses bytes nunca invadem o orçamento da imagem.
+    require(victimAlertPayloadBytes + victimAlertPhotoBytes <= 65507,
+            "victimAlertPayloadBytes plus victimAlertPhotoBytes must fit an IPv4 datagram");
     require(victimAlertPhotoWidth > 0 && victimAlertPhotoWidth <= 65535,
             "victimAlertPhotoWidth must be 1..65535");
     require(victimAlertPhotoHeight > 0 && victimAlertPhotoHeight <= 65535,

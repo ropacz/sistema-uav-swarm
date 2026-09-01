@@ -16,9 +16,24 @@ simple DroneApp like IApp
         int victimAlertPayloadBytes = default(320);
         // Bytes da miniatura anexada ao alerta, somados ao payload acima. Zero
         // envia o alerta sem foto e reproduz os cenários anteriores à câmera.
-        // O teto prático não é o MTU e sim a duração da transmissão: no PHY
-        // 802.11b a 1 Mbps do cenário, acima de ~768 B o quadro ultrapassa o
-        // maxTransmissionDuration do RadioMedium e a simulação aborta.
+        //
+        // O teto é o datagrama IPv4: 65535 B menos 20 B de cabeçalho IP e 8 B
+        // de UDP deixam 65507 B para a soma com victimAlertPayloadBytes. O
+        // INET aceitaria até 65527 B (só checa o campo do UDP), mas acima de
+        // 65507 o datagrama não existiria em uma pilha IPv4 real.
+        //
+        // Nem o MTU nem a duração do quadro limitam o tamanho. Acima da MTU o
+        // IP fragmenta, e o alerta atravessa em vários quadros — cada um
+        // limitado à MTU, ou seja ~12 ms no PHY 802.11b a 1 Mbit/s do cenário.
+        // O maxTransmissionDuration do RadioMedium só precisa cobrir esse
+        // fragmento único: o default de 10 ms fica logo abaixo dele, e é por
+        // isso que os cenários com foto o elevam, uma vez só, sem que o valor
+        // precise crescer junto com a imagem.
+        //
+        // O que escala com o tamanho é tempo de ar: 8 us por byte a 1 Mbit/s,
+        // ou ~265 ms por tentativa com 32 KB de imagem. Em cenário com poucas
+        // equipes isso quase não custa entrega; onde há disputa de meio, é o
+        // custo dominante e precisa ser medido no próprio cenário.
         int victimAlertPhotoBytes = default(0);
         // Dimensões declaradas da miniatura. São metadados do anexo: o custo no
         // enlace vem de victimAlertPhotoBytes, não daqui.
