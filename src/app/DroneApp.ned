@@ -110,6 +110,28 @@ simple DroneApp like IApp
         // confirmação: a sondagem economiza transmissões, não bloqueia entrega.
         int recoveryProbeMaxAttempts = default(2);
 
+        // Indicação de possível obstrução (S_ij)
+        // Janela de observação das amostras de RSSI do enlace direto.
+        double rssiWindow @unit(s) = default(3s);
+        // Tempo sem TeamUpdate recebido diretamente da equipe antes de a
+        // ausência valer como indicação. Repasses de outros drones não o
+        // reiniciam: eles não observam o enlace direto.
+        double directUpdateTimeout @unit(s) = default(3s);
+        // RSSI de referência a rssiReferenceDistance sem obstrução. O padrão
+        // corresponde a 10 mW, 2,4 GHz, 1 m e antenas sem ganho: 10 dBm menos
+        // os 40,05 dB de FSPL do primeiro metro.
+        double rssiReferenceDbm = default(-30.05);
+        double rssiReferenceDistance @unit(m) = default(1m);
+        // Expoente de perda de percurso admitido em linha de visada.
+        double losPathLossExponent = default(2.0);
+        // Margem admitida para as variações do canal. Acima dela a atenuação
+        // excedente conta como degradação.
+        double excessLossThresholdDb = default(6.0);
+        // Exige a indicação antes de consultar o sensor de obstáculos. Falso
+        // preserva o mecanismo atual e apenas registra S_ij; a indicação
+        // sozinha nunca aciona o reposicionamento em nenhum dos dois modos.
+        bool requireObstructionIndication = default(false);
+
         // Função de aptidão: os três pesos devem somar 1
         // Peso do custo estimado de comunicação com a equipe.
         double wLink = default(0.60);
@@ -119,8 +141,12 @@ simple DroneApp like IApp
         double wMove = default(0.15);
         // Escala espacial do decaimento exponencial da penalidade do obstáculo.
         double obstacleSigma @unit(m) = default(10m);
-        // Distância mínima de segurança entre candidato e obstáculo.
+        // Folga exigida em torno da trajetória e do obstáculo observado.
         double obstacleSafetyMargin @unit(m) = default(1m);
+        // Raio físico do drone, somado à margem acima para formar o corredor
+        // que a trajetória precisa ter livre. Padrão: 0,35 m, cobrindo a
+        // envergadura com hélices de um quadricóptero da classe do Phantom 4.
+        double droneRadius @unit(m) = default(0.35m);
         // Distância de referência para normalizar o custo de enlace.
         double linkNormalizationDistance @unit(m) = default(1000m);
 

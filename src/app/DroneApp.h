@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -68,6 +69,27 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     int64_t recoveryProbeSequence = 0;
     int victimAlertPhotoWidth = 160;
     int victimAlertPhotoHeight = 120;
+    omnetpp::simtime_t rssiWindow;
+    omnetpp::simtime_t directUpdateTimeout;
+    double rssiReferenceDbm = -30.05;
+    double rssiReferenceDistance = 1;
+    double losPathLossExponent = 2;
+    double excessLossThresholdDb = 6;
+    /// Exige a indicação S_ij antes de consultar o sensor. Falso preserva o
+    /// mecanismo atual, em que só as tentativas sem ACK decidem quando avaliar.
+    bool requireObstructionIndication = false;
+    int64_t directRssiSamples = 0;
+    /// Soma da atenuação excedente das amostras diretas. Dividida por
+    /// directRssiSamples dá a média de Delta observada na execução.
+    double directRssiExcessLossSum = 0;
+    int64_t forwardedTeamUpdatesIgnoredForRssi = 0;
+    int64_t rssiDegradationIndications = 0;
+    int64_t directUpdateTimeoutIndications = 0;
+    int64_t possibleObstructionIndications = 0;
+    /// Consultas ao sensor barradas pelo parâmetro acima. Mede o efeito do
+    /// gate; sem ele não se distingue "não houve gatilho" de "houve gatilho
+    /// sem indicação".
+    int64_t obstructionGateSuppressions = 0;
     int64_t droneStatusPayloadBytes = 0;
     int64_t droneStatusSequence = 0;
     int64_t droneStatusUpdatesAccepted = 0;
@@ -132,6 +154,20 @@ class DroneApp : public inet::ApplicationBase, public inet::UdpSocket::ICallback
     /// Remove entradas expiradas, retendo a última posição pelo prazo de
     /// recuperação e marcando-a como desatualizada.
     void expireDiscoveredEntries();
+    /// Guarda o RSSI e a distância de uma recepção direta. Sem a etiqueta
+    /// SignalPowerInd — ou com potência não positiva — nada é registrado.
+    void recordDirectRssiSample(const inet::Packet *packet, TeamLinkState& team,
+                                const inet::Coord& teamPosition);
+    /// RSSI previsto pelo Log-Distance sem obstrução para uma dada distância.
+    double expectedRssiDbm(double distanceMeters) const;
+    /// Descarta as amostras que saíram da janela de observação.
+    void discardExpiredRssiSamples(TeamLinkState& team);
+    /// Média da atenuação excedente em relação ao Log-Distance sem obstrução.
+    /// Vazio quando a janela não tem amostra direta.
+    std::optional<double> computeExcessAttenuation(TeamLinkState& team);
+    /// Calcula S_ij: atenuação acima do limiar, ou ausência prolongada de
+    /// recepção direta. Contabiliza cada episódio uma única vez.
+    bool evaluatePossibleObstruction(TeamLinkState& team);
     /// Atualiza a posição anunciada por outro drone, ignorando ecos e reordenação.
     void handleDroneStatus(inet::Packet *packet);
     /// Valida o VictimAck contra o destino histórico e encerra o alerta.

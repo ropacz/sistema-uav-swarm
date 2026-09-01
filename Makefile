@@ -17,14 +17,16 @@ ANALYSIS_SCRIPTS := analysis/core/process_results.py \
 	analysis/validation/validate_sensor_range_smoke_test.py \
 	analysis/validation/validate_reposition_interrupted_smoke_test.py \
 	analysis/validation/validate_multihop_smoke_test.py \
-	analysis/validation/validate_no_known_team_smoke_test.py
+	analysis/validation/validate_no_known_team_smoke_test.py \
+	analysis/validation/validate_obstruction_indication_smoke_test.py
 
 .PHONY: all clean cleanall clean-results makefiles checkmakefiles check analysis-tests \
 	experiment main-experiment robustness-experiment reproduce \
 	alert-sheet scavetool-check \
 	ba-smoke-test alert-lifecycle-smoke-test connectivity-smoke-test \
 	obstacle-smoke-test reposition-interrupted-smoke-test multihop-smoke-test \
-	sensor-range-smoke-test no-known-team-smoke-test manifest
+	sensor-range-smoke-test no-known-team-smoke-test \
+	obstruction-indication-smoke-test manifest
 
 all: checkmakefiles
 	cd src && $(MAKE) MODE=debug
@@ -62,7 +64,7 @@ checkmakefiles:
 check:
 	bash -n run.sh
 	python3 -m py_compile $(ANALYSIS_SCRIPTS)
-	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.reports.mechanism_summary, analysis.reports.formula_workbook, analysis.reports.scavetool_figures, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test"
+	python3 -c "import analysis.core.experiment_metrics, analysis.core.process_results, analysis.reports.figures, analysis.reports.alert_sheet, analysis.reports.mechanism_summary, analysis.reports.formula_workbook, analysis.reports.scavetool_figures, analysis.validation.validate_ba_smoke_test, analysis.validation.validate_alert_lifecycle_smoke_test, analysis.validation.validate_connectivity_smoke_test, analysis.validation.validate_obstacle_smoke_test, analysis.validation.validate_sensor_range_smoke_test, analysis.validation.validate_reposition_interrupted_smoke_test, analysis.validation.validate_multihop_smoke_test, analysis.validation.validate_no_known_team_smoke_test, analysis.validation.validate_obstruction_indication_smoke_test"
 	@! grep -rEn "HypothesisPilot|pilot_experiment|hypothesis-pilot" \
 		README.md docs run.sh simulations analysis --exclude-dir=results
 
@@ -109,6 +111,15 @@ multihop-smoke-test:
 no-known-team-smoke-test:
 	./run.sh -c NoKnownTeam_SmokeTest -r 0
 	python3 analysis/validation/validate_no_known_team_smoke_test.py
+
+# Verifica a indicação de possível obstrução (S_ij) ramo a ramo: enlace limpo,
+# atenuação de 10 dB e perda das recepções diretas por distância.
+obstruction-indication-smoke-test:
+	./run.sh -c ObstructionClear_SmokeTest -r 0
+	./run.sh -c ObstructionSensitive_SmokeTest -r 0
+	./run.sh -c ObstructionDegraded_SmokeTest -r 0
+	./run.sh -c ObstructionSilent_SmokeTest -r 0
+	python3 analysis/validation/validate_obstruction_indication_smoke_test.py
 
 # Experimento confirmatório: um único contraste pareado e uma pergunta central.
 # A análise produz atendimento/perda e o efeito BA-On − BA-Off pareado por seed.

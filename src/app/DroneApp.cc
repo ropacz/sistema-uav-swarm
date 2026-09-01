@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "inet/mobility/contract/IMobility.h"
+#include "inet/physicallayer/wireless/common/contract/packetlevel/SignalTag_m.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/networklayer/contract/ipv4/Ipv4Address.h"
 #include "mobility/BaGaussMarkovMobility.h"
@@ -106,6 +107,11 @@ void DroneApp::validateParameters() const
         require(recoveryProbeTimeout * recoveryProbeMaxAttempts <= retryInterval,
                 "recoveryProbeTimeout times recoveryProbeMaxAttempts must fit in retryInterval");
     }
+    require(rssiWindow > 0, "rssiWindow must be positive");
+    require(directUpdateTimeout > 0, "directUpdateTimeout must be positive");
+    require(rssiReferenceDistance > 0, "rssiReferenceDistance must be positive");
+    require(losPathLossExponent > 0, "losPathLossExponent must be positive");
+    require(excessLossThresholdDb > 0, "excessLossThresholdDb must be positive");
     require(droneStatusPayloadBytes > 0, "droneStatusPayloadBytes must be positive");
     require(applicationIpTtl > 0 && applicationIpTtl <= 255, "applicationIpTtl must be 1..255");
 
@@ -147,6 +153,7 @@ void DroneApp::validateParameters() const
 
     require(f.obstacleSigma > 0, "obstacleSigma must be positive");
     require(f.obstacleSafetyMargin >= 0, "obstacleSafetyMargin must not be negative");
+    require(f.droneRadius >= 0, "droneRadius must not be negative");
     require(f.linkNormalizationDistance > 0, "linkNormalizationDistance must be positive");
     require(f.communicationRange > 0, "communicationRange must be positive");
     require(f.wLink >= 0 && f.wObstacle >= 0 && f.wMove >= 0,
@@ -183,6 +190,13 @@ void DroneApp::initialize(int stage)
         recoveryProbePayloadBytes = par("recoveryProbePayloadBytes");
         recoveryProbeTimeout = par("recoveryProbeTimeout");
         recoveryProbeMaxAttempts = par("recoveryProbeMaxAttempts");
+        rssiWindow = par("rssiWindow");
+        directUpdateTimeout = par("directUpdateTimeout");
+        rssiReferenceDbm = par("rssiReferenceDbm");
+        rssiReferenceDistance = par("rssiReferenceDistance").doubleValueInUnit("m");
+        losPathLossExponent = par("losPathLossExponent");
+        excessLossThresholdDb = par("excessLossThresholdDb");
+        requireObstructionIndication = par("requireObstructionIndication");
         droneStatusPayloadBytes = par("droneStatusPayloadBytes");
         droneStatusInterval = par("droneStatusInterval");
         droneStatusInitialOffset = par("droneStatusInitialOffset");
@@ -217,6 +231,7 @@ void DroneApp::initialize(int stage)
         fitnessParameters.wObstacle = par("wObstacle");
         fitnessParameters.wMove = par("wMove");
         fitnessParameters.obstacleSigma = par("obstacleSigma").doubleValueInUnit("m");
+        fitnessParameters.droneRadius = par("droneRadius").doubleValueInUnit("m");
         fitnessParameters.obstacleSafetyMargin = par("obstacleSafetyMargin").doubleValueInUnit("m");
         fitnessParameters.linkNormalizationDistance =
             par("linkNormalizationDistance").doubleValueInUnit("m");
@@ -441,6 +456,24 @@ void DroneApp::handleTeamUpdate(Packet *packet)
     auto& team = teamIt->second;
     (void)inserted;
     Coord receivedPosition(update->getPositionX(), update->getPositionY(), update->getPositionZ());
+    // A etiqueta de potência só existe em pacote que cruzou o rádio. O repasse
+    // que este drone acabou de emitir volta pelo laço local do broadcast IPv4 e
+    // chega sem ela: é o eco do próprio nó, não uma recepção, e contá-lo como
+    // atualização encaminhada dobraria o diagnóstico sem nenhuma recepção nova.
+    bool receivedOverTheAir = packet->findTag<SignalPowerInd>() != nullptr;
+    // hopCount zero é a transmissão da própria equipe: só ela observa o enlace
+    // direto. O repasse de outro drone atualiza a posição conhecida, mas o RSSI
+    // que ele carregaria seria o do último salto, não o do enlace em questão.
+    // A amostragem precede a checagem de sequência: uma recepção duplicada ou
+    // reordenada não renova a entrada, mas foi uma recepção real, com potência
+    // real, e é evidência legítima sobre o enlace.
+    if (update->getHopCount() == 0) {
+        team.hasDirectReception = true;
+        team.lastDirectUpdateTime = simTime();
+        recordDirectRssiSample(packet, team, receivedPosition);
+    }
+    else if (receivedOverTheAir)
+        forwardedTeamUpdatesIgnoredForRssi++;
     // Duplicatas e pacotes reordenados não renovam a entrada nem são repassados.
     // Como o repasse acontece só nesta condição, cada drone encaminha no máximo
     // uma vez por (teamId, sequenceNumber).
@@ -479,6 +512,87 @@ void DroneApp::scheduleTeamUpdateRelay(const TeamUpdateChunk& original,
     simtime_t delay = teamUpdateForwardJitter > SIMTIME_ZERO
         ? uniform(0, teamUpdateForwardJitter.dbl()) : SIMTIME_ZERO;
     scheduleAt(simTime() + delay, forwarded);
+}
+
+void DroneApp::recordDirectRssiSample(const Packet *packet, TeamLinkState& team,
+                                      const Coord& teamPosition)
+{
+    // A etiqueta é anexada pelo rádio receptor e sobe intacta pela pilha. Sua
+    // ausência não é erro: um pacote que não veio do meio sem fio simplesmente
+    // não tem potência recebida para informar.
+    auto powerTag = packet->findTag<SignalPowerInd>();
+    if (!powerTag)
+        return;
+    double powerWatts = powerTag->getPower().get();
+    if (!(powerWatts > 0))
+        return;
+    auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
+    RssiSample sample;
+    sample.receptionTime = simTime();
+    sample.rssiDbm = 10.0 * std::log10(powerWatts / 1e-3);
+    // A posição anunciada no pacote é a da equipe no instante do envio, que é a
+    // geometria à qual este RSSI corresponde.
+    sample.distanceMeters = mobility->getCurrentPosition().distance(teamPosition);
+    team.rssiSamples.push_back(sample);
+    directRssiSamples++;
+    // Soma da atenuação excedente por amostra, e não por avaliação da janela:
+    // dividida por directRssiSamples ao final, dá a média não enviesada de
+    // Delta. É o que torna a verificação numérica — o escalar comparável ao
+    // valor analítico do cenário, em vez de apenas "indicou ou não indicou".
+    directRssiExcessLossSum += expectedRssiDbm(sample.distanceMeters) - sample.rssiDbm;
+    discardExpiredRssiSamples(team);
+}
+
+double DroneApp::expectedRssiDbm(double distanceMeters) const
+{
+    // O Log-Distance não vale abaixo da distância de referência: sem o piso,
+    // uma equipe a poucos centímetros produziria atenuação esperada negativa e
+    // uma degradação aparente onde o enlace está no melhor caso possível.
+    double distance = std::max(distanceMeters, rssiReferenceDistance);
+    return rssiReferenceDbm -
+        10.0 * losPathLossExponent * std::log10(distance / rssiReferenceDistance);
+}
+
+void DroneApp::discardExpiredRssiSamples(TeamLinkState& team)
+{
+    simtime_t limit = simTime() - rssiWindow;
+    while (!team.rssiSamples.empty() && team.rssiSamples.front().receptionTime < limit)
+        team.rssiSamples.pop_front();
+}
+
+std::optional<double> DroneApp::computeExcessAttenuation(TeamLinkState& team)
+{
+    discardExpiredRssiSamples(team);
+    if (team.rssiSamples.empty())
+        return std::nullopt;
+    double sum = 0;
+    for (const auto& sample : team.rssiSamples)
+        sum += expectedRssiDbm(sample.distanceMeters) - sample.rssiDbm;
+    return sum / team.rssiSamples.size();
+}
+
+bool DroneApp::evaluatePossibleObstruction(TeamLinkState& team)
+{
+    std::optional<double> attenuation = computeExcessAttenuation(team);
+    bool weakSignal = attenuation.has_value() && *attenuation > excessLossThresholdDb;
+    // Só perde o enlace direto quem chegou a tê-lo. Uma equipe conhecida apenas
+    // por repasse nunca forneceu recepção direta, e contar sua ausência como
+    // indicação transformaria multi-hop normal em suspeita de obstrução.
+    bool missingDirectUpdates = team.hasDirectReception &&
+        simTime() - team.lastDirectUpdateTime > directUpdateTimeout;
+    // Os contadores registram episódios, não avaliações: a manutenção reavalia
+    // a cada maintenanceInterval e inflaria qualquer contagem feita por tick.
+    if (weakSignal && !team.rssiDegraded)
+        rssiDegradationIndications++;
+    team.rssiDegraded = weakSignal;
+    if (missingDirectUpdates && !team.directUpdateTimedOut)
+        directUpdateTimeoutIndications++;
+    team.directUpdateTimedOut = missingDirectUpdates;
+    bool indication = weakSignal || missingDirectUpdates;
+    if (indication && !team.possibleObstruction)
+        possibleObstructionIndications++;
+    team.possibleObstruction = indication;
+    return indication;
 }
 
 void DroneApp::handleDroneStatus(Packet *packet)
@@ -716,6 +830,12 @@ void DroneApp::handleRecoveryProbe(Packet *packet)
 void DroneApp::performMaintenance()
 {
     expireDiscoveredEntries();
+    // S_ij é avaliado para toda equipe retida, e não apenas no instante da
+    // decisão de reposicionamento: a expiração da janela e o vencimento do
+    // prazo sem recepção direta são eventos de tempo, que passariam
+    // despercebidos se só fossem observados quando um alerta falha.
+    for (auto& entry : discoveredTeams)
+        evaluatePossibleObstruction(entry.second);
     expireRecoveryProbes();
 
     for (auto it = pendingAlerts.begin(); it != pendingAlerts.end(); ) {
@@ -825,6 +945,18 @@ bool DroneApp::tryReposition(PendingVictimAlert& alert)
         EV_DEBUG << "Reposition skipped: drone is already moving for another alert\n";
         return false;
     }
+    // S_ij é evidência adicional sobre o enlace, nunca gatilho: quem decide
+    // *quando* avaliar continua sendo a ausência de ACK acima do limiar.
+    // Habilitado, requireObstructionIndication exige que a evidência acompanhe
+    // a falha antes de gastar uma consulta ao sensor. A recusa é temporária —
+    // a indicação pode surgir na próxima janela —, então o alerta continua
+    // elegível em vez de perder o reposicionamento.
+    bool obstructionIndicated = evaluatePossibleObstruction(teamIt->second);
+    if (requireObstructionIndication && !obstructionIndicated) {
+        obstructionGateSuppressions++;
+        EV_DEBUG << "Reposition skipped: no obstruction indication for the target team\n";
+        return false;
+    }
     auto sensor = check_and_cast<AbstractObstacleSensor *>(getParentModule()->getSubmodule("obstacleSensor"));
     auto mobility = check_and_cast<IMobility *>(getParentModule()->getSubmodule("mobility"));
     Coord current = mobility->getCurrentPosition();
@@ -839,7 +971,7 @@ bool DroneApp::tryReposition(PendingVictimAlert& alert)
     // D4/E4.
     ObstacleObservation observation = sensor->inspect(current, teamPosition);
     AlertMetricEvent sensorEvent(alert.alertId, simTime(),
-                                 observation.confirmed ? "detected" : "notDetected");
+                                 observation.detected ? "detected" : "notDetected");
     emit(sensorEvaluationSignal, &sensorEvent);
     // A partir daqui a decisão é definitiva: o sensor foi consultado uma vez
     // para este alerta, como o gatilho prevê.
@@ -865,8 +997,12 @@ bool DroneApp::tryReposition(PendingVictimAlert& alert)
     // viabilidade das candidatas é testada pelo avaliador geométrico
     // idealizado do simulador, que é o que continua excluindo a posição atual
     // quando ela permanece obstruída.
+    // distanceValid, e não detected: uma observação sem distância utilizável
+    // não tem ponto de superfície para dar à aptidão. Usar o ponto mesmo assim
+    // seria contrabandear a geometria exata do simulador para dentro do termo
+    // de obstáculo.
     std::optional<Coord> obstaclePoint;
-    if (observation.confirmed)
+    if (observation.distanceValid)
         obstaclePoint = observation.nearestSurfacePoint;
     RepositionFitness fitness(fitnessParameters, sensor, current, teamPosition,
                               obstaclePoint,
@@ -977,6 +1113,13 @@ void DroneApp::resumeMobility()
 
 void DroneApp::finish()
 {
+    recordScalar("directRssiSamples", directRssiSamples);
+    recordScalar("directRssiExcessLossSum", directRssiExcessLossSum);
+    recordScalar("forwardedTeamUpdatesIgnoredForRssi", forwardedTeamUpdatesIgnoredForRssi);
+    recordScalar("rssiDegradationIndications", rssiDegradationIndications);
+    recordScalar("directUpdateTimeoutIndications", directUpdateTimeoutIndications);
+    recordScalar("possibleObstructionIndications", possibleObstructionIndications);
+    recordScalar("obstructionGateSuppressions", obstructionGateSuppressions);
     recordScalar("droneStatusUpdatesAccepted", droneStatusUpdatesAccepted);
     recordScalar("connectivityConstraintsApplied", connectivityConstraintsApplied);
     recordScalar("connectivityPreservedSelections", connectivityPreservedSelections);

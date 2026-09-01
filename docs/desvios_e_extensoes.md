@@ -514,6 +514,46 @@ experimento principal.**
 
 `src/app/TeamApp.ned`, `simulations/validation/smoke-tests.ini`.
 
+### E8. Indicação de possível obstrução (S_ij)
+
+Cada drone acompanha, por equipe, as `TeamUpdate` recebidas **diretamente** e o
+RSSI dessas recepções, obtido da etiqueta `SignalPowerInd` que o rádio anexa ao
+pacote. Sobre uma janela deslizante calcula a atenuação excedente em relação ao
+Log-Distance sem obstrução:
+
+```
+Δ_ij = média_k [ RSSI(d_ref) − 10·α_LoS·log10(d_ijk / d_ref) − RSSI_ijk ]
+```
+
+A indicação `S_ij` é verdadeira quando `Δ_ij > excessLossThresholdDb`, **ou**
+quando o tempo desde a última recepção direta ultrapassa `directUpdateTimeout`.
+`hopCount` distingue os dois casos: zero é transmissão da própria equipe;
+maior que zero é repasse de outro drone, que atualiza a posição conhecida mas
+não entra na janela de RSSI nem renova o prazo — o RSSI que ele carregaria
+seria o do último salto, não o do enlace em questão.
+
+**A indicação não é gatilho.** O acionamento continua sendo exclusivamente a
+ausência de ACK acima de `repositionAfterUnackedAttempts`, como em D7. `S_ij`
+entra como evidência adicional sobre o enlace, registrada em escalares por
+drone. O parâmetro `requireObstructionIndication` (padrão **falso**) permite,
+como braço separado, exigir a evidência antes de gastar uma consulta ao sensor;
+com ele falso o comportamento é idêntico ao anterior. Em nenhum dos dois modos
+`S_ij` sozinho move o drone.
+
+A referência `rssiReferenceDbm` depende da potência do cenário: os −30,05 dBm
+padrão são 10 mW (10 dBm) menos os 40,05 dB de FSPL do primeiro metro a
+2,4 GHz, coerentes com E5. Um cenário que mude a potência precisa mudar a
+referência junto.
+
+Verificação em `obstruction-indication-smoke-test`, que separa os ramos: enlace
+limpo a 100 m (Δ abaixo de 0,5 dB, `S = 0`), potência reduzida em 10 dB com a
+referência inalterada (Δ = 10 dB, `S = 1` pelo RSSI) e equipe afastada para
+fora de alcance (`S = 1` pelo prazo, sem passar pelo RSSI).
+
+`src/app/DroneApp.{h,cc,ned}`, `src/app/TeamLinkState.h`,
+`simulations/validation/smoke-tests.ini`,
+`analysis/validation/validate_obstruction_indication_smoke_test.py`.
+
 ---
 
 ## Lacunas

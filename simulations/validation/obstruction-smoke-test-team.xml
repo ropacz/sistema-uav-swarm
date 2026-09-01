@@ -1,0 +1,10 @@
+<movement>
+    <!-- A equipe fica 10 s a 100 m do drone, tempo suficiente para o enlace
+         direto ser estabelecido, e então se afasta para 900 m — muito além dos
+         ~559 m nominais a 10 mW. As recepções diretas cessam por distância, sem
+         depender das propriedades dielétricas de nenhum material. -->
+    <set x="200" y="100" z="10" speed="100" angle="0"/>
+    <wait t="10"/>
+    <forward d="800"/>
+    <wait t="1000"/>
+</movement>
